@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>エラー</title>
+    <style>
+        body {
+            font-family: Arial, "メイリオ", sans-serif;
+        }
+        .alert {
+            color: #a94442;
+            background-color: #f2dede;
+            border-color: #ebccd1;
+        }
+        body {
+            width: 500px;
+            margin: 100px auto;
+        }
+        ul {list-style: none;}
+    </style>
+</head>
+<body>
+    <% if (locals.err) { %>
+        <ul class="alert">
+            <li><%= err %></li>
+        </ul>
+    <% } %>
+    <a href="/">Topへ戻る</a>
+</body>
+</html>

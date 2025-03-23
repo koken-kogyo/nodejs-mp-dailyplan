@@ -1,0 +1,146 @@
+<!-- mp-daily-planning.ejs -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>日別計画表</title>
+    <link rel="stylesheet" href="/static/css/style-basic.css">
+    <link rel="stylesheet" href="/static/css/style-mppages.css">
+    <link href="https://use.fontawesome.com/releases/v5.6.1/css/all.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Common JavaScript -->
+    <%- include("_myfunctions.ejs") %>
+
+    <!-- Header -->
+    <%- include("_header.ejs", {title: "切削工程　日別計画表" + myFunc.c(req.params.planday) , req}) %>
+
+    <!-- Groups -->
+    <%- include("_mcgmenu.ejs", {mcgcdmenu, req, flgs: "1"}) %>
+
+    <!-- Details -->
+    <div id="top"></div>
+    <div id="main" class="containers">
+    <div id="details">
+    <% if (req.session.mcgcd && d0410) { %>
+        <% d0410.forEach(function (data) { %>
+        <div id="<%= data[0].MCCD %>"></div>
+        <div class="mcnm"><%= data[0].MCCD %>：<%= data[0].MCNM %></div>
+        <hr>
+        <% if (Object.keys(data[1]).length == 0) { %>
+            <div class="nodata">データありません．</div>
+        <% } else { %>
+        <table>
+            <tr class="tr2">
+                <th rowspan="2" width="20px">No</th><th rowspan="2" width="40px">日中<br>夜間</th><th rowspan="2" width="120px">品番</th><th rowspan="2" width="20px">段取(分)</th>
+                <th rowspan="2" width="20px">CT<br>(秒)</th><th rowspan="2" width="60px">所要時間</th>
+                <th colspan="3">予定</th><th colspan="3">実績</th><th rowspan="2" colspan="4" width="190px">工程経路</th>
+                <th rowspan="2" colspan="2" width="40px">作業</th>
+            </tr>
+            <tr class="tr2">
+                <th width="30px">開始</th><th width="30px">終了</th><th width="20px">数量</th><th width="30px">開始</th><th width="30px">終了</th><th width="20px">数量</th>
+            </tr>
+            <% let j = 1; %>
+            <% let sec1 = 0; %>
+            <% let sec2 = 0; %>
+            <% let mcsec = 0; %>
+            <% let mcqty = 0; %>
+            <% let mcjiqty = 0; %>
+            <% let mctime = 0; %>
+            <% data[1].forEach(function (d) { %>
+                <tr>
+                <% sec1 = myFunc.d(d.DT, d.CT, d.ODRQTY); %>
+                <% sec2 = myFunc.g(8, 20, mctime, mctime + sec1); %>
+                <td><%= j %></td><td>日中</td><td><%= d.HMCD %></td><td><%= d.DT %></td>
+                <td><%= d.CT %></td><td><%= myFunc.e(sec1); %></td>
+                <td><%= myFunc.f(8, 20, mctime); %></td><td><%= myFunc.f(8, 20, sec2); %></td><td><%= d.ODRQTY %></td>
+                <td><%= d.STTM %></td><td><%= d.EDTM %></td>
+                <td><% if (d.ODRSTS === '3') { %>
+                    <input type="number" value="<%= d.ODRQTY-d.JIQTY %>" class="input-number-qty" id="<%= d.ODRNO %>" />
+                <% } else if (d.ODRSTS === '4') { %>
+                    <%= d.JIQTY %>
+                <% } %></td>
+                <td class="s<%= d.STS1 %>"><%= d.KT1 %></td>
+                <td class="s<%= d.STS2 %>"><%= d.KT2 %></td>
+                <td class="s<%= d.STS3 %>"><%= d.KT3 %></td>
+                <% if (d.ODRSTS === '4') { %>
+                    <td>-</td><td>-</td><td>-</td>
+                <% } else { %>
+                    <% if (d.DTTM == null) { %>
+                        <td><a href="/mp/dandori/<%= d.ODRNO+':'+d.MCCD %>">段取</a></td>
+                    <% } else { %>
+                        <td>-</td>
+                    <% } %>
+                    <% if (d.STTM == null) { %>
+                        <td><a href="javascript:jump('S','<%= d.ODRNO %>', '<%= d.MCCD %>');">開始</a></td>
+                    <% } else { %>
+                        <td>-</td>
+                    <% } %>
+                    <% if (d.EDTM == null) { %>
+                        <td><a href="javascript:jump('E','<%= d.ODRNO %>', '<%= d.MCCD %>');">終了</a></td>
+                    <% } else { %>
+                        <td>-</td>
+                    <% } %>
+                <% } %>
+                </tr>
+                <% mcsec = mcsec + sec1; %>
+                <% mctime = sec2 + (5*60); %>
+                <% mcqty = mcqty + Number(d.ODRQTY); %>
+                <% mcjiqty = mcjiqty + Number(d.JIQTY); %>
+                <% j++; %>
+            <% }); %>
+            <tr>
+                <td colspan="3"></td><td colspan="2">所要計</td><td><%= myFunc.e(mcsec); %></td>
+                <td colspan="2">予定数</td><td><%= mcqty %></td>
+                <td colspan="2">実績数</td><td><%= mcjiqty %></td>
+                <td colspan="2">稼働率</td><td colspan="2">xx％</td>
+            </tr>
+        </table>
+        <br><br>
+        <% }; %>
+        <br><br>
+        <% }); %>
+    <% }; %>
+    </div>
+    </div>
+    <script>
+        function jump(mode, odrno, mccd) {
+            if (mode == 'S') {
+                //window.open("jp.co.cimtops.ireporter.createreport:defid=432", "_blank");
+                waitlocation("/mp/start/" + odrno + ":" + mccd);
+            }
+            if (mode == 'E') {
+                let element = document.getElementById(odrno);
+                // 入力項目チェック
+                if (element.value === "") {
+                    alert("実績数を入力してください．");
+                    element.focus();
+                    return false;    //送信ボタン本来の動作をキャンセル
+                } else if( isNaN(element.value) ) {
+                    element.focus();
+                    alert("数値を入力してください．");
+                    return false;
+                }
+                // i-Reporterの起動
+                //window.open("jp.co.cimtops.ireporter.createreport:defid=299&%E8%A3%BD%E9%80%A0%E6%8C%87%E7%A4%BA%E6%9B%B8%E6%8C%87%E7%A4%BANo.=2303042117MPMCL&%E5%93%81%E7%95%AA=RP851-79311-5", "_blank");
+                // 画面遷移
+                waitlocation("/mp/end/" + odrno + ":" + mccd + "/" + element.value);
+            }
+        }
+        // Promiseを使う方法
+        function sleepByPromise(sec) {
+            return new Promise(resolve => setTimeout(resolve, sec*1000));
+        }
+        // async修飾子を使って非同期関数を宣言します。
+        async function waitlocation(nexturi) {
+            location.href = "#" + nexturi.split(":")[1];
+            // await句を使って、Promiseの非同期処理が完了するまで待機します。
+            await sleepByPromise(1);
+            location.href = nexturi;
+        }
+    </script>
+    
+    <!-- Footer -->
+    <%- include("_footer", req) %>
+</body>
+</html>

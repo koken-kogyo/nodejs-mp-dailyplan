@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ログイン認証</title>
+    <style>
+        body {
+            font-family: Arial, "メイリオ", sans-serif;
+        }
+        .alert {
+            color: #a94442;
+            background-color: #f2dede;
+            border-color: #ebccd1;
+        }
+        body {
+            width: 500px;
+            margin: 100px auto;
+        }
+        ul {list-style: none;}
+        table {font-size: 1.25rem;}
+        input {font-size: 1.25rem}
+        input[type="text"] {font-size: 1.25rem;width: 230px}
+        input[type="password"] {font-size: 1.25rem;width: 230px}
+    </style>
+</head>
+<body>
+    <% if (locals.err) { %>
+        <ul class="alert">
+            <li><%= err %></li>
+        </ul>
+    <% } %>
+    <form method="POST" action="/login">
+        <table>
+            <tr><td width="120px">UserID</td><td><input type="text" name="userid" value="<%= userid; %>"><br></td></tr>
+            <tr></tr>
+            <tr><td width="120px">Password</td><td><input type="password" name="password"></td></tr>
+        </table>
+        <table>
+            <td width="120px"></td><td><input type="submit" name="LOGIN" value="ログイン認証"></td>
+        </table>
+        <br>
+        <a href="/">Topへ戻る</a>
+    </form>
+</body>
+</html>

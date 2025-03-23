@@ -1,0 +1,165 @@
+@charset "UTF-8";
+/* =========================================================================== */
+/*  mp-style.css : 主にMPページ群で使用する基本的なスタイルシート
+/* =========================================================================== */
+a {
+    color: cadetblue;
+    text-decoration: none;
+}
+/* === Header ================================================================ */
+#gotoswmenu {
+    display: block;
+    position: fixed;
+    left: 200px;
+    top: 7px;
+    font-size: 1.6rem;
+    z-index: 999;
+}
+#gotoswmenu a {
+    color: #FEFEFE;
+}
+#swmenu .active {
+    color: rgb(0,51,153,1);
+    background-color: rgb(153,200,255,0.6);
+}
+
+
+#details {
+    padding-top: 60px;
+    width: 1000px;
+    margin: auto;
+    z-index: 700;
+}
+.mcnm {
+    font-weight: 600;
+    margin: auto;
+    width: 960px;
+}
+.floatright {
+    float: right;
+}
+.smalltitle {
+    font-size: 0.4em;
+    color: darkgray;
+}
+.check-material {
+    width: 1.5em;
+    height: 1.5em;
+    vertical-align: text-bottom;
+    margin-bottom: 0px;
+}
+th a {
+    display: inline-block;
+    padding: 10px 7px;
+}
+td a {
+    display: inline-block;
+    padding: 2px 6px;
+}
+a li {
+    border-radius: 3px;
+    background-color: black;
+    color: #eee;
+}
+a li:hover {
+    background-color: #ddd;
+}
+.allow {
+    border-radius: 3px;
+    background-color: rgb(40, 40, 40);
+    width: 30px;
+    color: #eee;
+}
+.allow:hover {
+    border-radius: 3px;
+    background-color: rgb(24, 94, 164);
+    width: 30px;
+    color: #eee;
+}
+.noallow {
+    border-radius: 3px;
+    background-color: rgb(164, 164, 164);
+    width: 30px;
+    color: #eee;
+}
+li {
+    display: inline-block;
+    color: white;
+    list-style: none;
+    padding-top: 7px;
+    height: 25px;
+    width: 48px;
+    text-align: center;
+}
+table {
+    font-size: 0.8rem;
+    margin: auto;
+}
+th {
+    border: solid 0.5px #1414141c;
+    background-color: rgb(225, 238, 253);
+}
+.tr2 {
+    height: 1.25rem;
+}
+/*
+tr {
+    background-color: #FEFEFE;
+    height: 2.5rem;
+}
+tr:nth-child(even) {
+    background-color: #ECECEC;
+}
+*/
+td {
+    text-align: center;
+    width: 40px;
+    border: solid 0.5px #1414141c;
+    padding: 2px 5px ;
+    vertical-align: middle;
+}
+.lef {
+    text-align: left;
+}
+.nodata {
+    color: #a94442;
+    background-color: #f2dede;
+    border-color: #ebccd1;
+    display: flex;
+    width: 865px;
+    margin: 0 auto;
+}
+.s2 {
+    color:rgb(0, 0, 0);
+}
+.s3 {
+    border-radius: 3px;
+    animation: blinkAnimeS3 0.8s  infinite alternate; /*ease infinite;*/
+}
+@keyframes blinkAnimeS3{
+    0%{ color : rgba(230, 250, 230, 0.8);   background:rgba(20, 120, 20, 0.8) }
+  100%{ color : rgba(0, 0, 0, 0.8); background:rgba(100, 250, 120, 0.8)   }
+}
+.s4 {
+    border-radius: 3px;
+    background-color: rgb(100,100,100,0.4);
+}
+.s5 {
+    border-radius: 3px;
+    background: linear-gradient(to bottom, rgb(250, 250, 250, 0.1) 40%, rgb(100, 100, 100, 0.4) 80%);
+}
+.s9 {
+    color:rgb(0, 0, 0);
+}
+.input-number-qty {
+    width: 2.5em;
+}
+
+#details .btn-irepo {
+    background: rgba(234, 146, 75, 0.8);
+    border-radius: 0.4rem;
+    box-shadow: 2px 2px 4px gray;
+    text-align: center;
+    font-size: xx-small;
+    color: white;
+}

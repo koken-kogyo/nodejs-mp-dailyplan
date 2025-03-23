@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>内示一覧</title>
+    <!-- CSS -->
+    <link rel="stylesheet" href="/static/css/style-basic.css">
+    <link rel="stylesheet" href="/static/css/style-mppages.css">
+    <link rel="stylesheet" href="/static/css/style-jsQR.css"/>
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.1/css/all.css" >
+    <!-- JavaScript -->
+    <script src="/static/javascripts/jsQR.js" defer></script>
+    <script src="/static/javascripts/jsQR-main.js" defer></script>
+</head>
+
+<!--body>
+QRコード読取
+    <h1>jsQR</h1>
+    <div id="wrapper">
+        <div id="msg">Unable to access video stream.</div>
+        <canvas id="canvas"></canvas>
+    </div>
+</body -->
+
+<body>
+    <!-- Common JavaScript -->
+    <%- include("_myfunctions.ejs") %>
+    <% let osType = myRequestHeader.osType(req); %>
+
+    <!-- Header -->
+    <%- include("_header.ejs", { title: mcgcd + "工程　内示一覧", req }) %>
+    <input type="hidden" id="mcgcd" name="mcgcd" value="<%= mcgcd %>" />
+
+    <!-- Details -->
+    <div id="top"></div>
+    <div id="main" class="containers">
+    <div id="gotoswmenu"><a href="/mp"><i class="fas fa-home"></i></a></div>
+    <div id="details">
+    <% if (kd8440) { %>
+        <% let tableno = 1; %>
+        <% let mccount = Object.keys(kd8440).length; %>
+        <% kd8440.forEach(function (data) { %>
+            <div id="jump<%= tableno %>"></div>
+            <!-- 設備タイトル -->
+            <div class="mcnm">
+                <%= data[0].MCCD %>：<%= data[0].MCNM; %>
+                <span class="smalltitle">
+                <%= (data[0].CUTTHICKNESS==0) ? "（設備マスタに刃厚、端材長さの登録なし）" : "（刃厚：" + data[0].CUTTHICKNESS; %>
+                <%= (data[0].SCRAPLEN==0) ? "" : "、端材長さ：" + data[0].SCRAPLEN + "）"; %>
+                </span>
+                <span class="floatright">
+                <!-- チェックボックス -->
+                鋼材情報を表示
+                <input type="checkbox" id="checkbox<%= tableno %>" class="check-material" title="鋼材情報" value="<%= tableno %>" onchange="checkDispChange(this.value)"/>
+                <% let prevsectionid = "jump" + (tableno - 1); %>
+                <% let nextsectionid = "jump" + (tableno + 1); %>
+                <% if (tableno == 2) { %>
+                    <a href="#top">前の設備</a>
+                <% } %>
+                <% if (tableno >= 3) { %>
+                    <a href="javascript:jumpToSection('<%= prevsectionid %>')">&nbsp;&nbsp;前の設備&nbsp;&nbsp;</a>
+                <% } %>
+                <% if (tableno != mccount) { %>
+                    <a href="javascript:jumpToSection('<%= nextsectionid %>')">&nbsp;&nbsp;次の設備&nbsp;&nbsp;</a>
+                <% } %>
+                </span>
+            </div>
+            <hr>
+            <!-- 明細 -->
+            <% if (Object.keys(data[1]).length == 0) { %>
+                <div class="nodata">データありません．</div>
+            <% } else { %>
+                <table id="tbl<%= tableno %>">
+                    <tr>
+                        <th width="140px">品番</th>
+                        <th width="170px">品目名称</th>
+                        <th width="60px">材料</th>
+                        <th width="60px">長さ</th>
+                        <% ymds.forEach(function (e) { %>
+                            <th><a href="/mp/plan/<%- myFunc.b(e); %>"><%= myFunc.a(e); %></a></th>
+                        <% }); %>
+                        <th width="60px">仕掛</th>
+                        <th width="60px">ｽﾄｱ</th>
+                        <th width="100px">鋼材</th>
+                        <th>作業</th>
+                        
+                    </tr>
+                    <% data[1].forEach(function (d) { %>
+                    <tr>
+                        <td class="lef"><%= d.HMCD %></td>
+                        <td class="lef"><%= d.HMNM %></td>
+                        <td class=""><%= d.MATESIZE %></td>
+                        <td class=""><%= d.LENGTH %></td>
+                        <td class="s<%= d.STS0 %>"><%= d.D0 %></td>
+                        <td class="s<%= d.STS1 %>"><%= d.D1 %></td>
+                        <td class="s<%= d.STS2 %>"><%= d.D2 %></td>
+                        <td class="s<%= d.STS3 %>"><%= d.D3 %></td>
+                        <td class="s<%= d.STS4 %>"><%= d.D4 %></td>
+                        <td class="s<%= d.STS5 %>"><%= d.D5 %></td>
+                        <td class="s<%= d.STS6 %>"><%= d.D6 %></td>
+                        <td class="s<%= d.STS7 %>"><%= d.D7 %></td>
+                        <td class="s<%= d.STS8 %>"><%= d.D8 %></td>
+                        <td class="s<%= d.STS9 %>"><%= d.D9 %></td>
+                        <td class=""><%= (d.ZAIQTY == 0) ? "" : Number(d.ZAIQTY).toLocaleString(); %></td>
+                        <td class=""><%= (d.STORE == 0) ? "" : Number(d.STORE).toLocaleString(); %></td>
+                        <td class=""><%= d.MATERIALLEN %></td>
+                        <td class=""><%= data[0].CUTTHICKNESS %></td>
+                        <td class=""><%= data[0].SCRAPLEN %></td>
+                        <td></td>
+                    </tr>
+                    <% }); %>
+                </table>
+            <% }; %>
+            <% tableno += 1; %>
+            <br><br>
+        <% }); %>
+    <% }; %>
+    </div>
+    </div>
+
+    <!-- Footer -->
+    <%- include("_footer.ejs", req) %>
+    
+    <!-- ブラウザ読み込み完了後のJavaScriptを記述 -->
+    <script>
+        // 指定した要素の位置までスクロール
+        function jumpToSection(sectionId) {
+            document.getElementById(sectionId).scrollIntoView({block: "center", behavior: "smooth"});
+        }
+
+        // ブラウザ読み込み完了後の初期設定
+        SetInitialValues();
+
+        // ブラウザ読み込み完了後の初期設定
+        function SetInitialValues() {
+            // テーブルの数分ループ処理
+            for (tblno = 1; tblno < 10; tblno++){
+                const tblobj = document.getElementById(`tbl${tblno}`);
+                if (tblobj) {
+                    // 各テーブル内のデータ数分ループ処理
+                    const endcol = tblobj.rows[1].cells.length - 1;
+                    let mateold = tblobj.rows[1].cells[2].innerHTML;
+                    let colorno = 0;
+                    for( var i = 1; i < tblobj.rows.length; i++ ){
+                        // １．材料サイズ毎の色分け処理
+                        const matenow = tblobj.rows[i].cells[2].innerHTML;
+                        if (matenow != mateold) {
+                            colorno = (colorno == 0) ? 1 : 0;
+                            mateold = matenow;
+                        }
+                        // ２．鋼材情報行の追加
+                        var newrow = tblobj.insertRow(i + 1);
+                        appendTD(newrow, "", "center", 4);
+                        appendTD(newrow, "", "center", 5);
+                        appendTD(newrow, "", "center", 5);
+                        appendTD(newrow, "", "center", 4);
+                        // ３．鋼材使用長さの集計と、仕掛在庫の消込処理を同時に行う
+                        var productlen = Number(tblobj.rows[i].cells[3].innerHTML);
+                        var thickness = Number(tblobj.rows[i].cells[endcol - 2].innerHTML);
+                        var materiallen = Number(tblobj.rows[i].cells[endcol - 3].innerHTML);
+                        var scraplen = Number(tblobj.rows[i].cells[endcol - 1].innerHTML);
+                        var usedlenttl = Number("0.0");
+                        var zaiqty = Number("0.0"); // 14:zaiqty:仕掛かり済の在庫数
+                        if (!isNaN(tblobj.rows[i].cells[14].innerHTML)) zaiqty = Number(tblobj.rows[i].cells[14].innerHTML);
+                        for (var j=4; j<=9; j+=5) {
+                            var usedlen = Number("0.0"); // 一週間で使用する鋼材長さを集計
+                            for (var k=0; k<5; k++) {
+                                if (!isNaN(tblobj.rows[i].cells[j+k].innerHTML)) {
+                                    var qty = Number(tblobj.rows[i].cells[j+k].innerHTML);
+                                    // 仕掛かり在庫判定（ステータスを済に変更）
+                                    if (qty > 0) {
+                                        if (zaiqty >= qty) {
+                                            tblobj.rows[i].cells[j+k].className = "s4";
+                                            zaiqty -= qty;
+                                            qty = 0;
+                                        } else if (zaiqty > 0 && qty > 0) {
+                                            tblobj.rows[i].cells[j+k].className = "s5";
+                                            qty -= zaiqty;
+                                            zaiqty = 0;
+                                        }
+                                        usedlen += (productlen + thickness) * qty;
+                                        usedlenttl += (productlen + thickness) * qty;
+                                    }
+                                }
+                            }
+                            // 小数点第3位は切り捨て
+                            if (usedlen > 0) {
+                                var usedmate = Math.floor(usedlen / (materiallen - scraplen) * 100) / 100;
+                                tblobj.rows[i + 1].cells[(j==4) ? 1 : 2].innerHTML = 
+                                    usedmate + "本 (" + 
+                                    usedlen.toLocaleString() + "mm)";
+                            }
+                        }
+                        // ４．鋼材使用長さの集計結果を反映
+                        if (usedlenttl > 0) {
+                            var usedmate = Math.floor(usedlenttl / (materiallen - scraplen) * 100) / 100;
+                            tblobj.rows[i + 1].cells[3].innerHTML = 
+                                usedmate + "本 (" + 
+                                usedlenttl.toLocaleString() + "mm)";
+                        }
+                        // ５．材料の種類毎に背景色を変える
+                        tblobj.rows[i + 0].style.backgroundColor = (colorno == 0) ? "#FEFEFE" : "#ECECEC";
+                        tblobj.rows[i + 1].style.backgroundColor = (colorno == 0) ? "#FEFEFE" : "#ECECEC";
+                        // ６．鋼材情報は一旦非表示
+                        tblobj.rows[i + 1].style.display = "none";
+                        // ７．最終列にイベントハンドラー（i-Repo呼び出し）
+                        if (document.getElementById("mcgcd").value == "SW") {
+                            tblobj.rows[i].cells[endcol].innerHTML = `<a href="javascript:iReporter(${tblno},${i})" class="btn-irepo">` + "開始" + "</a>" ;
+                        }
+                        // ８．計算用に使用している列を非表示
+                        tblobj.rows[i].cells[endcol - 2].style.display = "none";
+                        tblobj.rows[i].cells[endcol - 1].style.display = "none";
+                        // ９．insertRowした分を加算
+                         i++;
+                    }
+                }
+            }
+        }
+        // 列の追加
+        function appendTD(newrow, str, name, colspan){
+            let newCell = newrow.insertCell();
+            let newText = document.createTextNode(str);
+            newCell.appendChild(newText);
+            if (colspan != "") newCell.setAttribute("colspan", colspan);
+            if (name != "") newCell.className = name;
+        }
+
+        // 鋼材情報の表示
+        function checkDispChange(tblno) {
+            const checkDisp = document.getElementById(`checkbox${tblno}`)
+            const tblobj = document.getElementById(`tbl${tblno}`);
+            const row = tblobj.rows.length;
+            for( var i = 1; i < row; i++ ){
+                if (checkDisp.checked == false) {
+                    if (i % 2 == 0) {
+                        tblobj.rows[i].style.display = "none";
+                    }
+                } else {
+                    tblobj.rows[i].style.display = "";
+                }
+            }
+        }
+        // i-Reporter の起動
+        async function iReporter(tblno, row) {
+            const defid = "1509";   // 帳票定義ID:1509 (SW日報兼チェックシート)
+            const clusterno = "16"; // 品番:クラスター番号
+            const irepourl = "jp.co.cimtops.ireporter";
+            const tblobj = document.getElementById(`tbl${tblno}`);
+            const hmcd = tblobj.rows[row].cells[0].innerHTML;
+            const mate = tblobj.rows[row].cells[2].innerHTML;
+            const cut = tblobj.rows[row].cells[3].innerHTML;
+            // irepoサーバーから保留中の品番がないかチェック
+            // (1) 編集中帳票ID取得API
+            fetch(`/ireposv/hold/${defid}:${hmcd}:${clusterno}:`)
+            .then(response => response.json())
+            .then(repid => {
+                if (repid == 0) {
+                    // なければ帳票定義からiRepoを起動
+                    const hmcdparam = encodeURI(`スキャン品番=${hmcd}`);
+                    const mateparam = encodeURI(`材料サイズ=${mate}`);
+                    const cutparam = encodeURI(`切断長=${cut}`);
+                    const modeparam = encodeURI("処理モード=plan"); // 内示モードで帳票を起動
+                    location.href = `${irepourl}.createreport:defid=${defid}` +
+                        `&${hmcdparam}&${mateparam}&${cutparam}&${modeparam}`;
+                    
+                } else {
+                    // 保留中の帳票があれば帳票IDから起動
+                    location.href = `${irepourl}.openreport:repid=${repid}`;
+
+                }
+            });
+            /*
+            // タブを閉じておく
+            const sleepByPromise = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+            sleepByPromise(2000);
+            window.close();
+            if (!window.closed) {
+                location.href = "/";
+                console.log("ブラウザの履歴が残っているので自動では閉じることが出来ません！\nxボタンを押して閉じて下さい．");
+            }
+            */
+        }
+
+</script>
+
+</body>
+</html>

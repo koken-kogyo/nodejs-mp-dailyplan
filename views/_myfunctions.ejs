@@ -1,0 +1,133 @@
+
+<%
+// ejs内で使用する共通関数群
+myFunc = {
+    // a: 日付形式の文字列を [m/d] で返却
+    a: function(value){
+        let dateObject = new Date(value);
+        return (dateObject.getMonth() + 1) + "/" + dateObject.getDate();
+    },
+    // b: 日付形式の文字列を [yyyy-mm-dd] で返却
+    b: function(value){
+        let dateObject = new Date(value);
+        return dateObject.getFullYear() + "-" + ("0" + (dateObject.getMonth() + 1)).slice(-2) + "-" + ("0" + dateObject.getDate()).slice(-2);
+    },
+    // c: 日付形式の文字列を [ [ m月d日] ] で返却
+    c: function(value){
+        let dateObject = new Date(value);
+        return " [ " + (dateObject.getMonth() + 1) + "月" + dateObject.getDate() + "日 ]";
+    },
+    // d: 所要時間を算出 (dt分),(ct秒),(qty数)を [ 秒 ] で返却
+    d: function(dt, ct, qty){ return (ct*qty)+(dt*60); }
+    ,
+    // e: 秒を [ hh:mm:ss ] で返却
+    // param: ss int
+    e: function(ss){
+        let hour = Math.floor(ss / 3600);
+        let min = ("0" + Math.floor(ss % 3600 / 60)).slice(-2);
+        let sec = ("0" + ss % 60).slice(-2);
+        return `${hour}:${min}:${sec}`; 
+    },
+    // f: 時刻を [ hh:mm ] で返却 
+    // param: 基準時刻(h int, m int)、基準からの積算の所要時間(秒)(ss int)
+    f: function(h, m, ss){
+        let d = new Date();
+        let dt = new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m, ss);
+        return `${dt.getHours()}:${("0" + dt.getMinutes()).slice(-2)}`;
+    },
+    // g: 休憩時間を考慮した所要時間を [int] で返却 
+    // param: 基準時刻(h int, m int)、基準時間(秒)(mc int)、加算する所要時間(秒)(ss int)
+    g: function(h, m, mc, ss){
+        let d = new Date();
+        let a = 0;
+        let dtFrom = new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m, mc);
+        let dtTo = new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m, ss);
+        let f = (dtFrom.getHours() * 60) + dtFrom.getMinutes();
+        let t = (dtTo.getHours() * 60) + dtTo.getMinutes();
+        // [8:20] 500m
+        if ( f <  610 && t >  610 ) { a += ( 5*60); } // 36,600s:610m:[10:10]
+        if ( f <  735 && t + (a==0 ? 0 : a/60) >  735 ) { a += (45*60); } // 44,100s:735m:[12:15]
+        if ( f <  900 && t + (a==0 ? 0 : a/60) >  900 ) { a += (10*60); } // 54,000s:900m:[15:00]
+        if ( f < 1030 && t + (a==0 ? 0 : a/60) > 1030 ) { a += ( 5*60); } // 61,800s:1030:[17:10]
+        return ss + a;
+    },
+    // h: 返却 
+    // param: 
+    h: function(kt1, kt2, kt3, kt4){
+        let t2 = (kt2=="") ? "" : "->" + kt2;
+        let t3 = (kt3=="") ? "" : "->" + kt3;
+        let t4 = (kt4=="") ? "" : "->" + kt4;
+        return kt1 + t2 + t3 + t4;
+    },
+    // i: 得意先略称をさらに独自関数で省略
+    // param: 得意先略称(str string)
+    i: function(str){
+        if (str==="IHIｱｸﾞﾘﾃｯｸ") {return "IHIｱｸﾞﾘ";}
+        if (str==="ｱｲｴｲﾁｱｲ") {return "ｱｲｴｲﾁｱ";}
+        if (str==="ｱｻﾋｲｰｼﾞｰｴﾑ") {return "ｱｻﾋ相模";}
+        if (str==="旭ゴムﾂｸﾊﾞ") {return "旭ｺﾞﾑ";}
+        if (str==="ｵｶﾈﾂ工業") {return "ｵｶﾈﾂ";}
+        if (str==="ｵﾘｴﾝﾄ商事") {return "ｵﾘｴﾝﾄ";}
+        if (str==="ｸﾎﾞﾀ精機") {return "ｸﾎﾞ精";}
+        if (str==="クリヤマ") {return "ｸﾘﾔﾏ";}
+        if (str==="ﾀｶｷﾞｾｲｺｰ") {return "ﾀｶｷﾞｾｲ";}
+        if (str==="㈱ﾆｯｺｰｸﾘｴ") {return "ﾆｯｺｰｸﾘｴ";}
+        if (str==="ヤンマー") {return "ﾔﾝﾏｰ";}
+        if (str==="ﾔﾝﾏｰY木本") {return "木本";}
+        if (str==="ヤマハ") {return "ﾔﾏﾊ";}
+        if (str==="日立建機") {return "ﾃｨｴﾗ";}
+        if (str==="福井化成") {return "福井化";}
+        if (str==="加藤製作所") {return "加藤";}
+        if (str==="川重商事") {return "川重";}
+        if (str==="神崎高級工") {return "神崎";}
+        if (str==="近畿金属") {return "近畿金";}
+        if (str==="興国ｲﾝﾃｯｸ") {return "興国";}
+        if (str==="神津製作所") {return "神津";}
+        if (str==="新栄工業") {return "新栄";}
+        if (str==="大和精工") {return "大和精";}
+        if (str==="ＫＭＴ") {return "KMT";}
+        if (str==="ＧＰＭ") {return "GPM";}
+        if ((str.substr(0, 4)==='ｸﾎﾞﾀ' || str.substr(0, 4)==='ﾔﾝﾏｰ') && str.length > 4) {return str.substr(4);}
+        return str;
+    },
+    // j: 品番24桁を空白(nbsp;)でパディング
+    // param: 品番(str string)
+    j: function(str){
+        if (str.length > 17) {
+            return "&nbsp;" + str + "&nbsp;";
+        } else if (str.length > 13) {
+            return "&nbsp;" + str + "&nbsp;".repeat(6);
+        } else {
+            return "&nbsp;" + str + "&nbsp;".repeat(24 - str.length);
+        }
+    },
+    // k: 担当者名称を独自関数で省略
+    // param: 得意先略称(str string)
+    k: function(str){
+        if (str==="ヤマシロアンナ（炉中）") {return "ﾔﾏｼﾛｱﾝﾅ　（炉中）";}
+        if (str==="クラロスディナ") {return "クラロス　ディナ";}
+        if (str==="デミロアネル") {return "デミロア　ネル";}
+        return str;
+    },
+
+}
+myRequestHeader = {
+    osType: function(req){
+        const userAgent = req.headers["user-agent"].toString().toLowerCase();
+        if (userAgent.match("windows") !== null) { return "windows"; } else 
+        if (userAgent.match("linux") !== null) { return "linux"; } else 
+        if (userAgent.match("ipad") !== null) { return "ipad"; } else 
+        if (userAgent.match("iphone") !== null) { return "iphone"; } else { return ""; }
+        // 以下取得した userAgent 一覧
+        // Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36 Edg/114.0.1823.67"
+        // Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36
+        // Mozilla/5.0 (iPad; CPU OS 15_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.4 Mobile/15E148 Safari/604.1"
+        // Mozilla/5.0 (iPhone; CPU iPhone OS 16_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.3 Mobile/15E148 Safari/604.1"
+    }
+}
+mySample = {
+    // https://qiita.com/qwe001/items/1f0f7282729e62388bf1
+    test: function(){ return "hello"; },
+    hoge: function(str){ return str; }
+  }
+%>

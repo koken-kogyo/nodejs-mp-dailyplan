@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <title>切削業務メニュー</title>
+    <meta charset="UTF-8">
+    <!-- CSS -->
+    <link rel="stylesheet" href="/static/css/style-basic.css">
+    <link rel="stylesheet" href="/static/css/style-index.css">
+    <link href="https://use.fontawesome.com/releases/v5.6.1/css/all.css" rel="stylesheet">
+    <!-- View -->
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <!-- ICON -->
+    <link rel="icon" href="/static/images/favicon.ico" sizes="32x32">
+</head>
+<body>
+<div>
+    <!-- Common JavaScript EJS -->
+    <%- include("_myfunctions.ejs") %>
+
+    <!-- Header -->
+    <%- include("_header.ejs", { title: "切削業務メニュー" }) %>
+
+    <!-- contents -->
+    <div id="top"></div>
+    
+    <% if (locals.err) { %>
+        <ul class="alert">
+            <li><%= err %></li>
+        </ul>
+    <% } %>
+
+    <div class="containers">
+        <div class="item-title">
+            <i class="fas fa-paw"></i> 業務メニュー
+        </div>
+        <div class="item">
+            <a href="/mp/plan/sw">
+                <img class="itemimg" src="/static/images/sample.png" alt="menu01">
+                <div class="itemtext">【SW】内示一覧</div>
+            </a>
+        </div>
+        <div class="item">
+            <a href="/mp/sw/report">
+                <img class="itemimg" src="/static/images/sample.png" alt="menu01">
+                <div class="itemtext">【SW】日報検索</div>
+            </a>
+        </div>
+        <div class="item-nothing"></div>
+        <br>
+        <!-- 自動機 -->
+        <div class="item">
+            <a href="/mp/plan/cn">
+                <img class="itemimg" src="/static/images/sample.png" alt="menu02">
+                <div class="itemtext">【CN】内示一覧</div>
+            </a>
+        </div>
+        <div class="item">
+            <a href="/mp/plan/ms">
+                <img class="itemimg" src="/static/images/sample.png" alt="menu02">
+                <div class="itemtext">【MS】内示一覧</div>
+            </a>
+        </div>
+        <div class="item-nothing"></div>
+        <br>
+        <div class="item">
+            <a href="javascript:LeaktestReport('6079');">
+                <img class="itemimg" src="/static/images/sample.png" alt="menu03">
+                <div class="itemtext">手動機</div>
+            </a>
+        </div>
+        <div class="item-nothing"></div>
+        <div class="item-nothing"></div>
+    </div>
+
+    <!-- Footer -->
+	<footer>
+	    <a class="copyright">&copy; 2025 Koken Kogyo Co. All rights reserved.</a>
+    </footer>
+</div>
+</body>
+</html>

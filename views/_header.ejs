@@ -1,0 +1,11 @@
+<header>
+    <div id="logo"><a href="/">コーケン工業</a></div>
+    <div id="menutitle"><%= title %></div>
+    <div id="userinfo">
+    <% if (req.session.userid) { %>
+        <%= req.session.jpname %>&nbsp;&nbsp;<a href="/logout">ログアウト</a>
+    <% } else { %>
+        ゲスト さん&nbsp;&nbsp;<a href="/login">ログイン</a>
+    <% }; %>
+    </div>
+</header>

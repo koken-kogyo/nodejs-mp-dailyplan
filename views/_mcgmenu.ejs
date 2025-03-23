@@ -1,0 +1,27 @@
+    <!-- Groups -->
+    <div id="groups">
+        <ul>
+            <% if (flgs=="1") { %>
+                <% let myDtY = new Date(req.params.planday)-1; %>
+                <% let idxY = ymds.findIndex((dt) => { return dt === req.params.planday }); %>
+                <% if (idxY===0) { %>
+                    <!--a href="javascript:alert('これ以上ありませんよ')"--><li class="noallow"><i class="fas fa-step-backward"></i></li>
+                <% } else { %>
+                    <a href="<%- '/mp/plan/' + myFunc.b(ymds[idxY-1]); %>"><li class="allow"><i class="fas fa-step-backward"></i></li></a>
+                <% }; %>
+            <% }; %>
+            <% mcgcdmenu.forEach(function (row) { %>
+                <a href="/mp/<%= row.MCGCD %>"><li<% if (req.session.mcgcd == row.MCGCD) { %> class="active"<%}%>><%= row.MCGCD %></li></a>
+            <% }); %>
+            <% if (flgs=="1") { %>
+                <% let myDtT = new Date(req.params.planday)+1; %>
+                <% let idxT = ymds.findIndex((dt) => { return dt === req.params.planday }); %>
+                <% if (idxT===9) { %>
+                    <!--a href="javascript:alert('これ以上ありませんよ')"--><li class="noallow"><i class="fas fa-step-forward"></i></li>
+                <% } else { %>
+                    <a href="<%- '/mp/plan/' + myFunc.b(ymds[idxT+1]); %>"><li class="allow"><i class="fas fa-step-forward"></i></li></a>
+                <% }; %>
+            <% }; %>
+            </ul>
+    </div>
+    

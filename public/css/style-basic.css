@@ -1,0 +1,98 @@
+@charset "UTF-8";
+/* =========================================================================== */
+/*  style.css : 全ページで使用する共通的なスタイルシート
+/* =========================================================================== */
+/* =========================================================================== */
+body {
+    font-family: "Arial", "メイリオ", sans-serif;
+    position: relative;
+    display: block;
+    margin: 0;
+    padding: 0;
+    background: #fff;
+    color: #333;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scroll-behavior: smooth; /* iOS端末 SafariやIEにEdgeブラウザだと機能しません */
+}
+body > * { box-sizing: border-box; }
+
+header {
+    position: fixed;
+    display: block;
+    color: rgb(255,255,255);
+    font-size: 24px;
+    top: 0;
+    width: 100vw;
+    height: 40px;
+/*    background: rgb(50, 50, 50, 1); */
+    background: rgb(175 ,25 ,25, 1);
+    z-index: 999;
+}
+
+footer {
+    position: fixed;
+    display: block;
+    font-size: 0.8rem;
+    bottom: 0;
+    width: 100vw;
+    height: 20px;
+    font-size: small;
+    text-align: center;
+    color: #fff;
+    z-index: 555;
+    background: rgb(62,173,242);
+    background: -moz-linear-gradient(top, rgba(62,173,242,1) 0%, rgba(43,101,200,1) 100%);
+    background: -webkit-linear-gradient(top, rgba(62,173,242,1) 0%,rgba(43,101,200,1) 100%);
+    background: linear-gradient(to bottom, rgba(62,173,242,1) 0%,rgba(43,101,200,1) 100%);
+}
+footer>p { 
+    padding: 4px 2px 2px 2px;
+    margin: 0;
+}
+
+/************************************************************************/
+#logo a {
+    display: inline-block;
+    position: relative;
+    white-space: nowrap;
+    top: 5px;
+    left: 30px;
+    color: rgb(255,255,255);
+    text-decoration: none;
+}
+#menutitle {
+    position: fixed;
+    top: 3px;
+    left: calc(100vw / 2 - 80px);
+}
+#userinfo {
+    display: inline-block;
+    position: fixed;
+    font-size: 1rem;
+    top: 5px;
+    right: 30px;
+}
+#userinfo a,#gotop a,#goback a {
+    display: inline-block;
+    text-align: right;
+    margin-top: 5px;
+    color: cadetblue;
+    text-decoration: none;
+}
+#gotop {
+    display: block;
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    font-size: small;
+    text-align: right;
+}
+#goback {
+    display: block;
+    position: fixed;
+    left: 20px;
+    bottom: 20px;
+    font-size: small;
+    text-align: left;
+}
