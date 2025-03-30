@@ -4,20 +4,20 @@
 /* =========================================================================== */:root {
     --item-title-row: 40px;
 
-    --tablet-top-row: 220px;
-    --tablet-top-img: 190px;
-    --tablet-grid-column: 250px;
-    --tablet-grid-row: 160px;
-    --tablet-item-img: 100px;
+    --tablet-top-row: 170px;
+    --tablet-top-img: 150px;
+    --tablet-grid-column: 200px;
+    --tablet-grid-row: 110px;
+    --tablet-item-img: 50px;
 
     --mobile-grid-column: 180px;
     --mobile-grid-row: 120px;
     --mobile-item-img: 80px;
 
-    --notepc-top-row: 210px;
-    --notepc-grid-column: 250px;
-    --notepc-grid-row: 180px;
-    --notepc-item-img: 80px;
+    --notepc-top-row: 160px;
+    --notepc-grid-column: 200px;
+    --notepc-grid-row: 130px;
+    --notepc-item-img: 40px;
 
     --desktop-top-row: 230px;
     --desktop-grid-column: 270px;
@@ -35,9 +35,12 @@
     border-radius: 10px;
     font-size: small;
     margin: 50px auto;
-    width: calc((var(--tablet-grid-column) * 3) + 1rem);
-    grid-template-columns: repeat(3, var(--tablet-grid-column));
-    grid-template-rows: var(--item-title-row) repeat(4, var(--tablet-grid-row));
+    width: calc((var(--tablet-grid-column) * 4) + 1rem);
+    grid-template-columns: repeat(4, var(--tablet-grid-column));
+    grid-template-rows: 
+        var(--item-title-row) repeat(1, var(--tablet-grid-row))
+        var(--item-title-row) repeat(1, var(--tablet-grid-row))
+        var(--item-title-row) repeat(2, var(--tablet-grid-row));
 }
 .containers a {
     display: inline-block;
@@ -114,7 +117,9 @@
     .responsible:before { content: "TabletPortrait"; }
     .containers {
         width: calc((var(--tablet-grid-column) * 3) + 1rem);
-        grid-template-rows: var(--item-title-row) repeat(2, var(--tablet-grid-row)) var(--item-title-row) var(--tablet-grid-row) calc(var(--tablet-grid-row)*1.5);
+        grid-template-rows: var(--item-title-row) repeat(1, var(--tablet-grid-row)) 
+            var(--item-title-row) repeat(1, var(--tablet-grid-row))
+            var(--item-title-row) repeat(1, var(--tablet-grid-row));
         grid-template-columns: repeat(3, var(--tablet-grid-column));
     }
 }
@@ -192,7 +197,9 @@
     .containers {
         width: calc((var(--notepc-grid-column) * 4) + 1rem);
         grid-template-columns: repeat(4, var(--notepc-grid-column));
-        grid-template-rows: var(--item-title-row) repeat(2, var(--notepc-grid-row));
+        grid-template-rows: var(--item-title-row) repeat(1, var(--notepc-grid-row))
+        var(--item-title-row) repeat(1, var(--notepc-grid-row))
+        var(--item-title-row) repeat(1, var(--notepc-grid-row));
     }
     .containers a {
         margin-bottom: 0.5rem;

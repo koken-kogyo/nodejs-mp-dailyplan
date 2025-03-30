@@ -109,6 +109,12 @@ myFunc = {
         if (str==="デミロアネル") {return "デミロア　ネル";}
         return str;
     },
+    // l: 日付形式の文字列を [m/d hh:mi] で返却
+    l: function(value){
+        let dateObject = new Date(value);
+        return (dateObject.getMonth() + 1) + "/" + dateObject.getDate() + " " + 
+                dateObject.getHours() + ":" + ("0" + dateObject.getMinutes()).slice(-2);
+    },
 
 }
 myRequestHeader = {

@@ -34,7 +34,7 @@ const getM0010 = async (userid) => {
 exports.getM0010 = getM0010;
 
 // 今週月曜日から来週金曜日までの営業日を取得
-const getYMDs = async () => {
+const getYMDOrders = async () => {
     const sql = 
         "select YMD from (select DATE_FORMAT(YMD,'%Y-%m-%d') 'YMD' from s0820 where CALTYP='00001' and WKKBN='1' and YMD between " +
         "(CURRENT_DATE - interval WEEKDAY(CURRENT_DATE) day) " + 
@@ -45,7 +45,7 @@ const getYMDs = async () => {
     for (let row of ymdobj) {ymd.push(row.YMD)};
     return ymd;
 };
-exports.getYMDs = getYMDs;
+exports.getYMDOrders = getYMDOrders;
 
 // 内示用月曜日から金曜日までの営業日を取得
 const getYMDPlans = async () => {
@@ -60,6 +60,40 @@ const getYMDPlans = async () => {
     return ymd;
 };
 exports.getYMDPlans = getYMDPlans;
+
+// 前日営業日を取得
+const getPrevDay = async (planday) => {
+    const sql = 
+    "select DATE_FORMAT(YMD, '%Y-%m-%d') AS PREVDAY " + 
+    "from s0820 " + 
+    "where CALTYP='00001' and WKKBN='1' and " + 
+    "YMD between " + 
+        `(select date_add(YMD, INTERVAL -14 day) from s0820 where CALTYP='00001' and YMD = '${planday}') ` + 
+        "and " + 
+        `date_add(CONVERT('${planday}', DATE), interval -1 day) ` + 
+    "order by YMD desc " + 
+    "limit 1";
+    const obj = await getDatabase(sql);
+    return obj[0].PREVDAY;
+};
+exports.getPrevDay = getPrevDay;
+
+// 翌日営業日を取得
+const getNextDay = async (planday) => {
+    const sql = 
+    "select DATE_FORMAT(YMD, '%Y-%m-%d') AS NEXTDAY " + 
+    "from s0820 " + 
+    "where CALTYP='00001' and WKKBN='1' and " + 
+    "YMD between " + 
+        `date_add(CONVERT('${planday}', DATE), interval +1 day) ` + 
+        "and " + 
+        `(select date_add(YMD, INTERVAL +14 day) from s0820 where CALTYP='00001' and YMD = '${planday}') ` + 
+    "order by YMD asc " + 
+    "limit 1";
+    const obj = await getDatabase(sql);
+    return obj[0].NEXTDAY;
+};
+exports.getNextDay = getNextDay;
 
 // 設備グループ群の取得
 const getMCGCDs = async () => {
@@ -121,6 +155,90 @@ const getMCOrderby = (mcgcd) => {
 exports.getMCOrderby = getMCOrderby;
 
 // 設備毎の注文データを2週間分取得
+const getKD8440Orders = async (mcgcd, mccds, ymds) => {
+    const orderby = getMCOrderby(mcgcd);
+    const mc = [];
+    for (let mccd of mccds) {
+        let parameters = [...ymds, ...ymds, ...ymds, ymds[0], ymds[9],
+                "%" + mcgcd + "-" + mccd.MCCD + ":%", ...ymds];
+        let sql = "select a.HMCD,b.HMNM,b.MATESIZE,b.LENGTH" +
+        ",max(ifnull(b.MATERIALLEN,0)) as 'MATERIALLEN'" + 
+        ",sum(case when EDDT=? then ODRQTY else null end) as 'D0'" +
+        ",sum(case when EDDT=? then ODRQTY else null end) as 'D1'" +
+        ",sum(case when EDDT=? then ODRQTY else null end) as 'D2'" +
+        ",sum(case when EDDT=? then ODRQTY else null end) as 'D3'" +
+        ",sum(case when EDDT=? then ODRQTY else null end) as 'D4'" +
+        ",sum(case when EDDT=? then ODRQTY else null end) as 'D5'" +
+        ",sum(case when EDDT=? then ODRQTY else null end) as 'D6'" +
+        ",sum(case when EDDT=? then ODRQTY else null end) as 'D7'" +
+        ",sum(case when EDDT=? then ODRQTY else null end) as 'D8'" +
+        ",sum(case when EDDT=? then ODRQTY else null end) as 'D9'" +
+        ",sum(case when EDDT=? and ODRSTS in ('2','31') then ODRQTY else 0 end) as 'D0Z'" +
+        ",sum(case when EDDT=? and ODRSTS in ('2','31') then ODRQTY else 0 end) as 'D1Z'" +
+        ",sum(case when EDDT=? and ODRSTS in ('2','31') then ODRQTY else 0 end) as 'D2Z'" +
+        ",sum(case when EDDT=? and ODRSTS in ('2','31') then ODRQTY else 0 end) as 'D3Z'" +
+        ",sum(case when EDDT=? and ODRSTS in ('2','31') then ODRQTY else 0 end) as 'D4Z'" +
+        ",sum(case when EDDT=? and ODRSTS in ('2','31') then ODRQTY else 0 end) as 'D5Z'" +
+        ",sum(case when EDDT=? and ODRSTS in ('2','31') then ODRQTY else 0 end) as 'D6Z'" +
+        ",sum(case when EDDT=? and ODRSTS in ('2','31') then ODRQTY else 0 end) as 'D7Z'" +
+        ",sum(case when EDDT=? and ODRSTS in ('2','31') then ODRQTY else 0 end) as 'D8Z'" +
+        ",sum(case when EDDT=? and ODRSTS in ('2','31') then ODRQTY else 0 end) as 'D9Z'" +
+        ",min(case when EDDT=? then ODRSTS else null end) as 'STS0'" +
+        ",min(case when EDDT=? then ODRSTS else null end) as 'STS1'" +
+        ",min(case when EDDT=? then ODRSTS else null end) as 'STS2'" +
+        ",min(case when EDDT=? then ODRSTS else null end) as 'STS3'" +
+        ",min(case when EDDT=? then ODRSTS else null end) as 'STS4'" +
+        ",min(case when EDDT=? then ODRSTS else null end) as 'STS5'" +
+        ",min(case when EDDT=? then ODRSTS else null end) as 'STS6'" +
+        ",min(case when EDDT=? then ODRSTS else null end) as 'STS7'" +
+        ",min(case when EDDT=? then ODRSTS else null end) as 'STS8'" +
+        ",min(case when EDDT=? then ODRSTS else null end) as 'STS9' " +
+        "from kd8430 a, km8430 b where a.HMCD = b.HMCD" +
+        " and a.KTCD like 'MP%' and a.ODCD like '6060%'" +
+        " and a.EDDT between ? and ?" +
+        " and a.HMCD in (select hmcd from km8430 where ktkey like ? ) " +
+        "group by a.HMCD, b.HMNM, b.MATESIZE, b.LENGTH " + 
+        "having " +
+        " sum(case when EDDT<=? then ODRQTY else null end) > 0 or" +
+        " sum(case when EDDT=? then ODRQTY else null end) > 0 or" +
+        " sum(case when EDDT=? then ODRQTY else null end) > 0 or" +
+        " sum(case when EDDT=? then ODRQTY else null end) > 0 or" +
+        " sum(case when EDDT=? then ODRQTY else null end) > 0 or" +
+        " sum(case when EDDT=? then ODRQTY else null end) > 0 or" +
+        " sum(case when EDDT=? then ODRQTY else null end) > 0 or" +
+        " sum(case when EDDT=? then ODRQTY else null end) > 0 or" +
+        " sum(case when EDDT=? then ODRQTY else null end) > 0 or" +
+        " sum(case when EDDT=? then ODRQTY else null end) > 0 " + orderby;
+        let kd8430 = await getDatabase(sql, parameters);
+
+        // 設備データを付加
+
+        // 内示データに品番毎の在庫情報を取得して付加
+        let kd8460 = await getDatabase(
+            "select HMCD, " + 
+            "sum(case when MCGCD=? and MCCD=? then ZAIQTY else 0 end) as 'ZAIQTY', " +
+            "sum(case when MCGCD='STORE' then ZAIQTY else 0 end) as 'STORE' " +
+            "from kd8460 group by HMCD"
+            , [mcgcd, mccd.MCCD]
+        );
+        for await (row of kd8430) {
+            let idx = kd8460.findIndex(t => t.HMCD === row.HMCD);
+            if (idx < 0) {
+                row.ZAIQTY = 0;
+                row.STORE = 0;
+            } else {
+                row.ZAIQTY = kd8460[idx].ZAIQTY === null ? 0 : kd8460[idx].ZAIQTY;
+                row.STORE = kd8460[idx].STORE === null ? 0 : kd8460[idx].STORE;
+            }
+        }
+        
+        mc.push([mccd, kd8430]);
+    }
+    return mc;
+};
+exports.getKD8440Orders = getKD8440Orders;
+
+// 設備毎の内示データを2週間分取得
 const getKD8440Plans = async (mcgcd, mccds, ymds) => {
     const orderby = getMCOrderby(mcgcd);
     const mc = [];
@@ -139,16 +257,16 @@ const getKD8440Plans = async (mcgcd, mccds, ymds) => {
         ",sum(case when EDDT=? then ODRQTY else null end) as 'D7'" +
         ",sum(case when EDDT=? then ODRQTY else null end) as 'D8'" +
         ",sum(case when EDDT=? then ODRQTY else null end) as 'D9'" +
-        ",sum(case when EDDT=? and ODRSTS in ('2','3') then ODRQTY else null end) as 'D0Z'" +
-        ",sum(case when EDDT=? and ODRSTS in ('2','3') then ODRQTY else null end) as 'D1Z'" +
-        ",sum(case when EDDT=? and ODRSTS in ('2','3') then ODRQTY else null end) as 'D2Z'" +
-        ",sum(case when EDDT=? and ODRSTS in ('2','3') then ODRQTY else null end) as 'D3Z'" +
-        ",sum(case when EDDT=? and ODRSTS in ('2','3') then ODRQTY else null end) as 'D4Z'" +
-        ",sum(case when EDDT=? and ODRSTS in ('2','3') then ODRQTY else null end) as 'D5Z'" +
-        ",sum(case when EDDT=? and ODRSTS in ('2','3') then ODRQTY else null end) as 'D6Z'" +
-        ",sum(case when EDDT=? and ODRSTS in ('2','3') then ODRQTY else null end) as 'D7Z'" +
-        ",sum(case when EDDT=? and ODRSTS in ('2','3') then ODRQTY else null end) as 'D8Z'" +
-        ",sum(case when EDDT=? and ODRSTS in ('2','3') then ODRQTY else null end) as 'D9Z'" +
+        ",sum(case when EDDT=? and ODRSTS in ('2','31') then ODRQTY else 0 end) as 'D0Z'" +
+        ",sum(case when EDDT=? and ODRSTS in ('2','31') then ODRQTY else 0 end) as 'D1Z'" +
+        ",sum(case when EDDT=? and ODRSTS in ('2','31') then ODRQTY else 0 end) as 'D2Z'" +
+        ",sum(case when EDDT=? and ODRSTS in ('2','31') then ODRQTY else 0 end) as 'D3Z'" +
+        ",sum(case when EDDT=? and ODRSTS in ('2','31') then ODRQTY else 0 end) as 'D4Z'" +
+        ",sum(case when EDDT=? and ODRSTS in ('2','31') then ODRQTY else 0 end) as 'D5Z'" +
+        ",sum(case when EDDT=? and ODRSTS in ('2','31') then ODRQTY else 0 end) as 'D6Z'" +
+        ",sum(case when EDDT=? and ODRSTS in ('2','31') then ODRQTY else 0 end) as 'D7Z'" +
+        ",sum(case when EDDT=? and ODRSTS in ('2','31') then ODRQTY else 0 end) as 'D8Z'" +
+        ",sum(case when EDDT=? and ODRSTS in ('2','31') then ODRQTY else 0 end) as 'D9Z'" +
         ",min(case when EDDT=? then ODRSTS else null end) as 'STS0'" +
         ",min(case when EDDT=? then ODRSTS else null end) as 'STS1'" +
         ",min(case when EDDT=? then ODRSTS else null end) as 'STS2'" +
@@ -163,7 +281,7 @@ const getKD8440Plans = async (mcgcd, mccds, ymds) => {
         " and a.KTCD like 'MP%' and a.ODCD like '6060%'" +
         " and a.EDDT between ? and ?" +
         " and a.HMCD in (select hmcd from km8430 where ktkey like ? ) " +
-        "group by a.HMCD, b.HMNM, b.MATESIZE " + 
+        "group by a.HMCD, b.HMNM, b.MATESIZE, b.LENGTH " + 
         "having " +
         " sum(case when EDDT<=? then ODRQTY else null end) > 0 or" +
         " sum(case when EDDT=? then ODRQTY else null end) > 0 or" +
@@ -204,8 +322,8 @@ const getKD8440Plans = async (mcgcd, mccds, ymds) => {
 };
 exports.getKD8440Plans = getKD8440Plans;
 
-// 設備毎の日別計画票データを取得
-const agetKD8440Plans = async (mcgcd, mccds, planday, km8430) => {
+// 設備グループ毎の手配一覧データを取得
+const getKD8430Orders = async (mcgcd, mccds, planday, km8430) => {
     const orderby = getMCOrderby(mcgcd);
     const mc = [];
     for (let mccd of mccds) {
@@ -252,13 +370,94 @@ const agetKD8440Plans = async (mcgcd, mccds, planday, km8430) => {
     };
     return mc;
 };
-exports.agetKD8440Plans = agetKD8440Plans;
+exports.getKD8430Orders = getKD8430Orders;
+
+// 設備毎の日別計画票データを取得
+const agetKD8440Daily = async (mcgcd, mccds, planday, km8430) => {
+    const orderby = getMCOrderby(mcgcd);
+    const mc = [];
+    for (let mccd of mccds) {
+        let mccdstr = mccd.MCCD;
+        let d0410 = await getDatabase(
+            "select a.ODRNO, a.HMCD, a.ODRQTY, a.JIQTY, a.ODRSTS, a.MCSEQ, a.MCGCD, a.MCCD " + 
+            ",time_format(WKDTDT, '%H:%i') as 'DTTM' " +
+            ",time_format(WKSTDT, '%H:%i') as 'STTM', time_format(WKEDDT, '%H:%i') as 'EDTM' " +
+            "from d0415 a, km8430 b where a.HMCD = b.HMCD" +
+            " and a.KTCD like 'MP%' and a.ODCD like '6060%'" +
+            " and a.EDDT=? and a.MCGCD=? " + orderby
+            , [planday, mcgcd]
+        );
+        // 注文データにコード票データを付加（CT,DT,工程経路,STS)
+        for await (row of d0410) {
+            let idx = km8430.findIndex(t => t.HMCD === row.HMCD && t.MCGCD === row.MCGCD && t.MCCD === row.MCCD);
+            row.CT = km8430[idx].CT === null ? 0 : km8430[idx].CT;
+            row.DT = km8430[idx].DT === null ? 0 : (km8430[idx].DT / 60);
+            row.STS1 = row.ODRSTS;
+            let sts2 = "";
+            let sts3 = "";
+            let sts4 = "";
+            //　前後工程のオーダー情報を取得
+            if (km8430[idx].KTSU > 1) {
+                let d0410_sub = await getDatabase(
+                "select min(case when MCSEQ=1 then ODRSTS else 'X' end) as 'STS1'" +
+                ",min(case when MCSEQ=2 then ODRSTS else 'X' end) as 'STS2'" +
+                ",min(case when MCSEQ=3 then ODRSTS else 'X' end) as 'STS3'" +
+                ",min(case when MCSEQ=4 then ODRSTS else 'X' end) as 'STS4'" +
+                " from d0415 where ODRNO=? group by ODRNO", [row.ODRNO]
+                );
+                row.STS1 = d0410_sub[0].STS1;
+                row.STS2 = d0410_sub[0].STS2;
+                row.STS3 = d0410_sub[0].STS3;
+                row.STS4 = d0410_sub[0].STS4;
+            }
+            let ktkeys = (km8430[idx].KTKEY + ":::::").split(":")// 工程を分割
+            row.KT1 = getKT(ktkeys[0]);
+            row.KT2 = getKT(ktkeys[1]);
+            row.KT3 = getKT(ktkeys[2]);
+            row.KT4 = getKT(ktkeys[3]);
+        };
+        mc.push([mccd, d0410]);
+    };
+    return mc;
+};
+exports.agetKD8440Daily = agetKD8440Daily;
 
 // グループ名と設備名が同一の場合は片側のみに編集
 const getKT = function (str) {
     const kts = str.split("-");
     return kts[0] === kts[1] ? kts[0] : str;
 };
+
+// コード票マスタから帳票IDを取得
+const getReportDefID = async (hmcd, mcgcd, mccd) => {
+    const sql = 
+    "select max(DEFID) as DEFID from (" + 
+        `select KT1IREPO as DEFID from km8430 where hmcd='${hmcd}' and KT1MCGCD='${mcgcd}' and KT1MCCD='${mccd}' ` + 
+        "union " + 
+        `select KT2IREPO as DEFID from km8430 where hmcd='${hmcd}' and KT2MCGCD='${mcgcd}' and KT2MCCD='${mccd}' ` + 
+        "union " + 
+        `select KT3IREPO as DEFID from km8430 where hmcd='${hmcd}' and KT3MCGCD='${mcgcd}' and KT3MCCD='${mccd}' ` + 
+        "union " + 
+        `select KT4IREPO as DEFID from km8430 where hmcd='${hmcd}' and KT4MCGCD='${mcgcd}' and KT4MCCD='${mccd}' ` + 
+        "union " + 
+        `select KT5IREPO as DEFID from km8430 where hmcd='${hmcd}' and KT5MCGCD='${mcgcd}' and KT5MCCD='${mccd}' ` + 
+        "union select 0 as DEFID" +
+        ") a";
+    const km8430 = await getDatabase(sql);
+    const defid = km8430[0].DEFID;
+    if (defid == 0) {
+        km8430[0].HMCDCID = 0;
+    } else {
+        const km8440 = await getDatabase(`select HMCDCID from km8440 where DEFID=${defid}`);
+        if (km8440.length == 0) {
+            km8430[0].HMCDCID = 0;
+        } else {
+            km8430[0].HMCDCID = km8440[0].HMCDCID;
+        }
+    }
+    return km8430;
+};
+exports.getReportDefID = getReportDefID;
 
 // 段取り開始
 exports.dandori = async (userid, odrno, planday, mcgcd, mccd) => {

@@ -18,7 +18,18 @@
     <%- include("_myfunctions.ejs") %>
 
     <!-- Header -->
-    <%- include("_header.ejs", { title: "切削業務メニュー" }) %>
+	<header>
+	    <header1 id="logo"><a href="/">コーケン工業</a></header1>
+		<header2 id="menutitle">切削業務メニュー</header2>
+        <div id="userinfo">
+            <% if (req.session.userid) { %>
+                <%= req.session.jpname %>&nbsp;&nbsp;<a href="/logout">ログアウト</a>
+            <% } else { %>
+                ゲスト さん&nbsp;&nbsp;<a href="/login">ログイン</a>
+            <% }; %>
+        </div>
+        <header3 id="settings"><a href="/settings"><img src="/static/images/settings.png" height="26px"></a></header3>
+    </header>
 
     <!-- contents -->
     <div id="top"></div>
@@ -30,51 +41,106 @@
     <% } %>
 
     <div class="containers">
+        <!-- SW -->
         <div class="item-title">
-            <i class="fas fa-paw"></i> 業務メニュー
+            <i class="fas fa-paw"></i> SWメニュー
         </div>
         <div class="item">
-            <a href="/mp/plan/sw">
+            <a href="/mp/order/sw" target="_blank">
+                <img class="itemimg" src="/static/images/sample.png" alt="menu01">
+                <div class="itemtext">【SW】手配一覧</div>
+            </a>
+        </div>
+        <div class="item">
+            <a href="/mp/plan/sw" target="_blank">
                 <img class="itemimg" src="/static/images/sample.png" alt="menu01">
                 <div class="itemtext">【SW】内示一覧</div>
             </a>
         </div>
         <div class="item">
-            <a href="/mp/sw/report">
+            <a href="/mp/viewreport/sw" target="_blank">
                 <img class="itemimg" src="/static/images/sample.png" alt="menu01">
-                <div class="itemtext">【SW】日報検索</div>
+                <div class="itemtext">【SW】日報一覧</div>
             </a>
         </div>
-        <div class="item-nothing"></div>
-        <br>
+        
         <!-- 自動機 -->
+        <div class="item-title">
+            <i class="fas fa-paw"></i> 自動機メニュー
+        </div>
         <div class="item">
-            <a href="/mp/plan/cn">
+            <a href="/mp/order/cn" target="_blank">
+                <img class="itemimg" src="/static/images/sample.png" alt="menu02">
+                <div class="itemtext">【CN】手配一覧</div>
+            </a>
+        </div>
+        <div class="item">
+            <a href="/mp/plan/cn" target="_blank">
                 <img class="itemimg" src="/static/images/sample.png" alt="menu02">
                 <div class="itemtext">【CN】内示一覧</div>
             </a>
         </div>
         <div class="item">
-            <a href="/mp/plan/ms">
+            <a href="/mp/order/ms" target="_blank">
+                <img class="itemimg" src="/static/images/sample.png" alt="menu02">
+                <div class="itemtext">【MS】手配一覧</div>
+            </a>
+        </div>
+        <div class="item">
+            <a href="/mp/plan/ms" target="_blank">
                 <img class="itemimg" src="/static/images/sample.png" alt="menu02">
                 <div class="itemtext">【MS】内示一覧</div>
             </a>
         </div>
-        <div class="item-nothing"></div>
-        <br>
+        
+        <!-- 手動機 -->
+        <div class="item-title">
+            <i class="fas fa-paw"></i> 手動機メニュー
+        </div>
         <div class="item">
-            <a href="javascript:LeaktestReport('6079');">
+            <a href="/mp/order/nc" target="_blank">
                 <img class="itemimg" src="/static/images/sample.png" alt="menu03">
-                <div class="itemtext">手動機</div>
+                <div class="itemtext">【NC】手配一覧</div>
+            </a>
+        </div>
+        <div class="item">
+            <a href="/mp/order/mc" target="_blank">
+                <img class="itemimg" src="/static/images/sample.png" alt="menu03">
+                <div class="itemtext">【MC】手配一覧</div>
+            </a>
+        </div>
+        <div class="item">
+            <a href="/mp/order/lf" target="_blank">
+                <img class="itemimg" src="/static/images/sample.png" alt="menu03">
+                <div class="itemtext">【LF】手配一覧</div>
             </a>
         </div>
         <div class="item-nothing"></div>
+        <div class="item">
+            <a href="/mp/plan/nc" target="_blank">
+                <img class="itemimg" src="/static/images/sample.png" alt="menu03">
+                <div class="itemtext">【NC】内示一覧</div>
+            </a>
+        </div>
+        <div class="item">
+            <a href="/mp/plan/mc" target="_blank">
+                <img class="itemimg" src="/static/images/sample.png" alt="menu03">
+                <div class="itemtext">【MC】内示一覧</div>
+            </a>
+        </div>
+        <div class="item">
+            <a href="/mp/plan/lf" target="_blank">
+                <img class="itemimg" src="/static/images/sample.png" alt="menu03">
+                <div class="itemtext">【LF】内示一覧</div>
+            </a>
+        </div>
         <div class="item-nothing"></div>
     </div>
 
     <!-- Footer -->
 	<footer>
 	    <a class="copyright">&copy; 2025 Koken Kogyo Co. All rights reserved.</a>
+        <a class="responsible"></a>
     </footer>
 </div>
 </body>

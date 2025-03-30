@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <title>切削業務設定</title>
+    <meta charset="UTF-8">
+    <!-- レスポンシブwebデザインの指定 --><!-- デバイスの横幅合わせ,等倍表示（半角空白入れるな！） -->
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <!-- https://fontawesome.com/ -->
+    <link href="https://use.fontawesome.com/releases/v5.6.1/css/all.css" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="/static/css/style-basic.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/style-settings.css">
+    <link rel="icon" href="/static/images/favicon.ico" sizes="32x32">
+	<script type="text/javascript">
+        window.onload = function(){
+            var userid = localStorage.getItem("userid");
+            var password = localStorage.getItem("password");
+            var odcd = localStorage.getItem("odcd");
+            var pdfcd = localStorage.getItem("pdfcd");
+            // alert(odcd + ":" + userid + ":" + password + ":" + pdf);
+            if (userid != null && userid != "") {
+                document.getElementById("userid").value = userid;
+                document.getElementById("password").value = password;
+            }
+            if (odcd != null && odcd != "") {
+                document.querySelector('[name="select-odcd"]').value = odcd;
+            }
+            if (pdfcd != null && pdfcd != "") {
+                document.querySelector('[name="select-pdfcd"]').value = pdfcd;
+            }
+        }
+    </script>
+</head>
+<body>
+<div>
+    <!-- Header -->
+	<header>
+	    <header1 id="logo"><a href="/">コーケン工業</a></header1>
+		<header2 id="menutitle">切削業務メニュー</header2>
+	</header>
+
+    <!-- contents -->
+    <div id="top"></div>
+    <div class="settings">
+
+        <!-- 自動ログイン設定(userid,password) -->
+        <div class="item-title">
+            <i class="fas fa-paw"></i> 自動ログイン設定
+        </div>
+        <table class="setting-items">
+            <tr>
+                <td class="text">UserID</td>
+                <td></td>
+                <td><input type="text" id="userid" name="userid"><br></td>
+            </tr>
+            <tr>
+                <td class="text">Password</td>
+                <td></td>
+                <td><input type="password" id="password" name="password"></td>
+                <td class="text-r">
+                    <a href="javascript:setautologin();"><button type="button">保存</button></a>
+                    &nbsp;&nbsp;
+                    <a href="javascript:removeautologin();"><button type="button">削除</button></a>
+                </td>
+        </tr>
+        </table><br>
+
+        <!-- 切断 -->
+        <div class="item-title">
+            <i class="fas fa-paw"></i> SW工程
+        </div>
+        <table class="setting-items">
+            <tr>
+                <td class="text">設置場所</td>
+                <td></td>
+                <td>
+                    <select name="select-odcd" title="作業場所の選択" class="select-odcd">
+                        <option value="">未選択</option>
+                        <option value="60707">炉中洩検(1階)</option>
+                        <option value="60708">炉中洩検(2階)</option>
+                        <option value="60500">黄銅洩検</option>
+                        <option value="60717">炉中メッキ他(1階)</option>
+                        <option value="60718">炉中メッキ他(2階)</option>
+                        <option value="60727">炉中目視(1階)</option>
+                        <option value="60728">炉中目視(2階)</option>
+                    </select>
+                </td>
+                <td class="text-r">
+                    <a href="javascript:setodcd();"><button type="button">設定</button></a>
+                    &nbsp;&nbsp;
+                    <a href="javascript:removeodcd();"><button type="button">解除</button></a>
+                </td>
+            </tr>
+        </table><br>
+        
+        <!-- 自動機 -->
+        <div class="item-title">
+            <i class="fas fa-paw"></i> 自動機
+        </div>
+        <table class="setting-items">
+            <tr>
+                <td class="text">設置場所</td>
+                <td></td>
+                <td>
+                    <select name="select-odcd" title="作業場所の選択" class="select-odcd">
+                        <option value="">未選択</option>
+                        <option value="60707">炉中洩検(1階)</option>
+                        <option value="60708">炉中洩検(2階)</option>
+                        <option value="60500">黄銅洩検</option>
+                        <option value="60717">炉中メッキ他(1階)</option>
+                        <option value="60718">炉中メッキ他(2階)</option>
+                        <option value="60727">炉中目視(1階)</option>
+                        <option value="60728">炉中目視(2階)</option>
+                    </select>
+                </td>
+                <td class="text-r">
+                    <a href="javascript:setodcd();"><button type="button">設定</button></a>
+                    &nbsp;&nbsp;
+                    <a href="javascript:removeodcd();"><button type="button">解除</button></a>
+                </td>
+            </tr>
+        </table><br>
+        
+        <!-- 手動機 -->
+        <div class="item-title">
+            <i class="fas fa-paw"></i> 手動機
+        </div>
+        <table class="setting-items">
+            <tr>
+                <td class="text">格納場所</td>
+                <td></td>
+                <td>
+                    <select name="select-pdfcd" title="PDF種類の選択" class="select-odcd">
+                        <option value="">未選択</option>
+                        <option value="6077">炉出口検査PDF</option>
+                        <option value="6078">炉投入荷姿PDF</option>
+                    </select>
+                </td>
+                <td class="text-r">
+                    <a href="javascript:setpdfcd();"><button type="button">設定</button></a>
+                    &nbsp;&nbsp;
+                    <a href="javascript:removepdfcd();"><button type="button">解除</button></a>
+                </td>
+            </tr>
+        </table>
+
+        <!-- 保存せず戻る -->
+        <table class="setting-buttons">
+            <tr>
+                <td class="text-r text-btm">
+                    <a href="/">
+                        <button type="button">切削業務メニューに戻る</button>
+                        &nbsp;&nbsp;
+                    </a>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Footer -->
+	<footer>
+        <a class="goback" href="javascript:history.back()">[戻る]</a>
+	    <a class="copyright">&copy; 2025 Koken Kogyo Co. All rights reserved.</a>
+        <a class="gotop" href="#">ページの先頭に戻る</a>
+    </footer>
+</div>
+<script type="text/javascript">
+    // ブラウザローカルストレージに保存
+    function setautologin() {
+        const userid = document.getElementById("userid").value;
+        const password = document.getElementById("password").value;
+        if (userid == null || userid == "") {
+            alert("ユーザーIDを入力してください．");
+            document.getElementById("userid").focus();
+            return;
+        }
+        if (password == null || password == "") {
+            alert("パスワードを入力してください．");
+            document.getElementById("password").focus();
+            return;
+        }
+        localStorage.setItem("userid", userid);
+        localStorage.setItem("password", password);
+        alert("保存しました．");
+    }
+    // ブラウザローカルストレージから削除
+    function removeautologin() {
+        localStorage.clear(); // この行はサンプルです（すべて削除されてしまう）
+        localStorage.removeItem("userid"); 
+        localStorage.removeItem("password"); 
+        document.getElementById("userid").value = "";
+        document.getElementById("password").value = "";
+        alert("削除しました．");
+    }
+    // 洩れ検査作業日報 設置場所セット
+    function setodcd() {
+        const odcd = document.querySelector('[name="select-odcd"]').value;
+        if (odcd == null || odcd == "") {
+            alert("設置場所を選択してください．");
+            return;
+        }
+        localStorage.setItem("odcd", odcd);
+        alert("設定しました．");
+        location.href = "/";
+    }
+    // 洩れ検査作業日報 設置場所解除
+    function removeodcd() {
+        localStorage.removeItem("odcd"); 
+        document.querySelector('[name="select-odcd"]').value = "";
+        alert("解除しました．");
+        location.href = "/";
+    }
+    // 電子マニュアル表示 PDF種類セット
+    function setpdfcd() {
+        const pdfcd = document.querySelector('[name="select-pdfcd"]').value;
+        if (pdfcd == null || pdfcd == "") {
+            alert("PDF種類を選択してください．");
+            return;
+        }
+        localStorage.setItem("pdfcd", pdfcd);
+        alert("設定しました．");
+        location.href = "/";
+    }
+    // 電子マニュアル表示 PDF種類解除
+    function removepdfcd() {
+        localStorage.removeItem("pdfcd"); 
+        document.querySelector('[name="select-pdfcd"]').value = "";
+        alert("解除しました．");
+        location.href = "/";
+    }
+</script>
+</body>
+</html>

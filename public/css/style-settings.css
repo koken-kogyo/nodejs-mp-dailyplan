@@ -1,0 +1,70 @@
+@charset "UTF-8";
+.settings {
+    font-family: "system-ui", sans-serif;
+    font-size: 1.2em;
+    background: rgb(235, 235, 235);
+    border-radius: 5px;
+    margin: 50px auto;
+    width: 800px;
+}
+.setting-items {
+    width: 90%;
+    background: rgb(250, 250, 250);
+    border-radius: 5px;
+    padding: 10px 10px;
+    margin: 10px auto;
+}
+.item-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #4D4D4D;
+    padding-left: 2em;
+}
+.select-odcd {
+    font-size: 1.2em;
+    padding: 3px;
+    padding-left: 10px;
+    width: 13em;
+    border: 0.1px solid rgba(163, 243, 214, 0.6);
+    border-radius: 0.2em;
+    color:rgb(55, 82, 72);
+    background-color: rgba(163, 243, 214, 0.6);
+    box-shadow: 2px 2px 4px gray;
+    outline: none;
+    cursor: pointer;
+}
+.text {
+    width: 120px;
+    padding: 10px 0;
+    padding-left: 10px;
+}
+.text-r {
+    display: flex;
+    justify-content: flex-end;
+    padding: 10px;
+}
+.text-btm {
+    margin-bottom: 10px;
+}
+input {
+    font-size: 1.2em;
+}
+button {
+    font-family: inherit;
+    font-size: 1.1em;
+    position: relative;
+    padding: 4px 8px;
+    color: #555;
+    cursor: pointer;
+    background: rgb(230 ,230 ,230);
+    border: 1.5px solid rgba(90, 90, 90, 0.2);
+    border-radius: 2px;
+}
+button:hover {
+    background: rgb(204 ,230 ,250);
+}
+.setting-buttons {
+    width: 90%;
+    padding: 10px 0 0 0;
+    margin: auto;
+}

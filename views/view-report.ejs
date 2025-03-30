@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>日報兼チェックシート</title>
+    <!-- CSS -->
+    <link rel="stylesheet" href="/static/css/style-basic.css">
+    <link rel="stylesheet" href="/static/css/style-mppages.css">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.1/css/all.css" >
+    <!-- View -->
+</head>
+<body>
+    <!-- Common JavaScript -->
+    <% include("_myfunctions.ejs") %>
+    <% let osType = myRequestHeader.osType(req); %>
+
+    <div id="top"></div>
+    <div id="main" class="containers">
+
+    <!-- Header -->
+    <%- include("_header.ejs", { title: mcgcd + "作業日報 兼 チェックシート" + myFunc.c(planday), req }) %>
+    <div id="gotoswmenu"><a href="javascript:window.close()"><i class="fas fa-home"></i></a></div>
+    <input type="hidden" id="mcgcd" name="mcgcd" value="<%= mcgcd %>" />
+
+    <!-- Navigate -->
+    <div id="navigate">
+        <a href="/mp/viewreport/prevday/<%= mcgcd %>/<%= planday %>"><button>前日</button></a>
+        <a href="/mp/viewreport/nextday/<%= mcgcd %>/<%= planday %>"><button>翌日</button></a>
+    </div>
+
+    <!-- Details -->
+    <div id="details">
+    <!-- % if (viewreport) { % -->
+    <% if (viewreport.rows.length == 0) { %>
+        <div class="nodata">データありません．</div>
+    <% } else { %>
+        <table id="tbl1">
+            <tr>
+                <th width="140px">品番</th>
+                <th width="60px">手配日</th>
+                <th width="70px">材料ｻｲｽﾞ</th>
+                <th width="70px">切断長</th>
+                <th width="60px" class="small">入力確認</th>
+                <th width="70px">着工</th>
+                <th width="70px">完工</th>
+                <th width="70px">実績数</th>
+                <th width="60px">状態</th>
+                <th width="80px">登録</th>
+                <th width="80px">更新</th>
+                <th width="60px">備考</th>                    
+            </tr>
+            <% viewreport.rows.forEach(function (d) { %>
+                <tr>
+                    <td class="lef"><%= d.品番 %></td>
+                    <td class=""><%= d.初回手配日 %></td>
+                    <td class=""><%= d.材料サイズ %></td>
+                    <td class=""><%= d.切断長 %></td>
+                    <td class=""><%= d.入力確認 %></td>
+                    <td class=""><%= d.着工 %></td>
+                    <td class=""><%= d.完工 %></td>
+                    <td class=""><%= d.実績数 %></td>
+                    <td class=""><%= (d.edit_refer_status==1) ? "編集中" : (d.edit_refer_status==4) ? "入力完了" : ""; %></td>
+                    <td class=""><%= myFunc.l(d.sys_regist_time) %></td>
+                    <td class=""><%= myFunc.l(d.sys_update_time) %></td>
+                    <td class=""><%= d.備考 %></td>
+                </tr>
+            <% }); %>
+        </table>
+    <% }; %>
+    </div>
+    </div>
+
+    <!-- Footer -->
+    <%- include("_footer.ejs", req) %>
+    
+    <!-- ブラウザ読み込み完了後のJavaScriptを記述 -->
+    <script>
+        // ブラウザ読み込み完了後の初期設定
+        SetInitialValues();
+
+        // ブラウザ読み込み完了後の初期設定
+        function SetInitialValues() {
+            const menutitle = document.getElementById("menutitle");
+            menutitle.style.left = "calc(100vw / 2 - 10em)";
+        }
+    </script>
+
+</body>
+</html>

@@ -18,15 +18,33 @@ a {
 #gotoswmenu a {
     color: #FEFEFE;
 }
-#swmenu .active {
-    color: rgb(0,51,153,1);
-    background-color: rgb(153,200,255,0.6);
+#gotoswmenu a:hover {
+    color: cadetblue;
 }
-
-
+/* === Navigate ================================================================ */
+#navigate {
+    position: fixed;
+    top: 45px;
+}
+#groups a li:hover {
+    background-color: #ddd;
+}
+#groups .allow {
+    padding: 0.6em;
+    border-radius: 3px;
+    background-color: rgb(40, 40, 40);
+    color: #eee;
+}
+#groups .allow:hover {
+    border-radius: 3px;
+    background-color: rgb(24, 94, 164);
+    /* width: 30px; */
+    color: #eee;
+}
+/* === Details ================================================================ */
 #details {
-    padding-top: 60px;
-    width: 1000px;
+    padding-top: 70px;
+    width: 100%;
     margin: auto;
     z-index: 700;
 }
@@ -42,11 +60,11 @@ a {
     font-size: 0.4em;
     color: darkgray;
 }
-.check-material {
-    width: 1.5em;
-    height: 1.5em;
+.check-box {
+    width: 2.0em;
+    height: 2.0em;
     vertical-align: text-bottom;
-    margin-bottom: 0px;
+    margin-bottom: -3px;
 }
 th a {
     display: inline-block;
@@ -54,7 +72,7 @@ th a {
 }
 td a {
     display: inline-block;
-    padding: 2px 6px;
+    padding: 6px 6px;
 }
 a li {
     border-radius: 3px;
@@ -102,15 +120,10 @@ th {
 .tr2 {
     height: 1.25rem;
 }
-/*
 tr {
     background-color: #FEFEFE;
     height: 2.5rem;
 }
-tr:nth-child(even) {
-    background-color: #ECECEC;
-}
-*/
 td {
     text-align: center;
     width: 40px;
@@ -151,6 +164,15 @@ td {
 .s9 {
     color:rgb(0, 0, 0);
 }
+.warn {
+    border-radius: 3px;
+    font-weight: 600;
+    animation: blinkAnimeWarn 1.5s  infinite alternate;
+}
+@keyframes blinkAnimeWarn {
+    0%{ color : rgba(71, 71, 59, 1.0);   background:rgba(241, 198, 198, 0.8) }
+  100%{ color : rgba(255, 255, 0, 1.0); background:rgba(236, 48, 34, 0.8)   }
+}
 .input-number-qty {
     width: 2.5em;
 }
@@ -160,6 +182,7 @@ td {
     border-radius: 0.4rem;
     box-shadow: 2px 2px 4px gray;
     text-align: center;
-    font-size: xx-small;
+    font-size: small;
     color: white;
+    width: 80%;
 }

@@ -2,7 +2,6 @@
 /* =========================================================================== */
 /*  style.css : 全ページで使用する共通的なスタイルシート
 /* =========================================================================== */
-/* =========================================================================== */
 body {
     font-family: "Arial", "メイリオ", sans-serif;
     position: relative;
@@ -16,7 +15,13 @@ body {
     scroll-behavior: smooth; /* iOS端末 SafariやIEにEdgeブラウザだと機能しません */
 }
 body > * { box-sizing: border-box; }
+a {
+    text-decoration: none;
+}
 
+/* =========================================================================== */
+/*  header
+/* =========================================================================== */
 header {
     position: fixed;
     display: block;
@@ -29,29 +34,10 @@ header {
     background: rgb(175 ,25 ,25, 1);
     z-index: 999;
 }
-
-footer {
-    position: fixed;
-    display: block;
-    font-size: 0.8rem;
-    bottom: 0;
-    width: 100vw;
-    height: 20px;
-    font-size: small;
-    text-align: center;
-    color: #fff;
-    z-index: 555;
-    background: rgb(62,173,242);
-    background: -moz-linear-gradient(top, rgba(62,173,242,1) 0%, rgba(43,101,200,1) 100%);
-    background: -webkit-linear-gradient(top, rgba(62,173,242,1) 0%,rgba(43,101,200,1) 100%);
-    background: linear-gradient(to bottom, rgba(62,173,242,1) 0%,rgba(43,101,200,1) 100%);
+header a {
+    text-decoration: none;
+    color: darkcyan;
 }
-footer>p { 
-    padding: 4px 2px 2px 2px;
-    margin: 0;
-}
-
-/************************************************************************/
 #logo a {
     display: inline-block;
     position: relative;
@@ -70,24 +56,38 @@ footer>p {
     display: inline-block;
     position: fixed;
     font-size: 1rem;
-    top: 5px;
-    right: 30px;
+    top: 9px;
+    right: 50px;
 }
-#userinfo a,#gotop a,#goback a {
-    display: inline-block;
-    text-align: right;
-    margin-top: 5px;
-    color: cadetblue;
-    text-decoration: none;
+#settings {
+    position: absolute;
+    top: 7px;
+    right: 15px;
 }
-#gotop {
-    display: block;
+
+/* =========================================================================== */
+/*  footer
+/* =========================================================================== */
+footer {
     position: fixed;
-    right: 20px;
-    bottom: 20px;
+    display: block;
+    font-size: 0.8rem;
+    bottom: 0;
+    width: 100vw;
+    height: 20px;
     font-size: small;
-    text-align: right;
+    text-align: center;
+    color: #fff;
+    z-index: 555;
+    background: rgb(62,173,242);
+    background: -moz-linear-gradient(top, rgba(62,173,242,1) 0%, rgba(43,101,200,1) 100%);
+    background: -webkit-linear-gradient(top, rgba(62,173,242,1) 0%,rgba(43,101,200,1) 100%);
+    background: linear-gradient(to bottom, rgba(62,173,242,1) 0%,rgba(43,101,200,1) 100%);
 }
+footer a {
+    color: #fff;
+}
+/* === [戻る] === */
 #goback {
     display: block;
     position: fixed;
@@ -95,4 +95,26 @@ footer>p {
     bottom: 20px;
     font-size: small;
     text-align: left;
+}
+/* === [Copy Right] === */
+footer .copyright {
+    position: fixed;
+    padding: 3px 0 0 0;
+    left: calc((100vw / 2) - 120px);
+}
+/* === [responsible] === */
+footer .responsible {
+    position: fixed; /* 要素の位置：絶対*/
+    bottom: 2px;
+    right: 160px;
+    color: rgb(255, 255, 255, 0.2);
+}
+/* === [ページの先頭に戻る] === */
+#gotop {
+    display: block;
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    font-size: small;
+    text-align: right;
 }

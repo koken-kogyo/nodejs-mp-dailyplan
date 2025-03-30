@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>内示一覧</title>
+    <title>手配一覧</title>
     <!-- CSS -->
     <link rel="stylesheet" href="/static/css/style-basic.css">
     <link rel="stylesheet" href="/static/css/style-mppages.css">
@@ -33,16 +33,16 @@ QRコード読取
     <div id="main" class="containers">
 
     <!-- Header -->
-    <%- include("_header.ejs", { title: mcgcd + "工程　内示一覧", req }) %>
+    <%- include("_header.ejs", { title: mcgcd + "工程　手配一覧", req }) %>
     <div id="gotoswmenu"><a href="javascript:window.close()"><i class="fas fa-home"></i></a></div>
     <input type="hidden" id="mcgcd" name="mcgcd" value="<%= mcgcd %>" />
 
      <!-- Details -->
     <div id="details">
-    <% if (kd8440) { %>
+    <% if (kd8430) { %>
         <% let tableno = 1; %>
-        <% let mccount = Object.keys(kd8440).length; %>
-        <% kd8440.forEach(function (data) { %>
+        <% let mccount = Object.keys(kd8430).length; %>
+        <% kd8430.forEach(function (data) { %>
             <div id="jump<%= tableno %>"></div>
             <input type="hidden" id="mccd<%= tableno %>" name="mccd<%= tableno %>" value="<%= data[0].MCCD %>" />
             <!-- 設備タイトル -->
@@ -100,17 +100,17 @@ QRコード読取
                         <td class="lef"><%= d.HMNM %></td>
                         <td class=""><%= d.MATESIZE %></td>
                         <td class=""><%= d.LENGTH %></td>
-                        <td class=""><%= d.D0 %></td>
-                        <td class=""><%= d.D1 %></td>
-                        <td class=""><%= d.D2 %></td>
-                        <td class=""><%= d.D3 %></td>
-                        <td class=""><%= d.D4 %></td>
-                        <td class=""><%= d.D5 %></td>
-                        <td class=""><%= d.D6 %></td>
-                        <td class=""><%= d.D7 %></td>
-                        <td class=""><%= d.D8 %></td>
-                        <td class=""><%= d.D9 %></td>
-                        <td class=""><%= Number(d.D0)+Number(d.D1)+Number(d.D2)+Number(d.D3)+Number(d.D4)+Number(d.D5)+Number(d.D6)+Number(d.D7)+Number(d.D8)+Number(d.D9)-Number(d.ZAIQTY) %></td>
+                        <td class="s<%= d.STS0 %>"><%= d.D0 %></td>
+                        <td class="s<%= d.STS1 %>"><%= d.D1 %></td>
+                        <td class="s<%= d.STS2 %>"><%= d.D2 %></td>
+                        <td class="s<%= d.STS3 %>"><%= d.D3 %></td>
+                        <td class="s<%= d.STS4 %>"><%= d.D4 %></td>
+                        <td class="s<%= d.STS5 %>"><%= d.D5 %></td>
+                        <td class="s<%= d.STS6 %>"><%= d.D6 %></td>
+                        <td class="s<%= d.STS7 %>"><%= d.D7 %></td>
+                        <td class="s<%= d.STS8 %>"><%= d.D8 %></td>
+                        <td class="s<%= d.STS9 %>"><%= d.D9 %></td>
+                        <td class=""><%= Number(d.D0Z)+Number(d.D1Z)+Number(d.D2Z)+Number(d.D3Z)+Number(d.D4Z)+Number(d.D5Z)+Number(d.D6Z)+Number(d.D7Z)+Number(d.D8Z)+Number(d.D9Z) %></td>
                         <td class=""><%= (d.ZAIQTY == 0) ? "" : Number(d.ZAIQTY).toLocaleString(); %></td>
                         <td class=""><%= (d.STORE == 0) ? "" : Number(d.STORE).toLocaleString(); %></td>
                         <td class=""><%= d.MATERIALLEN %></td>
@@ -158,14 +158,14 @@ QRコード読取
                         const materiallen = Number(tblobj.rows[i].cells[endcol - 1].innerHTML);     // 材料長さ
                         const zanqty = Number(tblobj.rows[i].cells[endcol - 4].innerHTML);          // 注文残数
                         const storeqty = Number(tblobj.rows[i].cells[endcol - 2].innerHTML);        // ストア在庫数
-
+                        
                         // １．材料サイズ毎の色分け処理
                         const matenow = tblobj.rows[i].cells[2].innerHTML;
                         if (matenow != mateold) {
                             colorno = (colorno == 0) ? 1 : 0;
                             mateold = matenow;
                         }
-                        
+
                         // １．５ ストア在庫数のチェック
                         if (zanqty > storeqty) {
                             tblobj.rows[i].cells[endcol - 4].className = "warn";
@@ -180,23 +180,12 @@ QRコード読取
 
                         // ３．鋼材使用長さの集計と、仕掛在庫の消込処理を同時に行う
                         let usedlenttl = Number("0.0");
-                        let zaiqty = Number(tblobj.rows[i].cells[endcol - 3].innerHTML);          // 仕掛かり済の在庫数
                         for (var j=4; j<=9; j+=5) {
                             let usedlen = Number("0.0"); // 一週間で使用する鋼材長さを集計
                             for (var k=0; k<5; k++) {
                                 if (!isNaN(tblobj.rows[i].cells[j+k].innerHTML)) {
-                                    let qty = Number(tblobj.rows[i].cells[j+k].innerHTML);
-                                    // 仕掛かり在庫判定（ステータスを済に変更）
-                                    if (qty > 0) {
-                                        if (zaiqty >= qty) {
-                                            tblobj.rows[i].cells[j+k].className = "s4";
-                                            zaiqty -= qty;
-                                            qty = 0;
-                                        } else if (zaiqty > 0 && qty > 0) {
-                                            tblobj.rows[i].cells[j+k].className = "s5";
-                                            qty -= zaiqty;
-                                            zaiqty = 0;
-                                        }
+                                    if (tblobj.rows[i].cells[j+k].className != "s4") {
+                                        let qty = Number(tblobj.rows[i].cells[j+k].innerHTML);
                                         usedlen += (productlen + thickness) * qty;
                                         usedlenttl += (productlen + thickness) * qty;
                                     }
@@ -334,34 +323,59 @@ QRコード読取
         }
         // i-Reporter の起動
         async function iReporter(tblno, row) {
-            const defid = "1509";   // 帳票定義ID:1509 (SW日報兼チェックシート)
-            const clusterno = "16"; // 品番:クラスター番号
-            const irepourl = "jp.co.cimtops.ireporter";
+            // 呼び出し元の基本情報取得
             const tblobj = document.getElementById(`tbl${tblno}`);
+            const mcgcd = document.getElementById("mcgcd").value;
+            const mccd = document.getElementById(`mccd${tblno}`).value;
+            // iRepo呼び出し用データの取得
+            const irepourl = "jp.co.cimtops.ireporter";
             const hmcd = tblobj.rows[row].cells[0].innerHTML;
             const mate = tblobj.rows[row].cells[2].innerHTML;
             const cut = tblobj.rows[row].cells[3].innerHTML;
-            // irepoサーバーから保留中の品番がないかチェック
-            // (1) 編集中帳票ID取得API
-            fetch(`/ireposv/getHoldid/${defid}:${hmcd}:${clusterno}:`)
+            // 品番と設備Gと設備コードから帳票IDと品番クラスター番号を取得
+            fetch(`/mysqlsv/getDefid/${hmcd}:${mcgcd}:${mccd}:`)
             .then(response => response.json())
-            .then(repid => {
-                if (repid == 0) {
-                    // なければ帳票定義からiRepoを起動
-                    const hmcdparam = encodeURI(`スキャン品番=${hmcd}`);
-                    const mateparam = encodeURI(`材料サイズ=${mate}`);
-                    const cutparam = encodeURI(`切断長=${cut}`);
-                    const modeparam = encodeURI("処理モード=plan"); // 内示モードで帳票を起動
-                    alert(`${irepourl}.createreport:defid=${defid}` +
-                        `&${hmcdparam}&${mateparam}&${cutparam}&${modeparam}`);
-                    location.href = `${irepourl}.createreport:defid=${defid}` +
-                        `&${hmcdparam}&${mateparam}&${cutparam}&${modeparam}`;
-                    browserTabClose();
-                } else {
-                    // 保留中の帳票があれば帳票IDから起動
-                    location.href = `${irepourl}.openreport:repid=${repid}`;
-                    browserTabClose();
+            .then(data => {
+                if (data.DEFID == 0) {
+                    alert("起動する帳票IDがマスター登録されていません．");
+                    return;
                 }
+                // 帳票定義ID
+                const defid = data.DEFID;       
+                // 1帳票1品番の場合:0、1帳票に複数品番ある場合、品番の入っているクラスター番号（保留帳票の検索を行う為に使用）
+                const clusterno = data.HMCDCID;
+                let apiurl = "";
+                if (clusterno == 0) {
+                    apiurl = `/ireposv/getHoldid/${defid}:`;
+                } else {
+                    apiurl = `/ireposv/getHoldid/${defid}:${hmcd}:${clusterno}:order:`;
+                }
+                // irepoサーバーから保留中の品番がないかチェック
+                // (1) 編集中帳票ID取得API
+                fetch(apiurl)
+                .then(response => response.json())
+                .then(repid => {
+                    if (repid == 0) {
+                        // なければ帳票定義からiRepoを起動
+                        if (mcgcd == "SW") {
+                            // 選択されたデータをセットして帳票定義IDを起動
+                            const hmcdparam = encodeURI(`スキャン品番=${hmcd}`);
+                            const mateparam = encodeURI(`材料サイズ=${mate}`);
+                            const cutparam = encodeURI(`切断長=${cut}`);
+                            const modeparam = encodeURI("処理モード=order"); // 内示モードで帳票を起動
+                            location.href = `${irepourl}.createreport:defid=${defid}` +
+                                `&${hmcdparam}&${mateparam}&${cutparam}&${modeparam}`;
+                        } else {
+                            // 帳票定義IDをそのまま起動
+                            location.href = `${irepourl}.createreport:defid=${defid}`;
+                        }
+                        browserTabClose();
+                    } else {
+                        // 保留中の帳票があれば帳票IDから起動
+                        location.href = `${irepourl}.openreport:repid=${repid}`;
+                        browserTabClose();
+                    }
+                });
             });
         }
         
