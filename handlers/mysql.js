@@ -211,7 +211,8 @@ const getKD8440Orders = async (mcgcd, mccds, ymds) => {
         " sum(case when EDDT=? then ODRQTY else null end) > 0 " + orderby;
         let kd8430 = await getDatabase(sql, parameters);
 
-        // 設備データを付加
+        // 帳票定義IDデータを取得
+        const km8430 = await getKM8430Defids(mcgcd, mccd.MCCD);
 
         // 内示データに品番毎の在庫情報を取得して付加
         let kd8460 = await getDatabase(
@@ -222,7 +223,16 @@ const getKD8440Orders = async (mcgcd, mccds, ymds) => {
             , [mcgcd, mccd.MCCD]
         );
         for await (row of kd8430) {
-            let idx = kd8460.findIndex(t => t.HMCD === row.HMCD);
+            let idx = 0;
+            // IREPO帳票IDを付与
+            idx = km8430.findIndex(t => t.HMCD === row.HMCD);
+            if (idx < 0) {
+                row.DEFID = 0;
+            } else {
+                row.DEFID = km8430[idx].DEFID === null ? 0 : km8430[idx].DEFID;
+            }
+            // 在庫情報を付与
+            idx = kd8460.findIndex(t => t.HMCD === row.HMCD);
             if (idx < 0) {
                 row.ZAIQTY = 0;
                 row.STORE = 0;
@@ -293,12 +303,13 @@ const getKD8440Plans = async (mcgcd, mccds, ymds) => {
         " sum(case when EDDT=? then ODRQTY else null end) > 0 or" +
         " sum(case when EDDT=? then ODRQTY else null end) > 0 or" +
         " sum(case when EDDT=? then ODRQTY else null end) > 0 " + orderby;
-        let kd8440 = await getDatabase(sql, parameters);
+        const kd8440 = await getDatabase(sql, parameters);
 
-        // 設備データを付加
+        // 帳票定義IDデータを取得
+        const km8430 = await getKM8430Defids(mcgcd, mccd.MCCD);
 
         // 内示データに品番毎の在庫情報を取得して付加
-        let kd8460 = await getDatabase(
+        const kd8460 = await getDatabase(
             "select HMCD, " + 
             "sum(case when MCGCD=? and MCCD=? then ZAIQTY else 0 end) as 'ZAIQTY', " +
             "sum(case when MCGCD='STORE' then ZAIQTY else 0 end) as 'STORE' " +
@@ -306,7 +317,16 @@ const getKD8440Plans = async (mcgcd, mccds, ymds) => {
             , [mcgcd, mccd.MCCD]
         );
         for await (row of kd8440) {
-            let idx = kd8460.findIndex(t => t.HMCD === row.HMCD);
+            let idx = 0;
+            // IREPO帳票IDを付与
+            idx = km8430.findIndex(t => t.HMCD === row.HMCD);
+            if (idx < 0) {
+                row.DEFID = 0;
+            } else {
+                row.DEFID = km8430[idx].DEFID === null ? 0 : km8430[idx].DEFID;
+            }
+            // 在庫情報を付与
+            idx = kd8460.findIndex(t => t.HMCD === row.HMCD);
             if (idx < 0) {
                 row.ZAIQTY = 0;
                 row.STORE = 0;
@@ -321,6 +341,26 @@ const getKD8440Plans = async (mcgcd, mccds, ymds) => {
     return mc;
 };
 exports.getKD8440Plans = getKD8440Plans;
+
+const getKM8430Defids =  async (mcgcd, mccd) => {
+    const sql = "select HMCD, case " + 
+    "when KT1MCGCD=? and KT1MCCD=? then KT1IREPO " + 
+    "when KT2MCGCD=? and KT2MCCD=? then KT2IREPO " + 
+    "when KT3MCGCD=? and KT3MCCD=? then KT3IREPO " + 
+    "when KT4MCGCD=? and KT4MCCD=? then KT4IREPO " + 
+    "when KT5MCGCD=? and KT1MCCD=? then KT5IREPO " + 
+    "else 0 end DEFID " + 
+    "from km8430 where KTKEY like ? " + 
+    "having DEFID > 0";
+    const km8430 = await getDatabase(sql, [
+        mcgcd, mccd, 
+        mcgcd, mccd, 
+        mcgcd, mccd, 
+        mcgcd, mccd, 
+        mcgcd, mccd, 
+        `%${mcgcd}-${mccd}:%`]);
+    return km8430;
+}
 
 // 設備グループ毎の手配一覧データを取得
 const getKD8430Orders = async (mcgcd, mccds, planday, km8430) => {

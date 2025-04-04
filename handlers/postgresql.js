@@ -12,21 +12,36 @@ const getDatabase = async (sql, param) => {
 
 // 最新の編集中の帳票IDを取得（編集中がない場合は0）
 const getHoldReportIDSingle = async (defid) => {
-    const sql = "select COALESCE(max(rep_top_id),0) as repid " + 
-        `from view_report_${defid} ` + 
-        `where edit_refer_status=1`;
-    return getDatabase(sql);
+    if (await isViewReport(defid) == 0) {
+        return 0;
+    } else {
+        const sql = "select COALESCE(max(rep_top_id),0) as repid " + 
+            `from view_report_${defid} ` + 
+            `where edit_refer_status=1`;
+        return getDatabase(sql);
+    }
 };
 exports.getHoldReportIDSingle = getHoldReportIDSingle;
 
 // 最新の編集中の帳票IDを取得（編集中がない場合は0）（defid:大元の帳票定義ID, clusterno:検索対象の品番クラスターNO）
 const getHoldReportID = async (defid, hmcd, clusterno, mode) => {
-    const sql = "select COALESCE(max(rep_top_id),0) as repid " + 
+    const vr = await isViewReport(defid);
+    if (vr.rows[0].repid == 0) {
+        return vr;
+    } else {
+        const sql = "select COALESCE(max(rep_top_id),0) as repid " + 
         `from view_report_${defid} ` + 
         `where cluster_1_${clusterno}_t='${hmcd}' and edit_refer_status=1`;
-    return getDatabase(sql);
+        return getDatabase(sql);
+    }
 };
 exports.getHoldReportID = getHoldReportID;
+
+// そもそもテーブルが存在しているかチェック
+const isViewReport = async (defid) => {
+    const sql = `SELECT count(*) repid FROM information_schema.tables WHERE table_name = 'view_report_${defid}'`
+    return getDatabase(sql);
+}
 
 // SW作業日報兼チェックシートの取得（帳票定義ID:1509）（※ejsに受け渡す項目名は小文字にする事）
 const getRepID1509 = async (planday) => {

@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
+    <!-- meta -->
     <meta charset="UTF-8">
+    <meta name="format-detection" content="telephone=no">    
     <title>手配一覧</title>
     <!-- CSS -->
     <link rel="stylesheet" href="/static/css/style-basic.css">
     <link rel="stylesheet" href="/static/css/style-mppages.css">
     <link rel="stylesheet" href="/static/css/style-jsQR.css"/>
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.1/css/all.css" >
-    <!-- View -->
     <!-- JavaScript -->
     <script src="/static/javascripts/_myfunctions.js"></script>
     <script src="/static/javascripts/jsQR.js" defer></script>
@@ -114,7 +115,7 @@ QRコード読取
                         <td class=""><%= (d.ZAIQTY == 0) ? "" : Number(d.ZAIQTY).toLocaleString(); %></td>
                         <td class=""><%= (d.STORE == 0) ? "" : Number(d.STORE).toLocaleString(); %></td>
                         <td class=""><%= d.MATERIALLEN %></td>
-                        <td></td>
+                        <td><%= (d.DEFID == 0) ? "" : d.DEFID %></td>
                     </tr>
                     <% }); %>
                 </table>
@@ -217,7 +218,7 @@ QRコード読取
                         // ６．鋼材情報行は一旦非表示
                         tblobj.rows[i + 1].style.display = "none";
                         // ７．最終列にイベントハンドラー（i-Repo呼び出し）
-                        if (document.getElementById("mcgcd").value == "SW") {
+                        if (tblobj.rows[i].cells[endcol].innerHTML != "") {
                             tblobj.rows[i].cells[endcol].innerHTML = `<a href="javascript:iReporter(${tblno},${i})" class="btn-irepo">` + "開始" + "</a>" ;
                         }
                         // ８．列(TD)の非表示化
@@ -345,10 +346,11 @@ QRコード読取
                 // 1帳票1品番の場合:0、1帳票に複数品番ある場合、品番の入っているクラスター番号（保留帳票の検索を行う為に使用）
                 const clusterno = data.HMCDCID;
                 let apiurl = "";
+                alert(clusterno);
                 if (clusterno == 0) {
-                    apiurl = `/ireposv/getHoldid/${defid}:`;
+                    apiurl = `/ireposv/getHoldid/${defid}`;
                 } else {
-                    apiurl = `/ireposv/getHoldid/${defid}:${hmcd}:${clusterno}:order:`;
+                    apiurl = `/ireposv/getHoldid/${defid}:${hmcd}:${clusterno}:order`;
                 }
                 // irepoサーバーから保留中の品番がないかチェック
                 // (1) 編集中帳票ID取得API
