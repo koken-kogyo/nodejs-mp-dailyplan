@@ -22,10 +22,10 @@
     --notepc-grid-row: 130px;
     --notepc-item-img: 40px;
 
-    --desktop-top-row: 230px;
-    --desktop-grid-column: 270px;
-    --desktop-grid-row: 160px;
-    --desktop-item-img: 90px;
+    --desktop-top-row: 200px;
+    --desktop-grid-column: 220px;
+    --desktop-grid-row: 140px;
+    --desktop-item-img: 60px;
 }
 /* =========================================================================== */
 /*  レスポンシブレイアウト [Grid] 設定
@@ -231,24 +231,16 @@
 @media screen and (orientation: landscape) and (min-width: 1600px) {
     .responsible:before { content: "PC24inchSize"; }
     .containers {
-        width: calc((var(--desktop-grid-column) * 4) + 1rem);
-        grid-template-columns: repeat(4, var(--desktop-grid-column));
-        grid-template-rows: var(--desktop-top-row) var(--item-title-row) repeat(2, (--desktop-grid-row)) var(--item-title-row) var(--desktop-grid-row);
-    }
-    .containers .item-top {
-        margin-top: 1.5rem;
-    }
-    .containers .topimg {
-        margin-top: 10px;
-    }
-    .containers #news-list {
-        height: var(--desktop-top-row);
-        font-size: 1.1rem;
-        margin: 1.5rem 0.5rem 0 1.5rem;
-        grid-column: 2 / 5;
+        width: calc((var(--desktop-grid-column) * 6) + 1rem);
+        grid-template-columns: repeat(6, var(--desktop-grid-column));
+        grid-template-rows: 
+        var(--item-title-row) var(--desktop-grid-row)
+        var(--item-title-row) var(--desktop-grid-row)
+        var(--item-title-row) var(--desktop-grid-row)
+        var(--item-title-row) var(--desktop-grid-row);
     }
     .containers .item-title {
-        grid-column: 1 / 5;
+        grid-column: 1 / 7;
     }
     .containers .itemimg {
         height: var(--desktop-item-img);

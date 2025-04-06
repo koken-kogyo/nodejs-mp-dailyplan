@@ -91,8 +91,8 @@ app.get("/mp/order/:mcgcd", async (req, res, next) => {
     Promise.all([mysqlHandler.getMCCDs(mcgcd), mysqlHandler.getYMDOrders()])
     .then( async ([mccds, ymds]) => {
         // 手配情報取得
-        const kd8430 = await mysqlHandler.getKD8440Orders(mcgcd, mccds, ymds);
-        res.render("order-information.ejs", {req, ymds, mcgcd, mccds, kd8430});
+        const kd8450 = await mysqlHandler.getKD8450Orders(mcgcd, mccds, ymds);
+        res.render("order-information.ejs", {req, ymds, mcgcd, mccds, kd8450});
     }).catch((err) => {
         next(err);
     });
@@ -187,6 +187,33 @@ app.get("/mysqlsv/getDefid/:args", async (req, res, next) => {
     const mccd = args.split(":")[2];
     const km8430 = await mysqlHandler.getReportDefID(hmcd, mcgcd, mccd);
     res.status(200).json(km8430[0]);
+});
+
+// 品番,設備,手配日付から、注文番号[ODRNO],手配状態[ODRSTS],実績数[JIQTY],未来の実績数[FUTUREQTY],過去の実績残数[ZANQTY]を取得するAPI
+// curl http://pc090n:53030/mysqlsv/getDefid/RD431-51322-1:TN:1:
+app.get("/mysqlsv/getOdrno/:args", async (req, res, next) => {
+    const args = req.params.args;
+    const hmcd = args.split(":")[0];
+    const mcgcd = args.split(":")[1];
+    const mccd = args.split(":")[2];
+    const eddt = args.split(":")[3];
+    const stdt = args.split(":")[4];
+    const kd8450 = await mysqlHandler.getOdrno(hmcd, mcgcd, mccd, eddt, stdt);
+    res.status(200).json(kd8450[0]);
+});
+
+// API 作業開始
+app.get("/mysqlsv/startOrder/:args", async function (req, res, next) {
+    const args = req.params.args;
+    const odrno = args.split(":")[0];
+    const mcgcd = args.split(":")[1];
+    const mccd = args.split(":")[2];
+    try {
+        await mysqlHandler.startOrder(odrno, mcgcd, mccd);
+        res.status(200).end();
+    } catch (err) {
+        next(err);
+    }
 });
 
 // API IREPOSVのPostgreSQLからview_report_defidの編集中ステータスの帳票IDを取得

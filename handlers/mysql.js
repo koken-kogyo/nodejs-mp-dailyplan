@@ -34,10 +34,13 @@ const getM0010 = async (userid) => {
 exports.getM0010 = getM0010;
 
 // 今週月曜日から来週金曜日までの営業日を取得
+// ※月曜日の場合は今週からのリストに更新しない
 const getYMDOrders = async () => {
+    const d = new Date();
+    const monday = (d.getDay() == 1) ? "- interval 7 day " : "";    
     const sql = 
         "select YMD from (select DATE_FORMAT(YMD,'%Y-%m-%d') 'YMD' from s0820 where CALTYP='00001' and WKKBN='1' and YMD between " +
-        "(CURRENT_DATE - interval WEEKDAY(CURRENT_DATE) day) " + 
+        "(CURRENT_DATE - interval WEEKDAY(CURRENT_DATE) day) " + monday + 
         "and " + 
         "(CURRENT_DATE - interval WEEKDAY(CURRENT_DATE) day + interval 30 day)) T limit 10"
     const ymdobj = await getDatabase(sql, []);
@@ -48,10 +51,13 @@ const getYMDOrders = async () => {
 exports.getYMDOrders = getYMDOrders;
 
 // 内示用月曜日から金曜日までの営業日を取得
+// ※月曜日の場合は今週からのリストに更新しない
 const getYMDPlans = async () => {
+    const d = new Date();
+    const monday = (d.getDay() == 1) ? "- interval 7 day " : "";
     const sql = 
         "select YMD from (select DATE_FORMAT(YMD,'%Y-%m-%d') 'YMD' from s0820 where CALTYP='00001' and WKKBN='1' and YMD between " +
-        "(CURRENT_DATE - interval WEEKDAY(CURRENT_DATE) day) + interval 14 day " + 
+        "(CURRENT_DATE - interval WEEKDAY(CURRENT_DATE) day) + interval 14 day " + monday + 
         "and " + 
         "(CURRENT_DATE - interval WEEKDAY(CURRENT_DATE) day + interval 44 day)) T limit 10"
     const ymdobj = await getDatabase(sql, []);
@@ -129,7 +135,7 @@ const getKM8430 = async (mcgcd) => {
 };
 exports.getKM8430 = getKM8430;
 
-// 手配データを並べて表示する際の設備ごとに決まっている仕様
+// 各工程毎に表示の並び変え順序
 const getMCOrderby = (mcgcd) => {
     const orderby = {
         SW: "order by b.MATESIZE desc, a.HMCD ",
@@ -155,12 +161,11 @@ const getMCOrderby = (mcgcd) => {
 exports.getMCOrderby = getMCOrderby;
 
 // 設備毎の注文データを2週間分取得
-const getKD8440Orders = async (mcgcd, mccds, ymds) => {
+const getKD8450Orders = async (mcgcd, mccds, ymds) => {
     const orderby = getMCOrderby(mcgcd);
     const mc = [];
     for (let mccd of mccds) {
-        let parameters = [...ymds, ...ymds, ...ymds, ymds[0], ymds[9],
-                "%" + mcgcd + "-" + mccd.MCCD + ":%", ...ymds];
+        let parameters = [...ymds, ...ymds, ...ymds, ymds[0], ymds[9], mcgcd, mccd.MCCD, ...ymds];
         let sql = "select a.HMCD,b.HMNM,b.MATESIZE,b.LENGTH" +
         ",max(ifnull(b.MATERIALLEN,0)) as 'MATERIALLEN'" + 
         ",sum(case when EDDT=? then ODRQTY else null end) as 'D0'" +
@@ -193,10 +198,9 @@ const getKD8440Orders = async (mcgcd, mccds, ymds) => {
         ",min(case when EDDT=? then ODRSTS else null end) as 'STS7'" +
         ",min(case when EDDT=? then ODRSTS else null end) as 'STS8'" +
         ",min(case when EDDT=? then ODRSTS else null end) as 'STS9' " +
-        "from kd8430 a, km8430 b where a.HMCD = b.HMCD" +
-        " and a.KTCD like 'MP%' and a.ODCD like '6060%'" +
+        "from kd8450 a, km8430 b where a.HMCD = b.HMCD" +
         " and a.EDDT between ? and ?" +
-        " and a.HMCD in (select hmcd from km8430 where ktkey like ? ) " +
+        " and a.MCGCD=? and a.MCCD=? " +
         "group by a.HMCD, b.HMNM, b.MATESIZE, b.LENGTH " + 
         "having " +
         " sum(case when EDDT<=? then ODRQTY else null end) > 0 or" +
@@ -209,12 +213,12 @@ const getKD8440Orders = async (mcgcd, mccds, ymds) => {
         " sum(case when EDDT=? then ODRQTY else null end) > 0 or" +
         " sum(case when EDDT=? then ODRQTY else null end) > 0 or" +
         " sum(case when EDDT=? then ODRQTY else null end) > 0 " + orderby;
-        let kd8430 = await getDatabase(sql, parameters);
+        let kd8450 = await getDatabase(sql, parameters);
 
         // 帳票定義IDデータを取得
         const km8430 = await getKM8430Defids(mcgcd, mccd.MCCD);
 
-        // 内示データに品番毎の在庫情報を取得して付加
+        // 切削オーダーに品番毎の在庫情報を取得して付加
         let kd8460 = await getDatabase(
             "select HMCD, " + 
             "sum(case when MCGCD=? and MCCD=? then ZAIQTY else 0 end) as 'ZAIQTY', " +
@@ -222,7 +226,7 @@ const getKD8440Orders = async (mcgcd, mccds, ymds) => {
             "from kd8460 group by HMCD"
             , [mcgcd, mccd.MCCD]
         );
-        for await (row of kd8430) {
+        for await (row of kd8450) {
             let idx = 0;
             // IREPO帳票IDを付与
             idx = km8430.findIndex(t => t.HMCD === row.HMCD);
@@ -242,11 +246,11 @@ const getKD8440Orders = async (mcgcd, mccds, ymds) => {
             }
         }
         
-        mc.push([mccd, kd8430]);
+        mc.push([mccd, kd8450]);
     }
     return mc;
 };
-exports.getKD8440Orders = getKD8440Orders;
+exports.getKD8450Orders = getKD8450Orders;
 
 // 設備毎の内示データを2週間分取得
 const getKD8440Plans = async (mcgcd, mccds, ymds) => {
@@ -499,6 +503,29 @@ const getReportDefID = async (hmcd, mcgcd, mccd) => {
 };
 exports.getReportDefID = getReportDefID;
 
+// 品番,設備,手配日付から、注文番号[ODRNO],手配状態[ODRSTS],実績数[JIQTY],未来の実績数[FUTUREQTY],過去の実績残数[ZANQTY]を取得するAPI
+const getOdrno = async (hmcd, mcgcd, mccd, eddt, stdt) => {
+    const sql = 
+    "select ODRNO, ODRSTS, sum(JIQTY) as JIQTY from kd8450 " + 
+        `where HMCD='${hmcd}' and MCGCD='${mcgcd}' and MCCD='${mccd}' and EDDT='${eddt}' ` + 
+        "and ODRSTS in ('2','3','4') group by ODRNO, ODRSTS";
+    const kd8450 = await getDatabase(sql);
+    const sql_2 = 
+    "select ifnull(sum(JIQTY), 0) as FUTUREQTY from kd8450 " + 
+        `where HMCD='${hmcd}' and MCGCD='${mcgcd}' and MCCD='${mccd}' and EDDT>'${eddt}' ` + 
+        "and ODRSTS in ('2','3','4') ";
+    const kd8450_2 = await getDatabase(sql_2);
+    kd8450[0].FUTUREQTY = kd8450_2[0].FUTUREQTY;
+    const sql_3 = 
+    "select ifnull(sum(ODRQTY) - sum(JIQTY), 0) as ZANQTY from kd8450 " + 
+        `where HMCD='${hmcd}' and MCGCD='${mcgcd}' and MCCD='${mccd}' and EDDT<'${eddt}' and EDDT between '${stdt}' and '${eddt}' ` + 
+        "and ODRSTS in ('2','3','4') ";
+    const kd8450_3 = await getDatabase(sql_3);
+    kd8450[0].ZANQTY = kd8450_3[0].ZANQTY;
+    return kd8450;
+};
+exports.getOdrno = getOdrno;
+
 // 段取り開始
 exports.dandori = async (userid, odrno, planday, mcgcd, mccd) => {
     const update = await getDatabase(
@@ -509,11 +536,11 @@ exports.dandori = async (userid, odrno, planday, mcgcd, mccd) => {
 };
 
 // 作業開始
-exports.workstart = async (userid, odrno, planday, mcgcd, mccd) => {
+exports.startOrder = async (odrno, mcgcd, mccd) => {
     const update = await getDatabase(
-        "update d0415 set ODRSTS='3', UPDTID=?, WKSTDT=current_timestamp " +
-        "where ODRNO=? and EDDT=? and MCGCD=? and MCCD=?"
-        , [userid, odrno, planday, mcgcd, mccd]
+        "update kd8450 set ODRSTS='3', WKSTDT=current_timestamp " +
+        "where ODRNO=? and MCGCD=? and MCCD=?"
+        , [odrno, mcgcd, mccd]
     );
 };
 

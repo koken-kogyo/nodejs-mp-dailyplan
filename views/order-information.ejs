@@ -38,12 +38,26 @@ QRコード読取
     <div id="gotoswmenu"><a href="javascript:window.close()"><i class="fas fa-home"></i></a></div>
     <input type="hidden" id="mcgcd" name="mcgcd" value="<%= mcgcd %>" />
 
+    
+    <!-- i-Reporter選択 Popup Window -->
+    <div id="irepoPopupWindow" class="popwin-background">
+        <div class="popwin-forward">
+            <div class="popwin-modalbody">
+                新規帳票の呼び出し
+                一時保存帳票の呼び出し（一番古いもの）
+                一時保存帳票の呼び出し（最新のもの）
+                過去帳票の参照（最後に入力完了したもの）    
+            </div>
+            <div id="irepoClose" class="popwin-close">閉じる</div>
+        </div>
+    </div>
+
      <!-- Details -->
     <div id="details">
-    <% if (kd8430) { %>
+    <% if (kd8450) { %>
         <% let tableno = 1; %>
-        <% let mccount = Object.keys(kd8430).length; %>
-        <% kd8430.forEach(function (data) { %>
+        <% let mccount = Object.keys(kd8450).length; %>
+        <% kd8450.forEach(function (data) { %>
             <div id="jump<%= tableno %>"></div>
             <input type="hidden" id="mccd<%= tableno %>" name="mccd<%= tableno %>" value="<%= data[0].MCCD %>" />
             <!-- 設備タイトル -->
@@ -92,7 +106,7 @@ QRコード読取
                         <th width="60px">仕掛</th>
                         <th width="60px">ｽﾄｱ</th>
                         <th width="100px">鋼材長さ</th>
-                        <th width="80px">作業</th>
+                        <th width="80px">ﾁｪｯｸｼｰﾄ</th>
                         
                     </tr>
                     <% data[1].forEach(function (d) { %>
@@ -127,15 +141,94 @@ QRコード読取
     </div>
     </div>
 
+    <!-- 実績入力 Popup Window -->
+    <div id="jiqtyPopupWindow" class="popwin-background">
+        <div id="jiqtyPopup">
+            <div class="popwin-modalbody">
+                <div id="jiqtyPopupTitle">
+                    <div class="center">　　　実績入力</div>
+                    <div id="jiqtyClose">閉じる</div>
+                </div>
+                <table id="jiqtyPopupTable">
+                    <tr>
+                        <th>品番</th>
+                        <td class="left" colspan="3" id="popHMCD">-</td>
+                    </tr>
+                    <tr>
+                        <th width="80px">注文番号</th>
+                        <td width="110px" id="popODRNO">--</td>
+                        <th width="80px">手配状態</th>
+                        <td width="110px" id="popODRSTS">--</td>
+                    </tr>
+                    <tr>
+                        <th>注文日付</th>
+                        <td id="popEDDT">--</td>
+                        <th>注文数</th>
+                        <td id="popODRQTY">--</td>
+                    </tr>
+                    <tr>
+                        <th>変更前</th>
+                        <td id="popJIQTY">--</td>
+                        <th>実績数</th>
+                        <td><input type="number" maxlength="4" id="inputJIQTY"></td>
+                        <th style="display: none">以降実績数</th>
+                        <td id="popFUTUREQTY" style="display: none">--</td>
+                    </tr>
+                </table>
+                <input type="hidden" id="popMCCD" name="popmccd" value="" />
+                <table id="jiqtyPopupCalc">
+                    <tr>
+                        <td class="calc-btn"><a href="javascript:w('center','center')" class="padbtn">初</a></td>
+                        <td class="borderless"></td>
+                        <td class="calc-numpad"><a href="javascript:i('7')" class="padnum">7</a></td>
+                        <td class="calc-numpad"><a href="javascript:i('8')" class="padnum">8</a></td>
+                        <td class="calc-numpad"><a href="javascript:i('9')" class="padnum">9</a></td>
+                        <td class="borderless"></td>
+                        <td class="calc-btn"><a href="javascript:equalqty()" class="padbtn">＝</a></td>
+                    </tr>
+                    <tr>
+                        <td class="calc-btn"><a href="javascript:w('left','self-start')" class="padbtn">上</a></td>
+                        <td class="borderless"></td>
+                        <td class="calc-numpad"><a href="javascript:i('4')" class="padnum">4</a></td>
+                        <td class="calc-numpad"><a href="javascript:i('5')" class="padnum">5</a></td>
+                        <td class="calc-numpad"><a href="javascript:i('6')" class="padnum">6</a></td>
+                        <td class="borderless"></td>
+                        <td class="calc-btn"><a href="javascript:w('right','self-start')" class="padbtn">上</a></td>
+                    </tr>
+                    <tr>
+                        <td class="calc-btn"><a href="javascript:w('left','center')" class="padbtn">中</a></td>
+                        <td class="borderless"></td>
+                        <td class="calc-numpad"><a href="javascript:i('1')" class="padnum">1</a></td>
+                        <td class="calc-numpad"><a href="javascript:i('2')" class="padnum">2</a></td>
+                        <td class="calc-numpad"><a href="javascript:i('3')" class="padnum">3</a></td>
+                        <td class="borderless"></td>
+                        <td class="calc-btn"><a href="javascript:w('right','center')" class="padbtn">中</a></td>
+                    </tr>
+                    <tr>
+                        <td class="calc-btn"><a href="javascript:w('left','self-end')" class="padbtn">下</a></td>
+                        <td class="borderless"></td>
+                        <td class="calc-function"><a href="javascript:bs()" class="padlen2">BS</a></td>
+                        <td class="calc-numpad"><a href="javascript:i('0')" class="padnum">0</a></td>
+                        <td class="calc-function"><a href="javascript:clear()" class="padlen1">C</a></td>
+                        <td class="borderless"></td>
+                        <td class="calc-btn"><a href="javascript:w('right','self-end')" class="padbtn">下</a></td>
+                    </tr>
+                </table>
+                <table id="jiqtyPopupButtons">
+                    <td id="jiqtyStart">作業開始</td>
+                    <td id="jiqtyEntry">実績登録</td>
+                    <td id="jiqtyModify">実績訂正</td>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    
     <!-- Footer -->
     <%- include("_footer.ejs", req) %>
     
     <!-- ブラウザ読み込み完了後のJavaScriptを記述 -->
     <script>
-        // 指定した要素の位置までスクロール
-        function jumpToSection(sectionId) {
-            document.getElementById(sectionId).scrollIntoView({block: "center", behavior: "smooth"});
-        }
 
         // ブラウザ読み込み完了後の初期設定
         SetInitialValues();
@@ -143,6 +236,9 @@ QRコード読取
         // ブラウザ読み込み完了後の初期設定
         function SetInitialValues() {
             const myos = myOS(); // OSによってデフォルト表示を切り替える
+            // ポップアップウィンドウを非表示
+            document.getElementById("jiqtyPopupWindow").style.display = "none";
+            document.getElementById("irepoPopupWindow").style.display = "none";
             // テーブルの数分ループ処理
             for (tblno = 1; tblno < 15; tblno++){
                 const tblobj = document.getElementById(`tbl${tblno}`);
@@ -185,10 +281,16 @@ QRコード読取
                             let usedlen = Number("0.0"); // 一週間で使用する鋼材長さを集計
                             for (var k=0; k<5; k++) {
                                 if (!isNaN(tblobj.rows[i].cells[j+k].innerHTML)) {
+                                    // 3.1
                                     if (tblobj.rows[i].cells[j+k].className != "s4") {
                                         let qty = Number(tblobj.rows[i].cells[j+k].innerHTML);
                                         usedlen += (productlen + thickness) * qty;
                                         usedlenttl += (productlen + thickness) * qty;
+                                    }
+                                    // 3.2 イベントハンドラー（実績入力ポップアップ呼び出し）
+                                    if (tblobj.rows[i].cells[j+k].innerHTML != "") {
+                                        const strQTY = tblobj.rows[i].cells[j+k].innerHTML;
+                                        tblobj.rows[i].cells[j+k].innerHTML = `<a href="javascript:jissekiPopup(${tblno},${i},${j+k})">` + strQTY + "</a>" ;
                                     }
                                 }
                             }
@@ -217,9 +319,9 @@ QRコード読取
                         tblobj.rows[i + 1].style.backgroundColor = (colorno == 0) ? "#FEFEFE" : "#ECECEC";
                         // ６．鋼材情報行は一旦非表示
                         tblobj.rows[i + 1].style.display = "none";
-                        // ７．最終列にイベントハンドラー（i-Repo呼び出し）
+                        // ７．イベントハンドラー（i-Repo呼び出し）
                         if (tblobj.rows[i].cells[endcol].innerHTML != "") {
-                            tblobj.rows[i].cells[endcol].innerHTML = `<a href="javascript:iReporter(${tblno},${i})" class="btn-irepo">` + "開始" + "</a>" ;
+                            tblobj.rows[i].cells[endcol].innerHTML = `<a href="javascript:iReporter(${tblno},${i})" class="btn-irepo">` + "記入" + "</a>" ;
                         }
                         // ８．列(TD)の非表示化
                         tblobj.rows[i].cells[2].style.display = "none";                 // 材料
@@ -254,6 +356,11 @@ QRコード読取
             newCell.appendChild(newText);
             if (colspan != "") newCell.setAttribute("colspan", colspan);
             if (name != "") newCell.className = name;
+        }
+
+        // 指定した要素の位置までスクロール
+        function jumpToSection(sectionId) {
+            document.getElementById(sectionId).scrollIntoView({block: "center", behavior: "smooth"});
         }
 
         // 在庫状況の表示
@@ -322,6 +429,129 @@ QRコード読取
                 }
             }
         }
+
+        /* ポップアップ関連 ここから */
+            // イベントリスナー（フォーカス時全選択）（アロー関数編）
+            const textBox = document.getElementById("inputJIQTY");
+            textBox.addEventListener("focus", event => event.target.select());
+
+            // 実績入力ポップアップの起動
+            async function jissekiPopup(tblno, row, col) {
+                // 呼び出し元の基本情報取得
+                const mcgcd = document.getElementById("mcgcd").value;
+                const mccd = document.getElementById(`mccd${tblno}`).value;
+                const tblobj = document.getElementById(`tbl${tblno}`);
+                const hmcd = tblobj.rows[row].cells[0].innerText;
+                const stdttext = tblobj.rows[0].cells[2].innerText;
+                const eddttext = tblobj.rows[0].cells[col].innerText;
+                const d = new Date();
+                const stdt = d.getFullYear() + "-" + stdttext.replace("/", "-");
+                const eddt = d.getFullYear() + "-" + eddttext.replace("/", "-");
+                const odrqty = tblobj.rows[row].cells[col].innerText;
+                // 品番,設備,手配日付から、注文番号[ODRNO],手配状態[ODRSTS],実績数[JIQTY],未来の実績数[FUTUREQTY],過去の実績残数[ZANQTY]を取得するAPI
+                fetch(`/mysqlsv/getOdrno/${hmcd}:${mcgcd}:${mccd}:${eddt}:${stdt}:`)
+                .then(response => response.json())
+                .then(data => {
+                    // タップした行から4行前の行を最上部にスクロール
+                    if (row > 4) {
+                        tblobj.rows[row - 4].scrollIntoView({block: "start", behavior: "smooth"});
+                        tblobj.rows[row].cells[col].classList.add("highlight"); // タップしたセルが分かるようハイライトを追加
+                    }
+                    // ポップアップウィンドウに値をセット
+                    const odrno = data.ODRNO;
+                    const odrsts = data.ODRSTS;
+                    document.getElementById("popHMCD").innerText = hmcd;
+                    document.getElementById("popODRNO").innerText = odrno;
+                    document.getElementById("popODRSTS").innerText = (odrsts=="2") ? "着手前(確定)" : (odrsts=="3") ? "着手中" : (odrsts=="4") ? "完了" : (odrsts=="9") ? "取消" : "不明";
+                    document.getElementById("popEDDT").innerText = eddttext;
+                    document.getElementById("popODRQTY").innerText = odrqty;
+                    document.getElementById("popJIQTY").innerText = data.JIQTY;
+                    document.getElementById("popFUTUREQTY").innerText = data.FUTUREQTY;
+                    document.getElementById("popMCCD").value = mccd;
+                    document.getElementById("inputJIQTY").value = "";
+                    // 使用可能ボタンを判定
+                    const startObj = document.getElementById("jiqtyStart");
+                    const finishObj = document.getElementById("jiqtyEntry");
+                    const modifyObj = document.getElementById("jiqtyModify");
+                    startObj.classList.remove("disable");
+                    finishObj.classList.remove("disable");
+                    modifyObj.classList.remove("disable");
+                    if (odrsts == "2") {
+                        if (Number(data.ZANQTY) != 0) startObj.classList.add("disable");
+                        if (Number(data.ZANQTY) != 0) finishObj.classList.add("disable");
+                        modifyObj.classList.add("disable");
+                    } else if (odrsts == "3") {
+                        startObj.classList.add("disable");
+                        if (Number(data.JIQTY) == 0) modifyObj.classList.add("disable");
+                    } else if (odrsts == "4") {
+                        startObj.classList.add("disable");
+                        finishObj.classList.add("disable");
+                        if (Number(data.FUTUREQTY) != 0) modifyObj.classList.add("disable");
+                    } else {
+                        startObj.classList.add("disable");
+                        finishObj.classList.add("disable");
+                        modifyObj.classList.add("disable");
+                    }
+                    // イベントリスナー設定
+                    document.getElementById("jiqtyClose").addEventListener("click", () => {
+                        tblobj.rows[row].cells[col].classList.remove("highlight");
+                        popWin.style.display = "none";
+                    });
+                    // 作業開始イベントリスナー設定
+                    startObj.addEventListener("click", () => {
+                        // 着手中[3]にステータス変更処理API
+                        fetch(`/mysqlsv/startOrder/${odrno}:${mcgcd}:${mccd}:`)
+                        .then(res => {if(!res.ok) {throw new Error(`${res.status} ${res.statusText}`);}})
+                        .then(data => {
+                            tblobj.rows[row].cells[col].classList.remove("highlight");
+                            tblobj.rows[row].cells[col].classList.add("s3");
+                            popWin.style.display = "none";
+                        })
+                        .catch(err => {alert(err);});
+                    });
+                    // ポップアップウィンドウを表示
+                    const popWin = document.getElementById("jiqtyPopupWindow");
+                    popWin.style.display = "flex";
+                }); 
+            }
+            // 表示されているポップアップウィンドウの場所を変更
+            function w(justifyname, alignname) {
+                const popWin = document.getElementById("jiqtyPopupWindow");
+                popWin.style.justifyContent = justifyname;
+                popWin.style.alignItems = alignname;
+            }
+            // 数値キーパッド処理
+            function i(numpad) {
+                const inputBox = document.getElementById("inputJIQTY");
+                if (inputBox.value.length >= 4) return;
+                inputBox.value += numpad;
+            }
+            // BS処理
+            function bs() {
+                const inputBox = document.getElementById("inputJIQTY");
+                inputBox.value = inputBox.value.slice(0, inputBox.value.length - 1);
+            }
+            // C処理
+            function clear() {
+                document.getElementById("inputJIQTY").value = "";
+                document.getElementById("inputJIQTY").focus();
+            }
+            // イイコール＝処理
+            function equalqty() {
+                document.getElementById("inputJIQTY").value = document.getElementById("popODRQTY").innerText
+            }
+            // 実績登録
+            function orderEntry() {
+
+            }
+            // 実績訂正
+            function orderModify() {
+
+            }
+
+        /* ポップアップ関連 ここまで */
+
+
         // i-Reporter の起動
         async function iReporter(tblno, row) {
             // 呼び出し元の基本情報取得

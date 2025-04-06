@@ -41,6 +41,150 @@ a {
     /* width: 30px; */
     color: #eee;
 }
+/* =========================================================================== */
+/*  ポップアップウィンドウ
+/* =========================================================================== */
+.popwin-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 0;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(0,0,0,.5);
+    z-index: 2;
+}
+.popwin-modalbody {
+    display: grid;
+}
+#jiqtyPopup {
+    border-radius: 5px;
+    width: 400px;
+    background-color: #fff;
+}
+#jiqtyPopupCalc {
+    margin: 10px auto;
+}
+#jiqtyPopupTitle {
+    display: flex;
+    color: rgb(255, 255, 255, 1);
+    background: rgb(50, 50, 50, 1);
+    height: 40px;
+    border-top-right-radius: 5px;
+    border-top-left-radius: 5px;
+    vertical-align: middle;
+}
+#jiqtyPopupTitle .center {
+    margin: auto;
+    font-size: x-large;
+}
+#jiqtyClose {
+    cursor: pointer;
+    margin: auto 0px;
+    padding: 5px;
+    font-size: medium;
+}
+#jiqtyPopup tr {
+    background-color: #FEFEFE;
+    height: 2.5rem;
+}
+#jiqtyPopup th {
+    border: solid 0.5px #1414141c;
+    border-radius: 5px;
+    background-color: rgb(225, 238, 253);
+}
+#jiqtyPopup th a {
+    display: inline-block;
+    padding: 10px 7px;
+}
+#jiqtyPopup td {
+    border: solid 0.5px #1414141c;
+    border-radius: 5px;
+    text-align: center;
+    vertical-align: middle;
+    padding: 2px 5px ;
+}
+#jiqtyPopup .left {
+    text-align: left;
+    padding-left: 15px;
+}
+#popHMCD {
+    font-size: x-large;
+    font-weight: 800;
+}
+#jiqtyPopup .borderless {
+    border: solid 0px;
+}
+#jiqtyPopup td a {
+    display: inline-block;
+}
+.padnum {
+    padding: 7px 19px;
+}
+.padlen1 {
+    padding: 10px 18px;
+}
+.padlen2 {
+    padding: 10px 10px;
+}
+.padbtn {
+    padding: 16px 12px;
+}
+#inputJIQTY {
+    outline: none;
+    font-size: xx-large;
+    width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: right;
+}
+.calc-numpad {
+    height: 60px;
+    width: 60px;
+    color: rgb(225, 238, 253);
+    background-color: rgba(0, 171, 250, 0.5);
+    font-size: 2.5rem;
+}
+.calc-function {
+    height: 60px;
+    width: 60px;
+    color: rgb(225, 238, 253);
+    background-color: rgba(250, 163, 50, 0.6);
+    font-size: 2.0rem;
+}
+.calc-btn {
+    height: 60px;
+    width: 40px;
+    color: rgb(50, 50, 50, 0.8);
+    background-color: rgba(200, 200, 200, 0.3);
+    font-size: 1.0rem;
+}
+#jiqtyPopupButtons {
+    cursor: pointer;
+    text-align: center;
+    vertical-align: bottom;
+    margin-bottom: 5px;
+    margin-inline: 5px;
+    color: rgb(50, 50, 50, 0.8);
+    font-size: x-large;
+    font-weight: bolder;
+}
+#jiqtyStart {
+    height: 40px;
+    background-color: rgba(179, 247, 188, 0.6);
+}
+#jiqtyEntry {
+    height: 40px;
+    background-color: rgba(160, 160, 160, 0.4);
+}
+#jiqtyModify {
+    background-color: rgba(235, 38, 38, 0.404);
+}
+#jiqtyPopupButtons .disable {
+    display: none;
+}
 /* === Details ================================================================ */
 #details {
     padding-top: 70px;
@@ -66,41 +210,7 @@ a {
     vertical-align: text-bottom;
     margin-bottom: -3px;
 }
-th a {
-    display: inline-block;
-    padding: 10px 7px;
-}
-td a {
-    display: inline-block;
-    padding: 6px 6px;
-}
-a li {
-    border-radius: 3px;
-    background-color: black;
-    color: #eee;
-}
-a li:hover {
-    background-color: #ddd;
-}
-.allow {
-    border-radius: 3px;
-    background-color: rgb(40, 40, 40);
-    width: 30px;
-    color: #eee;
-}
-.allow:hover {
-    border-radius: 3px;
-    background-color: rgb(24, 94, 164);
-    width: 30px;
-    color: #eee;
-}
-.noallow {
-    border-radius: 3px;
-    background-color: rgb(164, 164, 164);
-    width: 30px;
-    color: #eee;
-}
-li {
+#details li {
     display: inline-block;
     color: white;
     list-style: none;
@@ -109,27 +219,61 @@ li {
     width: 48px;
     text-align: center;
 }
-table {
+#details a li {
+    border-radius: 3px;
+    background-color: black;
+    color: #eee;
+}
+#details a li:hover {
+    background-color: #ddd;
+}
+#details .allow {
+    border-radius: 3px;
+    background-color: rgb(40, 40, 40);
+    width: 30px;
+    color: #eee;
+}
+#details .allow:hover {
+    border-radius: 3px;
+    background-color: rgb(24, 94, 164);
+    width: 30px;
+    color: #eee;
+}
+#details .noallow {
+    border-radius: 3px;
+    background-color: rgb(164, 164, 164);
+    width: 30px;
+    color: #eee;
+}
+#details table {
     font-size: 0.8rem;
     margin: auto;
 }
-th {
-    border: solid 0.5px #1414141c;
-    background-color: rgb(225, 238, 253);
-}
-.tr2 {
-    height: 1.25rem;
-}
-tr {
+#details tr {
     background-color: #FEFEFE;
     height: 2.5rem;
 }
-td {
+#details .tr2 {
+    height: 1.25rem;
+}
+#details th {
+    border: solid 0.5px #1414141c;
+    background-color: rgb(225, 238, 253);
+}
+#details th a {
+    display: inline-block;
+    padding: 10px 7px;
+}
+#details td {
     text-align: center;
     width: 40px;
     border: solid 0.5px #1414141c;
     padding: 2px 5px ;
     vertical-align: middle;
+}
+#details td a {
+    display: inline-block;
+    padding: 8px 8px;
 }
 .lef {
     text-align: left;
@@ -173,6 +317,14 @@ td {
     0%{ color : rgba(71, 71, 59, 1.0);   background:rgba(241, 198, 198, 0.8) }
   100%{ color : rgba(255, 255, 0, 1.0); background:rgba(236, 48, 34, 0.8)   }
 }
+.highlight {
+    animation: blinkAnimeHighlight 1.0s  infinite alternate;
+}
+@keyframes blinkAnimeHighlight {
+    0%{ color : rgba(71, 71, 59, 1.0);   background:rgba(241, 241, 241, 0.8) }
+  100%{ color : rgba(0, 0, 0, 1.0); background:rgba(255, 255, 0, 1.0)   }
+}
+
 .input-number-qty {
     width: 2.5em;
 }
