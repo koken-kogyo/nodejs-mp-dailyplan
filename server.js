@@ -195,7 +195,7 @@ app.get("/mysqlsv/getOdrno/:args", async (req, res, next) => {
     const args = req.params.args;
     const hmcd = args.split(":")[0];
     const mcgcd = args.split(":")[1];
-    const mccd = args.split(":")[2];
+    const mccd = args.split(":")[2]; 
     const eddt = args.split(":")[3];
     const stdt = args.split(":")[4];
     const kd8450 = await mysqlHandler.getOdrno(hmcd, mcgcd, mccd, eddt, stdt);
@@ -216,6 +216,21 @@ app.get("/mysqlsv/startOrder/:args", async function (req, res, next) {
     }
 });
 
+// API 実績登録
+app.get("/mysqlsv/finishOrder/:args", async function (req, res, next) {
+    const args = req.params.args;
+    const odrno = args.split(":")[0];
+    const mcgcd = args.split(":")[1];
+    const mccd = args.split(":")[2];
+    const jiqty = Number(args.split(":")[3]);
+    try {
+        await mysqlHandler.finishOrder(odrno, mcgcd, mccd, jiqty);
+        res.status(200).end();
+    } catch (err) {
+        next(err);
+    }
+});
+
 // API IREPOSVのPostgreSQLからview_report_defidの編集中ステータスの帳票IDを取得
 // （パラメータ3個：1帳票につき複数品番のパターン）
 // （パラメータ1個：1帳票のパターン）
@@ -225,7 +240,7 @@ app.get("/mysqlsv/startOrder/:args", async function (req, res, next) {
 // curl http://pc090n:53030/ireposv/getHoldid/1509:RD479-63171-1:16:
 app.get("/ireposv/getHoldid/:args", async (req, res, next) => {
     const args = req.params.args;
-    return res.status(200).json(0);//NabeV2
+    // return res.status(200).json(0);//NabeV2
     if (args.split(":").length == 1) {
         const defid = args.split(":")[0];
         const viewreport = await pgHandler.getHoldReportIDSingle(defid);
@@ -352,7 +367,7 @@ app.use((err, req, res, next) => {
 mysqlHandler.connect
 .then(() => {
     console.log(`MySQL Database [${mysqlHandler.database}] Connected!`);
-    // app.listen(53030); // ←HTTPのCurlでのテストをする場合https化しない
+    //app.listen(53030); // ←HTTPのCurlでのテストをする場合https化しない
     server.listen(PORT, () => {console.log(`Koken MP-APP listen on Port:${PORT}`)});
 }).catch((err) => {
     console.log("MySQL Database Connection Error!");

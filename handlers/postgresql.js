@@ -12,8 +12,9 @@ const getDatabase = async (sql, param) => {
 
 // 最新の編集中の帳票IDを取得（編集中がない場合は0）
 const getHoldReportIDSingle = async (defid) => {
-    if (await isViewReport(defid) == 0) {
-        return 0;
+    const ans = await isViewReport(defid);
+    if (ans.rows[0].repid == "0") {
+        return ans;
     } else {
         const sql = "select COALESCE(max(rep_top_id),0) as repid " + 
             `from view_report_${defid} ` + 

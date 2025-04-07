@@ -163,9 +163,17 @@ exports.getMCOrderby = getMCOrderby;
 // 設備毎の注文データを2週間分取得
 const getKD8450Orders = async (mcgcd, mccds, ymds) => {
     const orderby = getMCOrderby(mcgcd);
+    let appendsql = "";
+    for (let i=0; i<=9; i++){
+        appendsql +=
+        `,min(case when EDDT='${ymds[i]}' and ` + 
+            "ifnull(WKSTDT, STR_TO_DATE('1900-01-01', '%Y-%m-%d')) > " + 
+            "ifnull(WKEDDT, STR_TO_DATE('1900-01-01', '%Y-%m-%d')) then '1' " + 
+            `else case when EDDT='${ymds[i]}' then ODRSTS else null end end) as 'STS${i}'`;
+    }
     const mc = [];
     for (let mccd of mccds) {
-        let parameters = [...ymds, ...ymds, ...ymds, ymds[0], ymds[9], mcgcd, mccd.MCCD, ...ymds];
+        let parameters = [...ymds, ...ymds, ymds[0], ymds[9], mcgcd, mccd.MCCD, ...ymds];
         let sql = "select a.HMCD,b.HMNM,b.MATESIZE,b.LENGTH" +
         ",max(ifnull(b.MATERIALLEN,0)) as 'MATERIALLEN'" + 
         ",sum(case when EDDT=? then ODRQTY else null end) as 'D0'" +
@@ -188,16 +196,7 @@ const getKD8450Orders = async (mcgcd, mccds, ymds) => {
         ",sum(case when EDDT=? and ODRSTS in ('2','31') then ODRQTY else 0 end) as 'D7Z'" +
         ",sum(case when EDDT=? and ODRSTS in ('2','31') then ODRQTY else 0 end) as 'D8Z'" +
         ",sum(case when EDDT=? and ODRSTS in ('2','31') then ODRQTY else 0 end) as 'D9Z'" +
-        ",min(case when EDDT=? then ODRSTS else null end) as 'STS0'" +
-        ",min(case when EDDT=? then ODRSTS else null end) as 'STS1'" +
-        ",min(case when EDDT=? then ODRSTS else null end) as 'STS2'" +
-        ",min(case when EDDT=? then ODRSTS else null end) as 'STS3'" +
-        ",min(case when EDDT=? then ODRSTS else null end) as 'STS4'" +
-        ",min(case when EDDT=? then ODRSTS else null end) as 'STS5'" +
-        ",min(case when EDDT=? then ODRSTS else null end) as 'STS6'" +
-        ",min(case when EDDT=? then ODRSTS else null end) as 'STS7'" +
-        ",min(case when EDDT=? then ODRSTS else null end) as 'STS8'" +
-        ",min(case when EDDT=? then ODRSTS else null end) as 'STS9' " +
+        appendsql + " " + 
         "from kd8450 a, km8430 b where a.HMCD = b.HMCD" +
         " and a.EDDT between ? and ?" +
         " and a.MCGCD=? and a.MCCD=? " +
@@ -508,18 +507,18 @@ const getOdrno = async (hmcd, mcgcd, mccd, eddt, stdt) => {
     const sql = 
     "select ODRNO, ODRSTS, sum(JIQTY) as JIQTY from kd8450 " + 
         `where HMCD='${hmcd}' and MCGCD='${mcgcd}' and MCCD='${mccd}' and EDDT='${eddt}' ` + 
-        "and ODRSTS in ('2','3','4') group by ODRNO, ODRSTS";
+        "and ODRSTS in ('1','2','3','4') group by ODRNO, ODRSTS";
     const kd8450 = await getDatabase(sql);
     const sql_2 = 
     "select ifnull(sum(JIQTY), 0) as FUTUREQTY from kd8450 " + 
         `where HMCD='${hmcd}' and MCGCD='${mcgcd}' and MCCD='${mccd}' and EDDT>'${eddt}' ` + 
-        "and ODRSTS in ('2','3','4') ";
+        "and ODRSTS in ('1','2','3','4') ";
     const kd8450_2 = await getDatabase(sql_2);
     kd8450[0].FUTUREQTY = kd8450_2[0].FUTUREQTY;
     const sql_3 = 
     "select ifnull(sum(ODRQTY) - sum(JIQTY), 0) as ZANQTY from kd8450 " + 
         `where HMCD='${hmcd}' and MCGCD='${mcgcd}' and MCCD='${mccd}' and EDDT<'${eddt}' and EDDT between '${stdt}' and '${eddt}' ` + 
-        "and ODRSTS in ('2','3','4') ";
+        "and ODRSTS in ('1','2','3') ";
     const kd8450_3 = await getDatabase(sql_3);
     kd8450[0].ZANQTY = kd8450_3[0].ZANQTY;
     return kd8450;
@@ -537,21 +536,59 @@ exports.dandori = async (userid, odrno, planday, mcgcd, mccd) => {
 
 // 作業開始
 exports.startOrder = async (odrno, mcgcd, mccd) => {
+    const kd8430 = await getDatabase("select EDDT, HMCD from kd8430 where ODRNO=?",[odrno]);
     const update = await getDatabase(
-        "update kd8450 set ODRSTS='3', WKSTDT=current_timestamp " +
-        "where ODRNO=? and MCGCD=? and MCCD=?"
-        , [odrno, mcgcd, mccd]
-    );
+        "update kd8450 set ODRSTS='1', WKSTDT=current_timestamp " +
+        "where HMCD=? and EDDT=? and MCGCD=? and MCCD=? and ODRSTS='2'"
+        , [kd8430[0].HMCD, kd8430[0].EDDT, mcgcd, mccd]);
 };
 
-// 作業終了
-exports.workend = async (jiqty, userid, odrno, planday, mcgcd, mccd) => {
-    const update = await getDatabase(
-        "update d0415 set JIQTY=?, ODRSTS='4', UPDTID=?, WKEDDT=current_timestamp " +
-        "where ODRNO=? and EDDT=? and MCGCD=? and MCCD=?"
-        , [jiqty, userid, odrno, planday, mcgcd, mccd]
-    );
+
+
+
+
+
+// 実績登録(品目指定で登録する)
+exports.finishOrder = async (odrno, mcgcd, mccd, jiqty) => {
+    let countdownQty = jiqty;
+    const kd8430 = await getDatabase("select EDDT, HMCD from kd8430 where ODRNO=?",[odrno]);
+    const kd8450 = await getDatabase("select ODRNO, LOTSEQ, ODRQTY, JIQTY from kd8450 " + 
+        "where HMCD=? and EDDT>=? and MCGCD=? and MCCD=? and ODRSTS<>'4' and ODRSTS<>'9' " + 
+        "order by EDDT, LOTSEQ"
+        , [kd8430[0].HMCD, kd8430[0].EDDT, mcgcd, mccd]);
+    // 切削オーダーファイルをループして実績数の消込
+    for await (row of kd8450) {
+        let needQty = row.ODRQTY - row.JIQTY;
+        if (countdownQty >= needQty) {
+            // odrqtyで更新 countdownQty--
+            const update = await getDatabase(
+                "update kd8450 set JIQTY=ODRQTY, ODRSTS='4', WKEDDT=current_timestamp " +
+                "where ODRNO=? and LOTSEQ=?", [row.ODRNO, row.LOTSEQ]
+            );
+            countdownQty -= needQty;
+        } else {
+            // jiqtyに足して更新 countdownQty=0
+            const update = await getDatabase(
+                "update kd8450 set JIQTY=?, ODRSTS='3', WKEDDT=current_timestamp " +
+                "where ODRNO=? and LOTSEQ=?"
+                , [row.JIQTY+countdownQty, row.ODRNO, row.LOTSEQ]
+            );
+            countdownQty = 0;
+        }
+        if (countdownQty <= 0) break;
+    }
+    // 手配以上の実績の場合は仕掛り在庫に投入
+    if (countdownQty > 0) {
+        // 在庫テーブルが存在するかチェック
+        // 在庫テーブルに追加
+    }
+
 };
+
+
+
+
+
 
 // 炉中洩れ検査日報登録
 exports.insertKD8220 = async (id, args, bads, scraps, others) => {

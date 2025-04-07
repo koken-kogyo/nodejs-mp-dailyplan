@@ -61,7 +61,7 @@ a {
 }
 #jiqtyPopup {
     border-radius: 5px;
-    width: 400px;
+    width: 460px;
     background-color: #fff;
 }
 #jiqtyPopupCalc {
@@ -271,11 +271,40 @@ a {
     padding: 2px 5px ;
     vertical-align: middle;
 }
+/* リンク基本 */
 #details td a {
-    display: inline-block;
+    font-size: 1.2em;
+    font-weight: bold;
+    text-decoration: none;
+}
+/* APEM連携用リンク */
+#details .td-apem-a {
+    padding: 8px 8px 8px 3px;
+}
+/* 実績入力リンク */
+#details .td-qty1-a {
+    padding: 8px 16px;
+}
+#details .td-qty2-a {
+    padding: 8px 12px;
+}
+#details .td-qty3-a {
     padding: 8px 8px;
 }
-.lef {
+#details .td-qty4-a {
+    padding: 8px 0px;
+}
+/* チェックシート記入ボタン */
+#details .btn-irepo {
+    background: rgba(234, 146, 75, 0.8);
+    border-radius: 0.4rem;
+    box-shadow: 2px 2px 4px gray;
+    text-align: center;
+    font-size: small;
+    color: white;
+    padding: 8px 15px;
+}
+#details .lef {
     text-align: left;
 }
 .nodata {
@@ -286,24 +315,24 @@ a {
     width: 865px;
     margin: 0 auto;
 }
+.s1 {
+    border-radius: 3px;
+    animation: blinkAnimeS1 0.8s  infinite alternate; /*ease infinite;*/
+}
+@keyframes blinkAnimeS1 {
+    0%{ color : rgba(230, 250, 230, 0.8);   background:rgba(20, 120, 20, 0.8) }
+  100%{ color : rgba(0, 0, 0, 0.8); background:rgba(100, 250, 120, 0.8)   }
+}
 .s2 {
     color:rgb(0, 0, 0);
 }
 .s3 {
     border-radius: 3px;
-    animation: blinkAnimeS3 0.8s  infinite alternate; /*ease infinite;*/
-}
-@keyframes blinkAnimeS3{
-    0%{ color : rgba(230, 250, 230, 0.8);   background:rgba(20, 120, 20, 0.8) }
-  100%{ color : rgba(0, 0, 0, 0.8); background:rgba(100, 250, 120, 0.8)   }
+    background: linear-gradient(to bottom, rgb(250, 250, 250, 0.1) 40%, rgb(100, 100, 100, 0.4) 80%);
 }
 .s4 {
     border-radius: 3px;
     background-color: rgb(100,100,100,0.4);
-}
-.s5 {
-    border-radius: 3px;
-    background: linear-gradient(to bottom, rgb(250, 250, 250, 0.1) 40%, rgb(100, 100, 100, 0.4) 80%);
 }
 .s9 {
     color:rgb(0, 0, 0);
@@ -327,14 +356,4 @@ a {
 
 .input-number-qty {
     width: 2.5em;
-}
-
-#details .btn-irepo {
-    background: rgba(234, 146, 75, 0.8);
-    border-radius: 0.4rem;
-    box-shadow: 2px 2px 4px gray;
-    text-align: center;
-    font-size: small;
-    color: white;
-    width: 80%;
 }
