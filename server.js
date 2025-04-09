@@ -231,6 +231,22 @@ app.get("/mysqlsv/finishOrder/:args", async function (req, res, next) {
     }
 });
 
+// API 実績訂正
+app.get("/mysqlsv/modifyOrder/:args", async function (req, res, next) {
+    const args = req.params.args;
+    const odrno = args.split(":")[0];
+    const mcgcd = args.split(":")[1];
+    const mccd = args.split(":")[2];
+    const preqty = Number(args.split(":")[3]);
+    const modqty = Number(args.split(":")[4]);
+    try {
+        await mysqlHandler.modifyOrder(odrno, mcgcd, mccd, preqty, modqty);
+        res.status(200).end();
+    } catch (err) {
+        next(err);
+    }
+});
+
 // API IREPOSVのPostgreSQLからview_report_defidの編集中ステータスの帳票IDを取得
 // （パラメータ3個：1帳票につき複数品番のパターン）
 // （パラメータ1個：1帳票のパターン）

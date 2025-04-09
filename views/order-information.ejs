@@ -100,9 +100,9 @@ QRコード読取
             <% } else { %>
                 <table id="tbl<%= tableno %>">
                     <tr>
-                        <th width="140px">品番</th>
-                        <th width="170px">品目名称</th>
-                        <th width="60px">材料</th>
+                        <th width="160px">品番</th>
+                        <th width="150px">品目名称</th>
+                        <th width="40px">材料</th>
                         <th width="60px">長さ</th>
                         <% ymds.forEach(function (e) { %>
                             <th><%= myFunc.a(e); %></th>
@@ -128,16 +128,16 @@ QRコード読取
                         <td class="lef"><%= d.HMNM %></td>
                         <td class=""><%= d.MATESIZE %></td>
                         <td class=""><%= d.LENGTH %></td>
-                        <td class="s<%= d.STS0 %>"><%= d.D0 %></td>
-                        <td class="s<%= d.STS1 %>"><%= d.D1 %></td>
-                        <td class="s<%= d.STS2 %>"><%= d.D2 %></td>
-                        <td class="s<%= d.STS3 %>"><%= d.D3 %></td>
-                        <td class="s<%= d.STS4 %>"><%= d.D4 %></td>
-                        <td class="s<%= d.STS5 %>"><%= d.D5 %></td>
-                        <td class="s<%= d.STS6 %>"><%= d.D6 %></td>
-                        <td class="s<%= d.STS7 %>"><%= d.D7 %></td>
-                        <td class="s<%= d.STS8 %>"><%= d.D8 %></td>
-                        <td class="s<%= d.STS9 %>"><%= d.D9 %></td>
+                        <td class="s<%= d.STS0 %> td-qty"><%= d.D0 %></td>
+                        <td class="s<%= d.STS1 %> td-qty"><%= d.D1 %></td>
+                        <td class="s<%= d.STS2 %> td-qty"><%= d.D2 %></td>
+                        <td class="s<%= d.STS3 %> td-qty"><%= d.D3 %></td>
+                        <td class="s<%= d.STS4 %> td-qty"><%= d.D4 %></td>
+                        <td class="s<%= d.STS5 %> td-qty"><%= d.D5 %></td>
+                        <td class="s<%= d.STS6 %> td-qty"><%= d.D6 %></td>
+                        <td class="s<%= d.STS7 %> td-qty"><%= d.D7 %></td>
+                        <td class="s<%= d.STS8 %> td-qty"><%= d.D8 %></td>
+                        <td class="s<%= d.STS9 %> td-qty"><%= d.D9 %></td>
                         <td class=""><%= Number(d.D0Z)+Number(d.D1Z)+Number(d.D2Z)+Number(d.D3Z)+Number(d.D4Z)+Number(d.D5Z)+Number(d.D6Z)+Number(d.D7Z)+Number(d.D8Z)+Number(d.D9Z) %></td>
                         <td class=""><%= (d.ZAIQTY == 0) ? "" : Number(d.ZAIQTY).toLocaleString(); %></td>
                         <td class=""><%= (d.STORE == 0) ? "" : Number(d.STORE).toLocaleString(); %></td>
@@ -233,7 +233,7 @@ QRコード読取
                 <table id="jiqtyPopupButtons">
                     <td id="jiqtyStart" onclick="orderStart()">作業開始</td>
                     <td id="jiqtyEntry" onclick="orderEntry()">実績登録</td>
-                    <td id="jiqtyModify">実績訂正</td>
+                    <td id="jiqtyModify" onclick="orderModify()">実績訂正</td>
                 </table>
             </div>
         </div>
@@ -309,7 +309,7 @@ QRコード読取
                                     if (tblobj.rows[i].cells[j+k].innerText != "") {
                                         const strQTY = tblobj.rows[i].cells[j+k].innerText;
                                         tblobj.rows[i].cells[j+k].innerHTML =
-                                        `<a href="javascript:jissekiPopup(${tblno},${i},${j+k})" class="td-qty${strQTY.length}-a">` + strQTY + "</a>" ;
+                                        `<a href="javascript:jissekiPopup(${tblno},${i},${j+k})" class="td-qty-a">` + strQTY + "</a>" ;
                                     }
                                 }
                             }
@@ -343,7 +343,6 @@ QRコード読取
                             tblobj.rows[i].cells[endcol].innerHTML = `<a href="javascript:iReporter(${tblno},${i})" class="btn-irepo">` + "記入" + "</a>" ;
                         }
                         // ８．列(TD)の非表示化
-                        tblobj.rows[i].cells[2].style.display = "none";                 // 材料
                         tblobj.rows[i].cells[3].style.display = "none";                 // 長さ
                         tblobj.rows[i].cells[endcol - 1].style.display = "none";        // 鋼材長さ
                         if (myos != "windows") {
@@ -355,7 +354,6 @@ QRコード読取
                          i++;
                     }
                     // ヘッダー(TH)の非表示化
-                    tblobj.rows[0].cells[2].style.display = "none";                     // 材料
                     tblobj.rows[0].cells[3].style.display = "none";                     // 長さ
                     tblobj.rows[0].cells[endcol - 1].style.display = "none";            // 鋼材長さ
                     if (myos != "windows") {
@@ -421,11 +419,9 @@ QRコード読取
             const row = tblobj.rows.length;
             const endcol = tblobj.rows[1].cells.length - 1;
             if (checkDisp.checked == false) {
-                tblobj.rows[0].cells[2].style.display = "none";
-                tblobj.rows[0].cells[3].style.display = "none";
-                tblobj.rows[0].cells[endcol - 1].style.display = "none";
+                tblobj.rows[0].cells[3].style.display = "none";             // 長さ非表示
+                tblobj.rows[0].cells[endcol - 1].style.display = "none";    // 鋼材長さ非表示
             } else {
-                tblobj.rows[0].cells[2].style.display = "";
                 tblobj.rows[0].cells[3].style.display = "";
                 tblobj.rows[0].cells[endcol - 1].style.display = "";
             }
@@ -434,14 +430,12 @@ QRコード読取
                     if (i % 2 == 0) {
                         tblobj.rows[i].style.display = "none";
                     } else {
-                        tblobj.rows[i].cells[2].style.display = "none";
                         tblobj.rows[i].cells[3].style.display = "none";
                         tblobj.rows[i].cells[endcol - 1].style.display = "none";
                     }
                 } else {
                     tblobj.rows[i].style.display = "";
                     if (i % 2 != 0) {
-                        tblobj.rows[i].cells[2].style.display = "";
                         tblobj.rows[i].cells[3].style.display = "";
                         tblobj.rows[i].cells[endcol - 1].style.display = "";
                     }
@@ -455,15 +449,17 @@ QRコード読取
             inputBox.addEventListener("focus", event => event.target.select());
             // （無名関数編）
             inputBox.addEventListener("keydown", function(event) {
-                if (event.key == "Enter") inputBox.blur();});
+                if (event.key == "Enter") inputBox.blur();
+            });
             // 実績入力ポップアップの起動
             async function jissekiPopup(tblno, row, col) {
                 // 呼び出し元の基本情報取得
+                //alert(tblno + " - " + row + ":" +col)
                 let tblobj = document.getElementById(`tbl${tblno}`);
                 let mcgcd = document.getElementById("mcgcd").value;
                 let mccd = document.getElementById(`mccd${tblno}`).value;
                 let hmcd = tblobj.rows[row].cells[0].innerText;
-                let stdttext = tblobj.rows[0].cells[2].innerText;
+                let stdttext = tblobj.rows[0].cells[4].innerText;
                 let eddttext = tblobj.rows[0].cells[col].innerText;
                 let d = new Date();
                 let stdt = d.getFullYear() + "-" + stdttext.replace("/", "-");
@@ -476,14 +472,15 @@ QRコード読取
                 .then(response => response.json())
                 .then(data => {
                     flgSubmit = false;
-                    // タップした行から4行前の行を最上部にスクロール
+                    /*// タップした行から4行前の行を最上部にスクロール
                     if (row > 4) {
                         tblobj.rows[row - 4].scrollIntoView({block: "start", behavior: "smooth"});
                         tblobj.rows[row].cells[col].classList.add("highlight"); // タップしたセルが分かるようハイライトを追加
                     }
+                    廃止    */
                     // ポップアップウィンドウに値をセット
                     let odrno = data.ODRNO;
-                    let odrsts = tblobj.rows[row].cells[col].className.substr(1,1); //旧：data.ODRSTS;
+                    let odrsts = data.ODRSTS; //旧：tblobj.rows[row].cells[col].className.substr(1,1);
                     document.getElementById("popHMCD").innerText = hmcd;
                     document.getElementById("popODRNO").innerText = odrno;
                     document.getElementById("popODRSTS").innerText = (odrsts=="1") ? "着手中" : (odrsts=="2") ? "着手前" : (odrsts=="3") ? "着手" : (odrsts=="4") ? "完了" : (odrsts=="9") ? "取消" : "不明";
@@ -530,6 +527,7 @@ QRコード読取
                     });
                     // ポップアップウィンドウを表示
                     document.getElementById("jiqtyPopupWindow").style.display = "flex";
+                    inputBox.focus();
                 }); 
             }
             // 表示されているポップアップウィンドウの場所を変更
@@ -591,9 +589,43 @@ QRコード読取
                 })
                 .catch(err => {alert(err);});
             }
+            // 入力ボックスの標準チェック
+            function checkInputBox() {
+                let errmsg = "";
+                if (isNaN(inputBox.value)) errmsg = "数値を入力して下さい";
+                if (inputBox.value == "") errmsg = "実績数を入力して下さい";
+                if (errmsg != "") {
+                    alert(errmsg);
+                    inputBox.focus();
+                    return "false";
+                }
+                return "true";
+            }
             // 実績訂正
             function orderModify() {
-
+                if (checkInputBox() == "false") {return;}
+                let odrno = document.getElementById("popODRNO").innerText;
+                let odrqty = document.getElementById("popODRQTY").innerText;
+                let preqty = document.getElementById("popJIQTY").innerText;
+                if (Number(odrqty) < Number(inputBox.value)) {
+                    alert("正しい数値を入力してください");
+                    inputBox.focus();
+                    return;
+                }
+                let tblno = document.getElementById("popTBLNO").value;
+                let mcgcd = document.getElementById("mcgcd").value;
+                let mccd = document.getElementById("popMCCD").value;
+                let row = document.getElementById("popROW").value;
+                let col = document.getElementById("popCOL").value;
+                const tblobj = document.getElementById(`tbl${tblno}`);
+                const popWin = document.getElementById("jiqtyPopupWindow");
+                fetch(`/mysqlsv/modifyOrder/${odrno}:${mcgcd}:${mccd}:${preqty}:${inputBox.value}:`)
+                .then(res => {if(!res.ok) {throw new Error(`${res.status} ${res.statusText}`);}})
+                .then(data => {
+                    tblobj.rows[row].cells[col].className = "s4";
+                    popWin.style.display = "none";
+                })
+                .catch(err => {alert(err);});
             }
         /* ポップアップ関連 ここまで */
 
@@ -639,7 +671,7 @@ QRコード読取
                             const hmcdparam = encodeURI(`スキャン品番=${hmcd}`);
                             const mateparam = encodeURI(`材料サイズ=${mate}`);
                             const cutparam = encodeURI(`切断長=${cut}`);
-                            const modeparam = encodeURI("処理モード=order"); // 内示モードで帳票を起動
+                            const modeparam = encodeURI("処理モード=order"); // 手配モードで帳票を起動
                             location.href = `${irepourl}.createreport:defid=${defid}` +
                                 `&${hmcdparam}&${mateparam}&${cutparam}&${modeparam}`;
                         } else {

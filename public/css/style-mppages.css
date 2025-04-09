@@ -259,19 +259,18 @@ a {
 #details th {
     border: solid 0.5px #1414141c;
     background-color: rgb(225, 238, 253);
+    position: sticky;
+    top: 40px;
 }
 #details th a {
     display: inline-block;
     padding: 10px 7px;
 }
+/* td基本 */
 #details td {
-    text-align: center;
-    width: 40px;
     border: solid 0.5px #1414141c;
-    padding: 2px 5px ;
-    vertical-align: middle;
+    text-align: center;
 }
-/* リンク基本 */
 #details td a {
     font-size: 1.2em;
     font-weight: bold;
@@ -279,30 +278,35 @@ a {
 }
 /* APEM連携用リンク */
 #details .td-apem-a {
-    padding: 8px 8px 8px 3px;
+    padding: 10px 0 10px 3px;
 }
 /* 実績入力リンク */
-#details .td-qty1-a {
-    padding: 8px 16px;
+#details .td-qty {
+    height: 40px;
+    width: 40px;
+    border: solid 0.5px #1414141c;
+    padding-inline: 2px;
 }
-#details .td-qty2-a {
-    padding: 8px 12px;
+#details .td-qty-a {
+    display: block;
+    padding: 10px 0;
 }
-#details .td-qty3-a {
-    padding: 8px 8px;
-}
-#details .td-qty4-a {
-    padding: 8px 0px;
+/* checksheetリンク */
+#details .td-checksheet {
+    text-align: center;
+    height: 40px;
+    width: 40px;
+    border: solid 0.5px #1414141c;
+    padding-inline: 2px;
 }
 /* チェックシート記入ボタン */
 #details .btn-irepo {
     background: rgba(234, 146, 75, 0.8);
-    border-radius: 0.4rem;
+    border-radius: 0.5em;
     box-shadow: 2px 2px 4px gray;
-    text-align: center;
     font-size: small;
     color: white;
-    padding: 8px 15px;
+    padding: 7px 14px;
 }
 #details .lef {
     text-align: left;

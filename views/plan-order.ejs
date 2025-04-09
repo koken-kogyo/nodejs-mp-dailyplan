@@ -41,6 +41,11 @@ QRコード読取
      <!-- Details -->
     <div id="details">
     <% if (kd8440) { %>
+        <% const apemcontenturl = "http://apemsv/PEMasterEM/docspace/sdk/contentView.do?enc=UTF-8&service=cn%3Ddrep_service%40APEMSV%2Cou%3Dcomponents%2Cdc%3DAPEMEM&workspace=図面検索&condition=全図面検索&item=0%3Aoperator%3AexactlyMatch"; %>
+        <% const apemdownloadurl = "http://apemsv/PEMasterEM/docspace/sdk/download.do?enc=UTF-8&service=cn%3Ddrep_service%40APEMSV%2Cou%3Dcomponents%2Cdc%3DAPEMEM&workspace=図面検索&condition=全図面検索&item=0%3Aoperator%3AexactlyMatch"; %>
+        <% const wsenc = encodeURI("図面検索"); %>
+        <% const condenc = encodeURI("全図面検索"); %>
+
         <% let tableno = 1; %>
         <% let mccount = Object.keys(kd8440).length; %>
         <% kd8440.forEach(function (data) { %>
@@ -81,36 +86,44 @@ QRコード読取
             <% } else { %>
                 <table id="tbl<%= tableno %>">
                     <tr>
-                        <th width="140px">品番</th>
-                        <th width="170px">品目名称</th>
-                        <th width="60px">材料</th>
+                        <th width="160px">品番</th>
+                        <th width="150px">品目名称</th>
+                        <th width="40px">材料</th>
                         <th width="60px">長さ</th>
                         <% ymds.forEach(function (e) { %>
-                            <th><a href="/mp/plan/<%- myFunc.b(e); %>"><%= myFunc.a(e); %></a></th>
+                            <th><%= myFunc.a(e); %></th>
+                            <!-- a href="/mp/plan/<%- myFunc.b(e); %>"><%= myFunc.a(e); %></a -->
                         <% }); %>
                         <th width="60px">注文残</th>
                         <th width="60px">仕掛</th>
                         <th width="60px">ｽﾄｱ</th>
                         <th width="100px">鋼材長さ</th>
-                        <th width="80px">作業</th>
+                        <th width="80px">ﾁｪｯｸｼｰﾄ</th>
                         
                     </tr>
                     <% data[1].forEach(function (d) { %>
                     <tr>
-                        <td class="lef"><%= d.HMCD %></td>
+                        <td class="lef td-big">
+                            <% if (osType == "windows") { %>
+                                <a href="<%= apemcontenturl %>&item=0%3Avalue%3A<%= d.HMCD %>&item=7%3Aoperator%3Aboolean&item=7%3Avalue%3Atrue" class="td-apem-a" target="_blank">
+                            <% } else { %>
+                                <a href="<%= apemdownloadurl %>&item=0%3Avalue%3A<%= d.HMCD %>&item=7%3Aoperator%3Aboolean&item=7%3Avalue%3Atrue" class="td-apem-a" target="_blank">
+                            <% }; %>
+                            <%= d.HMCD %></a>
+                        </td>
                         <td class="lef"><%= d.HMNM %></td>
                         <td class=""><%= d.MATESIZE %></td>
                         <td class=""><%= d.LENGTH %></td>
-                        <td class=""><%= d.D0 %></td>
-                        <td class=""><%= d.D1 %></td>
-                        <td class=""><%= d.D2 %></td>
-                        <td class=""><%= d.D3 %></td>
-                        <td class=""><%= d.D4 %></td>
-                        <td class=""><%= d.D5 %></td>
-                        <td class=""><%= d.D6 %></td>
-                        <td class=""><%= d.D7 %></td>
-                        <td class=""><%= d.D8 %></td>
-                        <td class=""><%= d.D9 %></td>
+                        <td class="td-qty"><%= d.D0 %></td>
+                        <td class="td-qty"><%= d.D1 %></td>
+                        <td class="td-qty"><%= d.D2 %></td>
+                        <td class="td-qty"><%= d.D3 %></td>
+                        <td class="td-qty"><%= d.D4 %></td>
+                        <td class="td-qty"><%= d.D5 %></td>
+                        <td class="td-qty"><%= d.D6 %></td>
+                        <td class="td-qty"><%= d.D7 %></td>
+                        <td class="td-qty"><%= d.D8 %></td>
+                        <td class="td-qty"><%= d.D9 %></td>
                         <td class=""><%= Number(d.D0)+Number(d.D1)+Number(d.D2)+Number(d.D3)+Number(d.D4)+Number(d.D5)+Number(d.D6)+Number(d.D7)+Number(d.D8)+Number(d.D9)-Number(d.ZAIQTY) %></td>
                         <td class=""><%= (d.ZAIQTY == 0) ? "" : Number(d.ZAIQTY).toLocaleString(); %></td>
                         <td class=""><%= (d.STORE == 0) ? "" : Number(d.STORE).toLocaleString(); %></td>
@@ -230,10 +243,9 @@ QRコード読取
                         tblobj.rows[i + 1].style.display = "none";
                         // ７．最終列にイベントハンドラー（i-Repo呼び出し）
                         if (tblobj.rows[i].cells[endcol].innerHTML != "") {
-                            tblobj.rows[i].cells[endcol].innerHTML = `<a href="javascript:iReporter(${tblno},${i})" class="btn-irepo">` + "開始" + "</a>" ;
+                            tblobj.rows[i].cells[endcol].innerHTML = `<a href="javascript:iReporter(${tblno},${i})" class="btn-irepo">` + "記入" + "</a>" ;
                         }
                         // ８．列(TD)の非表示化
-                        tblobj.rows[i].cells[2].style.display = "none";                 // 材料
                         tblobj.rows[i].cells[3].style.display = "none";                 // 長さ
                         tblobj.rows[i].cells[endcol - 1].style.display = "none";        // 鋼材長さ
                         if (myos != "windows") {
@@ -245,7 +257,6 @@ QRコード読取
                          i++;
                     }
                     // ヘッダー(TH)の非表示化
-                    tblobj.rows[0].cells[2].style.display = "none";                     // 材料
                     tblobj.rows[0].cells[3].style.display = "none";                     // 長さ
                     tblobj.rows[0].cells[endcol - 1].style.display = "none";            // 鋼材長さ
                     if (myos != "windows") {
@@ -306,11 +317,9 @@ QRコード読取
             const row = tblobj.rows.length;
             const endcol = tblobj.rows[1].cells.length - 1;
             if (checkDisp.checked == false) {
-                tblobj.rows[0].cells[2].style.display = "none";
-                tblobj.rows[0].cells[3].style.display = "none";
-                tblobj.rows[0].cells[endcol - 1].style.display = "none";
+                tblobj.rows[0].cells[3].style.display = "none";             // 長さ非表示
+                tblobj.rows[0].cells[endcol - 1].style.display = "none";    // 鋼材長さ非表示
             } else {
-                tblobj.rows[0].cells[2].style.display = "";
                 tblobj.rows[0].cells[3].style.display = "";
                 tblobj.rows[0].cells[endcol - 1].style.display = "";
             }
@@ -319,20 +328,19 @@ QRコード読取
                     if (i % 2 == 0) {
                         tblobj.rows[i].style.display = "none";
                     } else {
-                        tblobj.rows[i].cells[2].style.display = "none";
                         tblobj.rows[i].cells[3].style.display = "none";
                         tblobj.rows[i].cells[endcol - 1].style.display = "none";
                     }
                 } else {
                     tblobj.rows[i].style.display = "";
                     if (i % 2 != 0) {
-                        tblobj.rows[i].cells[2].style.display = "";
                         tblobj.rows[i].cells[3].style.display = "";
                         tblobj.rows[i].cells[endcol - 1].style.display = "";
                     }
                 }
             }
         }
+        
         // i-Reporter の起動
         async function iReporter(tblno, row) {
             // 呼び出し元の基本情報取得
@@ -341,9 +349,9 @@ QRコード読取
             const mccd = document.getElementById(`mccd${tblno}`).value;
             // iRepo呼び出し用データの取得
             const irepourl = "jp.co.cimtops.ireporter";
-            const hmcd = tblobj.rows[row].cells[0].innerHTML;
-            const mate = tblobj.rows[row].cells[2].innerHTML;
-            const cut = tblobj.rows[row].cells[3].innerHTML;
+            const hmcd = tblobj.rows[row].cells[0].innerText;
+            const mate = tblobj.rows[row].cells[2].innerText;
+            const cut = tblobj.rows[row].cells[3].innerText;
             // 品番と設備Gと設備コードから帳票IDと品番クラスター番号を取得
             fetch(`/mysqlsv/getDefid/${hmcd}:${mcgcd}:${mccd}:`)
             .then(response => response.json())
@@ -381,14 +389,16 @@ QRコード読取
                             // 帳票定義IDをそのまま起動
                             location.href = `${irepourl}.createreport:defid=${defid}`;
                         }
-                        browserTabClose();
+                        /*browserTabClose();*/
                     } else {
                         // 保留中の帳票があれば帳票IDから起動
                         location.href = `${irepourl}.openreport:repid=${repid}`;
-                        browserTabClose();
+                        /*browserTabClose();*/
                     }
-                });
-            });
+                })
+                .catch(err => {alert(err);});
+            })
+            .catch(err => {alert(err);});
         }
         
         // 時間を置いてからタブを閉じる
