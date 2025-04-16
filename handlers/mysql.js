@@ -163,6 +163,7 @@ exports.getMCOrderby = getMCOrderby;
 // 設備毎の注文データを2週間分取得
 const getKD8450Orders = async (mcgcd, mccds, ymds) => {
     const orderby = getMCOrderby(mcgcd);
+    // 受注状態[1:作業開始]を新設
     let appendsql = "";
     for (let i=0; i<=9; i++){
         appendsql +=
@@ -502,7 +503,7 @@ const getReportDefID = async (hmcd, mcgcd, mccd) => {
 };
 exports.getReportDefID = getReportDefID;
 
-// 品番,設備,手配日付から、注文番号[ODRNO],手配状態[ODRSTS],実績数[JIQTY],未来の実績数[FUTUREQTY],過去の実績残数[ZANQTY]を取得するAPI
+// 品番,設備,手配日付から、注文番号[ODRNO],手配状態[ODRSTS],実績数[JIQTY],未来の実績数[FUTUREQTY],過去の実績残数[ZANQTY]を取得
 const getOdrno = async (hmcd, mcgcd, mccd, eddt, stdt) => {
     const sql = 
     "select min(ODRNO) as ODRNO, sum(ODRQTY) as ODRQTY, sum(JIQTY) as JIQTY from kd8450 " + 
@@ -517,12 +518,13 @@ const getOdrno = async (hmcd, mcgcd, mccd, eddt, stdt) => {
     } else {
         kd8450[0].ODRSTS = "3";
     }
-    // 未来の実績数が存在するかここでチェックして返却
+    // 未来の注文数、実績数をここでチェックして返却
     const sql_2 = 
-    "select ifnull(sum(JIQTY), 0) as FUTUREQTY from kd8450 " + 
+    "select sum(ODRQTY) as FUTUREODR, sum(ifnull(JIQTY, 0)) as FUTUREQTY from kd8450 " + 
         `where HMCD='${hmcd}' and MCGCD='${mcgcd}' and MCCD='${mccd}' and EDDT>'${eddt}' ` + 
         "and ODRSTS in ('1','2','3','4') ";
     const kd8450_2 = await getDatabase(sql_2);
+    kd8450[0].FUTUREODR = kd8450_2[0].FUTUREODR;
     kd8450[0].FUTUREQTY = kd8450_2[0].FUTUREQTY;
     // 過去の手配に未完成のものが存在するかここでチェック（ODRQTY!=JIQTY ODRSTS:"4" 手配あり！）
     const sql_3 = 
@@ -534,6 +536,27 @@ const getOdrno = async (hmcd, mcgcd, mccd, eddt, stdt) => {
     return kd8450;
 };
 exports.getOdrno = getOdrno;
+
+// 品番,設備,調査開始日付から、注文番号[ODRNO]を取得
+const getWaitOdrno = async (hmcd, mcgcd, mccd, stdt) => {
+    const sql = 
+    "select min(ODRNO) as ODRNO, sum(ODRQTY) as ODRQTY, sum(JIQTY) as JIQTY from kd8450 " + 
+    `where HMCD='${hmcd}' and MCGCD='${mcgcd}' and MCCD='${mccd}' and ODRSTS in ('1','2','3') and EDDT=` + 
+    "(select min(EDDT) from kd8450 " + 
+        `where HMCD='${hmcd}' and MCGCD='${mcgcd}' and MCCD='${mccd}' and EDDT>='${stdt}' ` + 
+        "and ODRSTS in ('1','2','3') )";
+    const kd8450 = await getDatabase(sql);
+    // 同じ日に違う手配番号が複数、１オーダーのロット分割があるのでここでステータス判定
+    if (kd8450[0].ODRQTY == kd8450[0].JIQTY) {
+        kd8450[0].ODRSTS = "4";
+    } else if (kd8450[0].JIQTY == 0) {
+        kd8450[0].ODRSTS = "2";
+    } else {
+        kd8450[0].ODRSTS = "3";
+    }
+    return kd8450;
+};
+exports.getWaitOdrno = getWaitOdrno;
 
 // 段取り開始
 exports.dandori = async (userid, odrno, planday, mcgcd, mccd) => {
@@ -562,13 +585,16 @@ exports.startOrder = async (odrno, mcgcd, mccd) => {
 exports.finishOrder = async (odrno, mcgcd, mccd, jiqty) => {
     let countdownQty = jiqty;
     const kd8430 = await getDatabase("select EDDT, HMCD from kd8430 where ODRNO=?",[odrno]);
-    const kd8450 = await getDatabase("select ODRNO, LOTSEQ, ODRQTY, JIQTY from kd8450 " + 
+    const kd8450 = await getDatabase("select ODRNO, LOTSEQ, EDDT, ODRQTY, JIQTY from kd8450 " + 
         "where HMCD=? and EDDT>=? and MCGCD=? and MCCD=? and ODRSTS<>'4' and ODRSTS<>'9' " + 
         "order by EDDT, ODRNO, LOTSEQ"
         , [kd8430[0].HMCD, kd8430[0].EDDT, mcgcd, mccd]);
+    let result= null;
     // 切削オーダーファイルをループして実績数の消込
     for await (row of kd8450) {
-        let needQty = row.ODRQTY - row.JIQTY;
+        let odrQty = Number(row.ODRQTY);
+        let jiQty = Number(row.JIQTY);
+        let needQty = odrQty - jiQty;
         if (countdownQty >= needQty) {
             // odrqtyで更新 countdownQty--
             const update = await getDatabase(
@@ -576,34 +602,47 @@ exports.finishOrder = async (odrno, mcgcd, mccd, jiqty) => {
                 "where ODRNO=? and LOTSEQ=? and MCGCD=? and MCCD=?"
                 , [row.ODRNO, row.LOTSEQ, mcgcd, mccd]
             );
+            if (!result) {
+                result = [{"EDDT": row.EDDT, "NEWSTS": "4", "NEWJIQTY": odrQty}];
+            } else {
+                result.push({"EDDT": row.EDDT, "NEWSTS": "4", "NEWJIQTY": odrQty});
+            }
             countdownQty -= needQty;
         } else {
             // jiqtyに足して更新 countdownQty=0
+            let newjiqty = jiQty + countdownQty;
             const update = await getDatabase(
                 "update kd8450 set JIQTY=?, ODRSTS='3', WKEDDT=current_timestamp " +
                 "where ODRNO=? and LOTSEQ=? and MCGCD=? and MCCD=?"
-                , [row.JIQTY+countdownQty, row.ODRNO, row.LOTSEQ, mcgcd, mccd]
+                , [newjiqty, row.ODRNO, row.LOTSEQ, mcgcd, mccd]
             );
-            countdownQty = 0;
+            if (!result) {
+                result = [{"EDDT": row.EDDT, "NEWSTS": "3", "NEWJIQTY": newjiqty}];
+            } else {
+                result.push({"EDDT": row.EDDT, "NEWSTS": "3", "NEWJIQTY": newjiqty});
+            }
+        countdownQty = 0;
         }
         if (countdownQty <= 0) break;
     }
     // 手配以上の実績の場合は仕掛り在庫に投入
     if (countdownQty > 0) {
-        // 在庫テーブルが存在するかチェック
-        // 在庫テーブルに追加
+        await this.updateKD8460(kd8430[0].HMCD, mcgcd, mccd, countdownQty, "11014");
     }
-
+    // 結果を返却
+    return result;
 };
 
 
 // 実績訂正(品目指定で更新)
 exports.modifyOrder = async (odrno, mcgcd, mccd, preqty, modqty) => {
     const kd8430 = await getDatabase("select EDDT, HMCD from kd8430 where ODRNO=?",[odrno]);
-    const kd8450 = await getDatabase("select ODRNO, LOTSEQ, ODRQTY, JIQTY from kd8450 " + 
+    const ordered = (preqty < modqty) ? "asc" : "desc";
+    const kd8450 = await getDatabase("select ODRNO, LOTSEQ, EDDT, ODRQTY, JIQTY from kd8450 " + 
         "where HMCD=? and EDDT=? and MCGCD=? and MCCD=? and ODRSTS<>'9' " + 
-        "order by ODRNO, LOTSEQ"
+        "order by ODRNO " + ordered + ", LOTSEQ " + ordered
         , [kd8430[0].HMCD, kd8430[0].EDDT, mcgcd, mccd]);
+    let result= null;
     // 加算訂正
     if (preqty < modqty) {
         let countdownQty = modqty - preqty;
@@ -617,15 +656,26 @@ exports.modifyOrder = async (odrno, mcgcd, mccd, preqty, modqty) => {
                     "where ODRNO=? and LOTSEQ=? and MCGCD=? and MCCD=?"
                     , [row.ODRNO, row.LOTSEQ, mcgcd, mccd]
                 );
+                if (!result) {
+                    result = [{"EDDT": row.EDDT, "NEWSTS": "4", "NEWJIQTY": odrQty}];
+                } else {
+                    result.push({"EDDT": row.EDDT, "NEWSTS": "4", "NEWJIQTY": odrQty});
+                }
                 countdownQty -= (odrQty - jiQty);
             } else {
-                // 訂正数量に変更して更新 countdownQty=0
-                let newsts = ((jiQty+countdownQty) == odrQty) ? "4" : "3";
+                // 訂正数量に変更して更新
+                let newjiqty = jiQty + countdownQty;
+                let newsts = (newjiqty == odrQty) ? "4" : "3";
                 const update = await getDatabase(
                     "update kd8450 set JIQTY=?, ODRSTS=?, WKEDDT=null " +
                     "where ODRNO=? and LOTSEQ=? and MCGCD=? and MCCD=?"
-                    , [jiQty+countdownQty, newsts, row.ODRNO, row.LOTSEQ, mcgcd, mccd]
+                    , [newjiqty, newsts, row.ODRNO, row.LOTSEQ, mcgcd, mccd]
                 );
+                if (!result) {
+                    result = [{"EDDT": row.EDDT, "NEWSTS": newsts, "NEWJIQTY": newjiqty}];
+                } else {
+                    result.push({"EDDT": row.EDDT, "NEWSTS": newsts, "NEWJIQTY": newjiqty});
+                }
                 countdownQty = 0;
             }
             if (countdownQty <= 0) break;
@@ -639,27 +689,38 @@ exports.modifyOrder = async (odrno, mcgcd, mccd, preqty, modqty) => {
             let jiQty = Number(row.JIQTY);
             if (countdownQty >= jiQty) {
                 const update = await getDatabase(
-                    "update kd8450 set JIQTY=0, ODRSTS='2', WKEDDT=null " +
+                    "update kd8450 set JIQTY=0, ODRSTS='2', WKSTDT=null, WKEDDT=null " +
                     "where ODRNO=? and LOTSEQ=? and MCGCD=? and MCCD=?"
                     , [row.ODRNO, row.LOTSEQ, mcgcd, mccd]
                 );
+                if (!result) {
+                    result = [{EDDT: row.EDDT, NEWSTS: "2", NEWJIQTY: 0}];
+                } else {
+                    result.push([{EDDT: row.EDDT, NEWSTS: "2", NEWJIQTY: 0}]);
+                }
                 countdownQty -= jiQty;
             } else {
                 // 訂正数量に変更して更新 countdownQty=0
+                let newjiqty = jiQty - countdownQty;
                 let newsts = (countdownQty == 0) ? "2" : "3";
                 const update = await getDatabase(
                     "update kd8450 set JIQTY=?, ODRSTS=?, WKEDDT=null " +
                     "where ODRNO=? and LOTSEQ=? and MCGCD=? and MCCD=?"
-                    , [jiQty-countdownQty, newsts, row.ODRNO, row.LOTSEQ, mcgcd, mccd]
+                    , [newjiqty, newsts, row.ODRNO, row.LOTSEQ, mcgcd, mccd]
                 );
+                if (!result) {
+                    result = [{EDDT: row.EDDT, NEWSTS: newsts, NEWJIQTY: newjiqty}];
+                } else {
+                    result.push({EDDT: row.EDDT, NEWSTS: newsts, NEWJIQTY: newjiqty});
+                }
                 countdownQty = 0;
             }
             if (countdownQty <= 0) break;
         }
 
     }
-    // 実績数以上の訂正数の入力はフロント側でチェック
-
+    // 実績数以上の訂正数の入力はフロント側でチェック済み
+    return result;
 };
 
 
@@ -893,30 +954,39 @@ exports.isKM0010 = async (userid) => {
 };
 
 // 在庫テーブルに品番が存在するかチェック
+// レコードなし:-1、それ以外は在庫数を返却
 exports.isKD8460 = async (hmcd, mcgcd, mccd) => {
-    const sql = "select count(*) as cnt from kd8460 where HMCD=? and MCGCD=? and MCCD=?";
+    const sql = "select count(*) as cnt, sum(ZAIQTY) as ZAIQTY from kd8460 where HMCD=? and MCGCD=? and MCCD=?";
     const res = await getDatabase(sql, [hmcd, mcgcd, mccd]);
-    return (res[0].cnt == 0) ? false : true; 
+    return (Number(res[0].cnt) == 0) ? -1 : Number(res[0].ZAIQTY);
 }
 
 // 在庫更新
- // https://pc090n:53030/ireporegist/sw/10841/RD479-63171-1:6:plan:
+// https://pc090n:53030/ireporegist/sw/10841/RD479-63171-1:6:plan: -> ZAI=0
+// https://pc090n:53030/ireporegist/sw/10841/RP801-63142-2:105:plan: -> ZAI=229
+// https://pc090n:53030/ireporegist/sw/10841/69141GL10A-1:30:plan: -> REC=0
 exports.updateKD8460 = async (hmcd, mcgcd, mccd, jiqty, operator) => {
     // 在庫テーブルが存在するかチェック
-    if (await this.isKD8460(hmcd, mcgcd, mccd) == false) {
+    const zaiqty = await this.isKD8460(hmcd, mcgcd, mccd);
+    if (zaiqty < 0) {
         // なければ追加
-        const sql = "insert into kd8460 " +
-            "(HMCD, MCGCD, MCCD, ZAIQTY, " +
-            "INDT, MPINSTID, MPUPDTID, MPINSTDT, MPUPDTDT) " +
-            "values " + 
-            "(?,?,?,?,now(),?,?,now(),now())";
-        const insert = await getDatabase(sql, 
-            [hmcd, mcgcd, mccd, jiqty, operator, operator]);
+        // 減算の場合は追加しない
+        if (jiqty > 0) {
+            const sql = "insert into kd8460 " +
+                "(HMCD, MCGCD, MCCD, ZAIQTY, " +
+                "INDT, MPINSTID, MPUPDTID, MPINSTDT, MPUPDTDT) " +
+                "values " + 
+                "(?,?,?,?,now(),?,?,now(),now())";
+            const insert = await getDatabase(sql, 
+                [hmcd, mcgcd, mccd, jiqty, operator, operator]);
+        }
     } else {
         // あれば更新
-        const sql = "update kd8460 set ZAIQTY=ZAIQTY+?, INDT=now(), MPUPDTID=?, MPUPDTDT=now() " +
+        // 減算の場合、最低数を0に設定（レコードなし=-1との相関関係）
+        let newqty = (zaiqty + jiqty < 0) ? 0 : zaiqty + jiqty;
+        const sql = "update kd8460 set ZAIQTY=?, INDT=now(), MPUPDTID=?, MPUPDTDT=now() " +
             "where HMCD=? and MCGCD=? and MCCD=?";
         const update = await getDatabase(sql,
-            [jiqty, operator, hmcd, mcgcd, mccd]);
+            [newqty, operator, hmcd, mcgcd, mccd]);
     }
 };

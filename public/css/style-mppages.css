@@ -64,10 +64,15 @@ a {
     width: 460px;
     background-color: #fff;
 }
+#irepoPopup {
+    border-radius: 5px;
+    width: 700px;
+    background-color: #fff;
+}
 #jiqtyPopupCalc {
     margin: 10px auto;
 }
-#jiqtyPopupTitle {
+.popwin-Title {
     display: flex;
     color: rgb(255, 255, 255, 1);
     background: rgb(50, 50, 50, 1);
@@ -76,7 +81,7 @@ a {
     border-top-left-radius: 5px;
     vertical-align: middle;
 }
-#jiqtyPopupTitle .center {
+.popwin-Title .center {
     margin: auto;
     font-size: x-large;
 }
@@ -86,51 +91,51 @@ a {
     padding: 5px;
     font-size: medium;
 }
+#irepoClose {
+    cursor: pointer;
+    margin: auto 0px;
+    padding: 5px;
+    font-size: medium;
+}
+#irepoPopupTable {
+    font-size: small;
+}
 #jiqtyPopup tr {
     background-color: #FEFEFE;
     height: 2.5rem;
 }
-#jiqtyPopup th {
+.popwin-modalbody th {
     border: solid 0.5px #1414141c;
-    border-radius: 5px;
+    border-radius: 2px;
     background-color: rgb(225, 238, 253);
 }
-#jiqtyPopup th a {
-    display: inline-block;
-    padding: 10px 7px;
+.popwin-modalbody .lef {
+    text-align: left;
 }
-#jiqtyPopup td {
+.popwin-modalbody .small {
+    font-size: small;
+}
+.popwin-modalbody td {
     border: solid 0.5px #1414141c;
-    border-radius: 5px;
+    border-radius: 2px;
     text-align: center;
     vertical-align: middle;
     padding: 2px 5px ;
 }
-#jiqtyPopup .left {
+.popwin-modalbody .left {
     text-align: left;
-    padding-left: 15px;
+    padding-left: 3px;
 }
 #popHMCD {
     font-size: x-large;
     font-weight: 800;
+    padding-left: 15px;
 }
 #jiqtyPopup .borderless {
     border: solid 0px;
 }
 #jiqtyPopup td a {
     display: inline-block;
-}
-.padnum {
-    padding: 7px 19px;
-}
-.padlen1 {
-    padding: 10px 18px;
-}
-.padlen2 {
-    padding: 10px 10px;
-}
-.padbtn {
-    padding: 16px 12px;
 }
 #inputJIQTY {
     outline: none;
@@ -140,7 +145,11 @@ a {
     text-overflow: ellipsis;
     text-align: right;
 }
+#jiqtyPopupCalc td{
+    border-radius: 5px;    
+}
 .calc-numpad {
+    cursor: pointer;
     height: 60px;
     width: 60px;
     color: rgb(225, 238, 253);
@@ -148,6 +157,7 @@ a {
     font-size: 2.5rem;
 }
 .calc-function {
+    cursor: pointer;
     height: 60px;
     width: 60px;
     color: rgb(225, 238, 253);
@@ -155,6 +165,7 @@ a {
     font-size: 2.0rem;
 }
 .calc-btn {
+    cursor: pointer;
     height: 60px;
     width: 40px;
     color: rgb(50, 50, 50, 0.8);
@@ -185,6 +196,31 @@ a {
 #jiqtyPopupButtons .disable {
     display: none;
 }
+#newReport {
+    cursor: pointer;
+    display: block;
+    border-radius: 5px;
+    color: white;
+    background: rgba(234, 146, 75, 0.8);
+    font-size: xx-large;
+    font-weight: bolder;
+    margin: 10px 10px;
+    padding-block: 5px;
+}
+#oldReport {
+    border: 0px;
+    padding-bottom: 0px;
+    font-weight: 600;
+}
+#irepoPopupTable tr {
+    height: 3rem;
+}
+#irepoPopupTable tr:hover td {
+    cursor: pointer;
+    color: white;
+    background-color: rgb(5, 171, 226);
+}
+
 /* === Details ================================================================ */
 #details {
     padding-top: 70px;

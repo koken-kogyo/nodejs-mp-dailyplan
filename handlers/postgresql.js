@@ -12,8 +12,8 @@ const getDatabase = async (sql, param) => {
 
 // 最新の編集中の帳票IDを取得（編集中がない場合は0）
 const getHoldReportIDSingle = async (defid) => {
-    const ans = await isViewReport(defid);
-    if (ans.rows[0].repid == "0") {
+    const result = await isViewReport(defid);
+    if (result == false) {
         return ans;
     } else {
         const sql = "select COALESCE(max(rep_top_id),0) as repid " + 
@@ -25,9 +25,9 @@ const getHoldReportIDSingle = async (defid) => {
 exports.getHoldReportIDSingle = getHoldReportIDSingle;
 
 // 最新の編集中の帳票IDを取得（編集中がない場合は0）（defid:大元の帳票定義ID, clusterno:検索対象の品番クラスターNO）
-const getHoldReportID = async (defid, hmcd, clusterno, mode) => {
-    const vr = await isViewReport(defid);
-    if (vr.rows[0].repid == 0) {
+const getHoldReportID = async (defid, hmcd, clusterno) => {
+    const result = await isViewReport(defid);
+    if (result == false) {
         return vr;
     } else {
         const sql = "select COALESCE(max(rep_top_id),0) as repid " + 
@@ -38,10 +38,15 @@ const getHoldReportID = async (defid, hmcd, clusterno, mode) => {
 };
 exports.getHoldReportID = getHoldReportID;
 
-// そもそもテーブルが存在しているかチェック
+// そもそもテーブルが存在しているかチェック（帳票定義を本番にしていないとViewが作られない）
 const isViewReport = async (defid) => {
-    const sql = `SELECT count(*) repid FROM information_schema.tables WHERE table_name = 'view_report_${defid}'`
-    return getDatabase(sql);
+    const sql = `SELECT count(*) registcount FROM information_schema.tables WHERE table_name = 'view_report_${defid}'`
+    const res = await getDatabase(sql);
+    if (res.rows[0].registcount == 0) {
+        return false;
+    } else {
+        return true;
+    }
 }
 
 // SW作業日報兼チェックシートの取得（帳票定義ID:1509）（※ejsに受け渡す項目名は小文字にする事）
@@ -71,3 +76,27 @@ const getRepID1509 = async (planday) => {
     return getDatabase(sql);
 };
 exports.getRepID1509 = getRepID1509;
+
+// 帳票一覧の取得
+const getViewReport = async (defid) => {
+    const result = await isViewReport(defid);
+    if (result == false) {
+        return null;
+    } else {
+        // edit_refer_status==1) ? "編集中" : (d.edit_refer_status==4) ? "入力完了" 
+        const sql = "select " + 
+            "rep_top_id, " + 
+            "rep_top_name, " + 
+            "case edit_refer_status " + 
+            "when 1 then '編集中' " + 
+            "when 4 then '入力完了' " + 
+            "else '不明' end edit_refer_status, " + 
+            "to_char(sys_regist_time, 'YYYY-MM-DD HH24:MI') sys_regist_time,  " + 
+            "to_char(sys_update_time, 'YYYY-MM-DD HH24:MI') sys_update_time " + 
+            `from view_report_${defid} ` + 
+            "order by rep_top_id desc limit 10";
+        const viewreport = await getDatabase(sql);
+        return viewreport;
+    }
+};
+exports.getViewReport = getViewReport;

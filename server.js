@@ -142,7 +142,7 @@ app.get("/ireporegist/sw/:id/:args", async function (req, res, next) {
     try {
         const operator = req.params.id;
         const args = req.params.args;
-        const hmcd = args.split(":")[       0];
+        const hmcd = args.split(":")[0];
         const jiqty = args.split(":")[1];
         const mode = args.split(":")[2];
 
@@ -156,12 +156,28 @@ app.get("/ireporegist/sw/:id/:args", async function (req, res, next) {
             const logger = log4js.getLogger("e");
             logger.error(msg + `[ /ireporegist/sw/${operator}/${hmcd}:${jiqty}:${mode}: ]`);
             return res.redirect(`/error/${msg}`);
-        }
 
-        // 在庫更新
-        // https://pc090n:53030/ireporegist/sw/10841/RD479-63171-1:6:plan:
-        // https://nabev2:53030/ireporegist/sw/10841/RP801-63142-2:400:plan:
-        await mysqlHandler.updateKD8460(hmcd, "SW", "SW", jiqty, operator);
+        } else if (mode == "plan") {
+            // 仕掛り在庫に追加
+            // https://pc090n:53030/ireporegist/sw/10841/RD479-63171-1:6:plan:
+            // https://pc090n:53030/ireporegist/sw/10841/RP801-63142-2:105:plan:
+            // https://nabev2:53030/ireporegist/sw/10841/RP801-63142-2:400:plan:
+            await mysqlHandler.updateKD8460(hmcd, "SW", "SW", jiqty, operator);
+
+        } else if (mode == "order") {
+            // 実績登録
+            // https://pc090n:53030/ireporegist/sw/10841/RP801-63142-2:105:order:
+            // https://pc090n:53030/ireporegist/sw/10841/05719-52741-1:94:order:
+            // https://pc090n:53030/ireporegist/sw/10841/05719-52741-1:100:order:
+            // １．スタート日付を取得
+            const ymds = await mysqlHandler.getYMDOrders();
+            // ２．更新対象の注文番号を取得
+            const kd8450 = await mysqlHandler.getWaitOdrno(hmcd, "SW", "SW", ymds[0])
+            // ３．実績登録
+            await mysqlHandler.finishOrder(kd8450[0].ODRNO, "SW", "SW", jiqty);
+            // ４．仕掛り在庫の消込
+            await mysqlHandler.updateKD8460(hmcd, "SW", "SW", Number(jiqty) * -1, operator);
+        }
 
         //    res.writeHead(301, {Location: `jp.co.cimtops.ireporter.openreport:repid=187146`}); // 入力帳票を開く
 
@@ -223,9 +239,14 @@ app.get("/mysqlsv/finishOrder/:args", async function (req, res, next) {
     const mcgcd = args.split(":")[1];
     const mccd = args.split(":")[2];
     const jiqty = Number(args.split(":")[3]);
+
+    //　登録内容をデバッグログに記録
+    const logger = log4js.getLogger();
+    logger.debug(`/mysqlsv/finishOrder/${args}`);
+
     try {
-        await mysqlHandler.finishOrder(odrno, mcgcd, mccd, jiqty);
-        res.status(200).end();
+        const updateresult = await mysqlHandler.finishOrder(odrno, mcgcd, mccd, jiqty);
+        res.status(200).json(updateresult);
     } catch (err) {
         next(err);
     }
@@ -239,9 +260,14 @@ app.get("/mysqlsv/modifyOrder/:args", async function (req, res, next) {
     const mccd = args.split(":")[2];
     const preqty = Number(args.split(":")[3]);
     const modqty = Number(args.split(":")[4]);
+
+    //　訂正内容をデバッグログに記録
+    const logger = log4js.getLogger();
+    logger.debug(`/mysqlsv/modifyOrder/${args}`);
+
     try {
-        await mysqlHandler.modifyOrder(odrno, mcgcd, mccd, preqty, modqty);
-        res.status(200).end();
+        const updateresult = await mysqlHandler.modifyOrder(odrno, mcgcd, mccd, preqty, modqty);
+        res.status(200).json(updateresult);
     } catch (err) {
         next(err);
     }
@@ -265,15 +291,20 @@ app.get("/ireposv/getHoldid/:args", async (req, res, next) => {
         const defid = args.split(":")[0];
         const hmcd = args.split(":")[1];
         const clusterno = args.split(":")[2];
-        const mode = args.split(":")[3];
-        const viewreport = await pgHandler.getHoldReportID(defid, hmcd, clusterno, mode);
+        const viewreport = await pgHandler.getHoldReportID(defid, hmcd, clusterno);
         res.status(200).json(viewreport.rows[0].repid);
     }
+});
+// 帳票一覧取得API
+app.get("/ireposv/getViewReport/:defid", async (req, res, next) => {
+    const defid = req.params.defid;
+    const viewreport = await pgHandler.getViewReport(defid);
+    res.status(200).json(viewreport);
 });
 
 app.get("/error/:msg", async (req, res, next) => {
     res.render("error.ejs", {err : req.params.msg});
-});
+});　
 
 app.get("/settings", async (req, res, next) => {
     res.render("settings.ejs", {req});
