@@ -64,12 +64,20 @@ a {
     width: 460px;
     background-color: #fff;
 }
+#zaiqtyPopup {
+    border-radius: 5px;
+    width: 460px;
+    background-color: #fff;
+}
 #irepoPopup {
     border-radius: 5px;
     width: 700px;
     background-color: #fff;
 }
 #jiqtyPopupCalc {
+    margin: 10px auto;
+}
+#zaiqtyPopupCalc {
     margin: 10px auto;
 }
 .popwin-Title {
@@ -91,6 +99,12 @@ a {
     padding: 5px;
     font-size: medium;
 }
+#zaiqtyClose {
+    cursor: pointer;
+    margin: auto 0px;
+    padding: 5px;
+    font-size: medium;
+}
 #irepoClose {
     cursor: pointer;
     margin: auto 0px;
@@ -100,7 +114,7 @@ a {
 #irepoPopupTable {
     font-size: small;
 }
-#jiqtyPopup tr {
+.popwin-modalbody tr {
     background-color: #FEFEFE;
     height: 2.5rem;
 }
@@ -131,7 +145,7 @@ a {
     font-weight: 800;
     padding-left: 15px;
 }
-#jiqtyPopup .borderless {
+.popwin-modalbody .borderless {
     border: solid 0px;
 }
 #jiqtyPopup td a {
@@ -145,7 +159,15 @@ a {
     text-overflow: ellipsis;
     text-align: right;
 }
-#jiqtyPopupCalc td{
+#inputZAIQTY {
+    outline: none;
+    font-size: xx-large;
+    width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: right;
+}
+#jiqtyPopupCalc td {
     border-radius: 5px;    
 }
 .calc-numpad {
@@ -182,6 +204,16 @@ a {
     font-size: x-large;
     font-weight: bolder;
 }
+#zaiqtyPopupButtons {
+    cursor: pointer;
+    text-align: center;
+    vertical-align: bottom;
+    margin-bottom: 5px;
+    margin-inline: 5px;
+    color: rgb(50, 50, 50, 0.8);
+    font-size: x-large;
+    font-weight: bolder;
+}
 #jiqtyStart {
     height: 40px;
     background-color: rgba(179, 247, 188, 0.6);
@@ -191,6 +223,9 @@ a {
     background-color: rgba(160, 160, 160, 0.4);
 }
 #jiqtyModify {
+    background-color: rgba(235, 38, 38, 0.404);
+}
+#zaiqtyModify {
     background-color: rgba(235, 38, 38, 0.404);
 }
 #jiqtyPopupButtons .disable {

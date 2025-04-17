@@ -139,6 +139,74 @@ QRコード読取
     <% }; %>
     </div>
     </div>
+    <!-- 在庫訂正 Popup Window -->
+    <div id="zaiqtyPopupWindow" class="popwin-background">
+        <div id="zaiqtyPopup">
+            <div class="popwin-modalbody">
+                <div class="popwin-Title">
+                    <div class="center">　　　仕掛り在庫訂正</div>
+                    <div id="zaiqtyClose">閉じる</div>
+                </div>
+                <table id="zaiqtyPopupTable">
+                    <tr>
+                        <th>品番</th>
+                        <td class="left" colspan="3" id="popHMCD">-</td>
+                    </tr>
+                    <tr>
+                        <th width="80px">変更前</th>
+                        <td width="110px" id="popZAIQTY">--</td>
+                        <th width="80px">訂正数</th>
+                        <td width="110px"><input type="number" maxlength="4" id="inputZAIQTY"></td>
+                    </tr>
+                </table>
+                <input type="hidden" id="popMCCD" name="popmccd" value="" />
+                <input type="hidden" id="popTBLNO" name="poptblno" value="" />
+                <input type="hidden" id="popROW" name="poprow" value="" />
+                <input type="hidden" id="popCOL" name="popcol" value="" />
+                <table id="zaiqtyPopupCalc">
+                    <tr>
+                        <td class="calc-btn" onclick="javascript:w('center','center')">初</td>
+                        <td class="borderless"></td>
+                        <td class="calc-numpad" onclick="javascript:i('7')">7</td>
+                        <td class="calc-numpad" onclick="javascript:i('8')">8</td>
+                        <td class="calc-numpad" onclick="javascript:i('9')">9</td>
+                        <td class="borderless"></td>
+                        <td class="calc-btn" onclick="javascript:equalqty()">＝</td>
+                    </tr>
+                    <tr>
+                        <td class="calc-btn" onclick="javascript:w('left','self-start')">上</td>
+                        <td class="borderless"></td>
+                        <td class="calc-numpad" onclick="javascript:i('4')">4</td>
+                        <td class="calc-numpad" onclick="javascript:i('5')">5</td>
+                        <td class="calc-numpad" onclick="javascript:i('6')">6</td>
+                        <td class="borderless"></td>
+                        <td class="calc-btn" onclick="javascript:w('right','self-start')">上</td>
+                    </tr>
+                    <tr>
+                        <td class="calc-btn" onclick="javascript:w('left','center')">中</td>
+                        <td class="borderless"></td>
+                        <td class="calc-numpad" onclick="javascript:i('1')">1</td>
+                        <td class="calc-numpad" onclick="javascript:i('2')">2</td>
+                        <td class="calc-numpad" onclick="javascript:i('3')">3</td>
+                        <td class="borderless"></td>
+                        <td class="calc-btn" onclick="javascript:w('right','center')">中</td>
+                    </tr>
+                    <tr>
+                        <td class="calc-btn" onclick="javascript:w('left','self-end')">下</td>
+                        <td class="borderless"></td>
+                        <td class="calc-function" onclick="javascript:inputBS()">BS</td>
+                        <td class="calc-numpad" onclick="javascript:i('0')">0</td>
+                        <td class="calc-function" onclick="javascript:inputClear()">C</td>
+                        <td class="borderless"></td>
+                        <td class="calc-btn" onclick="javascript:w('right','self-end')">下</td>
+                    </tr>
+                </table>
+                <table id="zaiqtyPopupButtons">
+                    <td id="zaiqtyModify" onclick="zaikoModify()">在庫訂正</td>
+                </table>
+            </div>
+        </div>
+    </div>
 
     <!-- Footer -->
     <%- include("_footer.ejs", req) %>
@@ -156,6 +224,10 @@ QRコード読取
         // ブラウザ読み込み完了後の初期設定
         function SetInitialValues() {
             const myos = myOS(); // OSによってデフォルト表示を切り替える
+
+            // ポップアップウィンドウを非表示
+            document.getElementById("zaiqtyPopupWindow").style.display = "none";
+
             // テーブルの数分ループ処理
             for (tblno = 1; tblno < 15; tblno++){
                 const tblobj = document.getElementById(`tbl${tblno}`);
@@ -192,7 +264,7 @@ QRコード読取
                         appendTD(newrow, "", "center", 5);
                         appendTD(newrow, "", "center", 5);
 
-                        // ３．鋼材使用長さの集計と、仕掛在庫の消込処理を同時に行う
+                        // ３．１ 鋼材使用長さの集計と、仕掛在庫の消込処理を同時に行う
                         let usedlenttl = Number("0.0");
                         let zaiqty = Number(tblobj.rows[i].cells[endcol - 3].innerHTML);          // 仕掛かり済の在庫数
                         for (var j=4; j<=9; j+=5) {
@@ -200,12 +272,13 @@ QRコード読取
                             for (var k=0; k<5; k++) {
                                 if (!isNaN(tblobj.rows[i].cells[j+k].innerHTML)) {
                                     let qty = Number(tblobj.rows[i].cells[j+k].innerHTML);
-                                    // 仕掛かり在庫判定（ステータスを済に変更）
                                     if (qty > 0) {
+                                        // 仕掛かり在庫判定（ステータスを済に変更）
                                         if (zaiqty >= qty) {
                                             tblobj.rows[i].cells[j+k].className = "s4";
                                             zaiqty -= qty;
                                             qty = 0;
+
                                         } else if (zaiqty > 0 && qty > 0) {
                                             tblobj.rows[i].cells[j+k].className = "s5";
                                             qty -= zaiqty;
@@ -223,6 +296,13 @@ QRコード読取
                                     usedmate + "本 (" + 
                                     usedlen.toLocaleString() + "mm)";
                             }
+                        }
+                        // ３．２ 仕掛在庫訂正ポップアップイベントリスナー設定
+                        if (Number(tblobj.rows[i].cells[endcol - 3].innerHTML) > 0) {
+                            tblobj.rows[i].cells[endcol - 3].addEventListener("click", () => {
+                                zaiqtyPopup(tblno, i);
+                            });
+                            tblobj.rows[i].cells[endcol - 3].style.cursor = "pointer";
                         }
                         // ４．鋼材使用長さの集計結果を反映
                         if (usedlenttl > 0) {
@@ -340,6 +420,33 @@ QRコード読取
                 }
             }
         }
+        
+        /* ポップアップ関連 ここから */
+
+        // 仕掛り在庫の表示
+        function zaiqtyPopup(tblno, row) {
+            const tblobj = document.getElementById(`tbl${tblno}`);
+            const mcgcd = document.getElementById("mcgcd").value;
+            alert(tblno + ":" + row)
+            const mccd = document.getElementById(`mccd${tblno}`).value;
+            const hmcd = tblobj.rows[row].cells[0].innerText;
+            alert("B")
+            // ポップアップウィンドウに値をセット
+            document.getElementById("popHMCD").innerText = hmcd;
+            document.getElementById("popMCCD").value = mccd;
+            document.getElementById("popTBLNO").value = tblno;
+            document.getElementById("popROW").value = row;
+            document.getElementById("popCOL").value = col;
+            // 閉じるイベントリスナー設定
+            document.getElementById("zaiqtyClose").addEventListener("click", () => {
+                document.getElementById("zaiqtyPopupWindow").style.display = "none";
+            });
+            // ポップアップウィンドウを表示
+            document.getElementById("zaiqtyPopupWindow").style.display = "flex";
+            inputBox.focus();
+        }
+
+        /* ポップアップ関連 ここまで */
         
         // i-Reporter の起動
         async function iReporter(tblno, row) {

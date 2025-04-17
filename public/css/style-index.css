@@ -41,7 +41,7 @@
     width: calc((var(--tablet-grid-column) * 6) + 1rem);
     grid-template-columns: repeat(6, var(--tablet-grid-column));
     grid-template-rows:
-    var(--item-title-row) repeat(1, var(--tablet-grid-row))
+    var(--item-title-row) repeat(2, var(--tablet-grid-row))
     var(--item-title-row) repeat(1, var(--tablet-grid-row))
     var(--item-title-row) repeat(1, var(--tablet-grid-row))
     var(--item-title-row) repeat(1, var(--tablet-grid-row))
@@ -124,7 +124,7 @@
         width: calc((var(--tabport-grid-column) * 6) + 1rem);
         grid-template-columns: repeat(6, var(--tabport-grid-column));
         grid-template-rows: 
-        var(--item-title-row) repeat(1, var(--tablet-grid-row)) 
+        var(--item-title-row) repeat(2, var(--tablet-grid-row)) 
         var(--item-title-row) repeat(1, var(--tablet-grid-row))
         var(--item-title-row) repeat(1, var(--tablet-grid-row)) 
         var(--item-title-row) repeat(1, var(--tablet-grid-row)) 
@@ -138,7 +138,7 @@
     .responsible:before { content: "MobileSizeW"; }
     .containers {
         width: calc((var(--mobile-grid-column) * 3) + 1rem);
-        grid-template-rows: var(--item-title-row) repeat(2, (--mobile-grid-row)) var(--item-title-row) var(--mobile-grid-row);
+        grid-template-rows: var(--item-title-row) repeat(3, (--mobile-grid-row)) var(--item-title-row) var(--mobile-grid-row);
         grid-template-columns: repeat(3, var(--mobile-grid-column));
     }
     .containers .item-top {
@@ -207,7 +207,7 @@
         width: calc((var(--notepc-grid-column) * 6) + 1rem);
         grid-template-columns: repeat(6, var(--notepc-grid-column));
         grid-template-rows: 
-        var(--item-title-row) repeat(1, var(--notepc-grid-row))
+        var(--item-title-row) repeat(2, var(--notepc-grid-row))
         var(--item-title-row) repeat(1, var(--notepc-grid-row))
         var(--item-title-row) repeat(1, var(--notepc-grid-row));
         var(--item-title-row) repeat(1, var(--notepc-grid-row));
