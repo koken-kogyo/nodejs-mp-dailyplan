@@ -273,6 +273,26 @@ app.get("/mysqlsv/modifyOrder/:args", async function (req, res, next) {
     }
 });
 
+// API 在庫訂正
+app.get("/mysqlsv/modifyZaiko/:args", async function (req, res, next) {
+    const args = req.params.args;
+    const hmcd = args.split(":")[0];
+    const mcgcd = args.split(":")[1];
+    const mccd = args.split(":")[2];
+    const modqty = Number(args.split(":")[3]);
+
+    //　訂正内容をデバッグログに記録
+    const logger = log4js.getLogger();
+    logger.debug(`/mysqlsv/modifyZaiko/${args}`);
+
+    try {
+        const updateresult = await mysqlHandler.modifyZaiko(hmcd, mcgcd, mccd, modqty);
+        res.status(200).json(updateresult);
+    } catch (err) {
+        next(err);
+    }
+});
+
 // API IREPOSVのPostgreSQLからview_report_defidの編集中ステータスの帳票IDを取得
 // （パラメータ3個：1帳票につき複数品番のパターン）
 // （パラメータ1個：1帳票のパターン）

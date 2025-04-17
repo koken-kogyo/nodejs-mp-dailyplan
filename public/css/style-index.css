@@ -209,8 +209,8 @@
         grid-template-rows: 
         var(--item-title-row) repeat(2, var(--notepc-grid-row))
         var(--item-title-row) repeat(1, var(--notepc-grid-row))
-        var(--item-title-row) repeat(1, var(--notepc-grid-row));
-        var(--item-title-row) repeat(1, var(--notepc-grid-row));
+        var(--item-title-row) repeat(1, var(--notepc-grid-row))
+        var(--item-title-row) repeat(1, var(--notepc-grid-row))
         var(--item-title-row) repeat(1, var(--notepc-grid-row));
     }
     .containers a {
@@ -234,7 +234,7 @@
         width: calc((var(--desktop-grid-column) * 6) + 1rem);
         grid-template-columns: repeat(6, var(--desktop-grid-column));
         grid-template-rows: 
-        var(--item-title-row) var(--desktop-grid-row)
+        var(--item-title-row) repeat(2, var(--desktop-grid-row))
         var(--item-title-row) var(--desktop-grid-row)
         var(--item-title-row) var(--desktop-grid-row)
         var(--item-title-row) var(--desktop-grid-row);

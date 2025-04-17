@@ -723,6 +723,16 @@ exports.modifyOrder = async (odrno, mcgcd, mccd, preqty, modqty) => {
     return result;
 };
 
+// 在庫訂正
+exports.modifyZaiko = async (hmcd, mcgcd, mccd, modqty) => {
+    const update = await getDatabase(
+        "update kd8460 set ZAIQTY=? " +
+        "where HMCD=? and MCGCD=? and MCCD=?"
+        , [modqty, hmcd, mcgcd, mccd]
+    );
+    return update;
+};
+
 
 
 
