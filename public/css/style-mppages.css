@@ -97,19 +97,19 @@ a {
     cursor: pointer;
     margin: auto 0px;
     padding: 5px;
-    font-size: medium;
+    font-size: larger;
 }
 #zaiqtyClose {
     cursor: pointer;
     margin: auto 0px;
     padding: 5px;
-    font-size: medium;
+    font-size: larger;
 }
 #irepoClose {
     cursor: pointer;
     margin: auto 0px;
     padding: 5px;
-    font-size: medium;
+    font-size: larger;
 }
 #irepoPopupTable {
     font-size: small;
@@ -140,7 +140,7 @@ a {
     text-align: left;
     padding-left: 3px;
 }
-#popHMCD {
+.popHMCD {
     font-size: x-large;
     font-weight: 800;
     padding-left: 15px;
@@ -233,19 +233,17 @@ a {
 }
 #newReport {
     cursor: pointer;
-    display: block;
     border-radius: 5px;
     color: white;
     background: rgba(234, 146, 75, 0.8);
-    font-size: xx-large;
+    font-size: large;
     font-weight: bolder;
-    margin: 10px 10px;
-    padding-block: 5px;
 }
 #oldReport {
     border: 0px;
-    padding-bottom: 0px;
-    font-weight: 600;
+    background: white;
+    font-size: large;
+    height: 1.5rem;
 }
 #irepoPopupTable tr {
     height: 3rem;
@@ -254,6 +252,12 @@ a {
     cursor: pointer;
     color: white;
     background-color: rgb(5, 171, 226);
+}
+#irepoPopupTitle {
+    margin: 30px 10px 10px 10px;
+}
+#irepoPopupTable {
+    margin: 10px;
 }
 
 /* === Details ================================================================ */
@@ -350,6 +354,11 @@ a {
 /* APEM連携用リンク */
 #details .td-apem-a {
     padding: 10px 0 10px 3px;
+}
+/* 明細が空のとき用 */
+#details .th-qty {
+    height: 40px;
+    width: 40px;
 }
 /* 実績入力リンク */
 #details .td-qty {

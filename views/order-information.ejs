@@ -61,7 +61,10 @@ QRコード読取
                 <input type="hidden" id="mcscrap<%= tableno %>" name="mcscrap" value="<%= data[0].SCRAPLEN %>" />
                 </span>
                 <span class="floatright">
-                <!-- チェックボックス -->
+                <!-- チェックボックス関連 -->
+                全て表示
+                <span id ="countResult<%= tableno %>">(完了3件 / 105件中)</span>
+                <input type="checkbox" id="chktehai<%= tableno %>" class="check-box" title="手配情報" value="<%= tableno %>" onchange="checkTehaiChange(this.value)"/>
                 在庫状況
                 <input type="checkbox" id="chkzaiko<%= tableno %>" class="check-box" title="在庫状況" value="<%= tableno %>" onchange="checkZaikoChange(this.value)"/>
                 鋼材情報を表示
@@ -91,7 +94,7 @@ QRコード読取
                         <th width="40px">材料</th>
                         <th width="60px">長さ</th>
                         <% ymds.forEach(function (e) { %>
-                            <th><%= myFunc.a(e); %></th>
+                            <th class="th-qty"><%= myFunc.a(e); %></th>
                             <!-- a href="/mp/plan/<%- myFunc.b(e); %>"></a -->
                         <% }); %>
                         <th width="60px">注文残</th>
@@ -151,34 +154,34 @@ QRコード読取
                 <table id="jiqtyPopupTable">
                     <tr>
                         <th>品番</th>
-                        <td class="left" colspan="3" id="popHMCD">-</td>
+                        <td id="jpopHMCD" class="popHMCD lef" colspan="3">-</td>
                     </tr>
                     <tr>
                         <th width="80px">注文番号</th>
-                        <td width="110px" id="popODRNO">--</td>
+                        <td width="110px" id="jpopODRNO">--</td>
                         <th width="80px">手配状態</th>
-                        <td width="110px" id="popODRSTS">--</td>
+                        <td width="110px" id="jpopODRSTS">--</td>
                     </tr>
                     <tr>
                         <th>注文日付</th>
-                        <td id="popEDDT">--</td>
+                        <td id="jpopEDDT">--</td>
                         <th>注文数</th>
-                        <td id="popODRQTY">--</td>
+                        <td id="jpopODRQTY">--</td>
                     </tr>
                     <tr>
                         <th>変更前</th>
-                        <td id="popJIQTY">--</td>
+                        <td id="jpopJIQTY">--</td>
                         <th>実績数</th>
                         <td><input type="number" maxlength="4" id="inputJIQTY"></td>
                         <th style="display: none">以降実績数</th>
-                        <td id="popFUTUREODR" style="display: none">--</td>
-                        <td id="popFUTUREQTY" style="display: none">--</td>
+                        <td id="jpopFUTUREODR" style="display: none">--</td>
+                        <td id="jpopFUTUREQTY" style="display: none">--</td>
                     </tr>
                 </table>
-                <input type="hidden" id="popMCCD" name="popmccd" value="" />
-                <input type="hidden" id="popTBLNO" name="poptblno" value="" />
-                <input type="hidden" id="popROW" name="poprow" value="" />
-                <input type="hidden" id="popCOL" name="popcol" value="" />
+                <input type="hidden" id="jpopMCCD" name="jpopmccd" value="" />
+                <input type="hidden" id="jpopTBLNO" name="jpoptblno" value="" />
+                <input type="hidden" id="jpopROW" name="jpoprow" value="" />
+                <input type="hidden" id="jpopCOL" name="jpopcol" value="" />
                 <table id="jiqtyPopupCalc">
                     <tr>
                         <td class="calc-btn" onclick="javascript:w('center','center')">初</td>
@@ -227,7 +230,7 @@ QRコード読取
     </div>
     
     
-    <!-- i-Reporter選択 Popup Window -->
+    <!-- i-Reporter選択 Popup Window width: 700px -->
     <div id="irepoPopupWindow" class="popwin-background">
         <div id="irepoPopup">
             <div class="popwin-modalbody">
@@ -235,16 +238,18 @@ QRコード読取
                     <div class="center">　　　i-Reporter 帳票選択</div>
                     <div id="irepoClose" class="popwin-close">閉じる</div>
                 </div>
-                <table>
-                    <tr height="60px">
-                        <td id="newReport" height="40px" colspan="5">新規チェックシート呼び出し</td>
-                    </tr>
-                    <tr height="30px">
-                        <td id="oldReport" colspan="5" class="lef">Javascript可変メッセージ</td>                        
+                <table id="irepoPopupTitle">
+                    <tr>
+                        <th height="60px" width="60px">品番</th>
+                        <td id="ipopHMCD" class="popHMCD lef" width="300px">-</td>
+                        <td id="newReport" colspan="3">新規チェックシート記入</td>
                     </tr>
                 </table>
                 <table id="irepoPopupTable">
-                        <tr>
+                    <tr>
+                        <th id="oldReport" colspan="5" class="lef">Javascript可変メッセージ</th>
+                    </tr>
+                    <tr>
                         <th width="30px">ID</th>
                         <th width="200px">帳票名称</th>
                         <th width="50px">状態</th>
@@ -278,6 +283,7 @@ QRコード読取
             // テーブルの数分ループ処理
             for (tblno = 1; tblno < 15; tblno++){
                 const tblobj = document.getElementById(`tbl${tblno}`);
+                let compcount = 0; // 完了数
                 if (tblobj) {
                     // 各テーブル内のデータ数分ループ処理
                     const endcol = tblobj.rows[1].cells.length - 1;
@@ -323,8 +329,8 @@ QRコード読取
                                         usedlen += (productlen + thickness) * qty;
                                         usedlenttl += (productlen + thickness) * qty;
                                     }
-                                    // 3.2 イベントハンドラー（実績入力ポップアップ呼び出し）（SW工程以外）
-                                    if (tblobj.rows[i].cells[j+k].innerText != "" && mcgcd != "SW2") {
+                                    // 3.2 イベントハンドラー（実績入力ポップアップ呼び出し）（SW工程以外xxx）
+                                    if (tblobj.rows[i].cells[j+k].innerText != "" && mcgcd != "SWxxx") {
                                         const strQTY = tblobj.rows[i].cells[j+k].innerText;
                                         tblobj.rows[i].cells[j+k].innerHTML =
                                         `<a href="javascript:jissekiPopup(${tblno},${i},${j+k})" class="td-qty-a">` + strQTY + "</a>" ;
@@ -354,13 +360,11 @@ QRコード読取
                         // ５．材料の種類毎に背景色を変える
                         tblobj.rows[i + 0].style.backgroundColor = (colorno == 0) ? "#FEFEFE" : "#ECECEC";
                         tblobj.rows[i + 1].style.backgroundColor = (colorno == 0) ? "#FEFEFE" : "#ECECEC";
-                        // ６．鋼材情報行は一旦非表示
-                        tblobj.rows[i + 1].style.display = "none";
-                        // ７．イベントハンドラー（i-Repo呼び出し）
+                        // ６．イベントハンドラー（i-Repo呼び出し）
                         if (tblobj.rows[i].cells[endcol].innerHTML != "") {
                             tblobj.rows[i].cells[endcol].innerHTML = `<a href="javascript:iReporter(${tblno},${i})" class="btn-irepo">` + "記入" + "</a>" ;
                         }
-                        // ８．列(TD)の非表示化
+                        // ７．列(TD)の非表示化
                         tblobj.rows[i].cells[3].style.display = "none";                 // 長さ
                         tblobj.rows[i].cells[endcol - 1].style.display = "none";        // 鋼材長さ
                         if (myos != "windows") {
@@ -368,9 +372,19 @@ QRコード読取
                             tblobj.rows[i].cells[endcol - 3].style.display = "none";    // 仕掛かり在庫数
                             tblobj.rows[i].cells[endcol - 2].style.display = "none";    // ストア在庫数
                         }
-                        // ９．insertRowした分を加算
-                         i++;
+                        // ８．行(TR)の非表示化
+                        tblobj.rows[i + 1].style.display = "none";    // 8.1.鋼材情報行は一旦非表示
+                        if (zanqty == 0) {
+                            tblobj.rows[i].style.display = "none";    // 8.2.注文残数が0の場合一旦非表示
+                            compcount++;
+                        }
+                        // insertRowした分を加算
+                        i++;
                     }
+                    // 合計数量の表示
+                    document.getElementById(`countResult${tblno}`).innerText =
+                        `(完了${compcount}件 / ${(tblobj.rows.length-1)/2}件中)`;
+
                     // ヘッダー(TH)の非表示化
                     tblobj.rows[0].cells[3].style.display = "none";                     // 長さ
                     tblobj.rows[0].cells[endcol - 1].style.display = "none";            // 鋼材長さ
@@ -398,7 +412,7 @@ QRコード読取
             document.getElementById(sectionId).scrollIntoView({block: "center", behavior: "smooth"});
         }
 
-        // 在庫状況の表示
+        // チェックボックス在庫状況の表示切り替え
         function checkZaikoChange(tblno) {
             const checkDisp = document.getElementById(`chkzaiko${tblno}`)
             const tblobj = document.getElementById(`tbl${tblno}`);
@@ -430,7 +444,7 @@ QRコード読取
             }
         }
 
-        // 鋼材情報の表示
+        // チェックボックス鋼材情報の表示切り替え
         function checkMateChange(tblno) {
             const checkDisp = document.getElementById(`chkmate${tblno}`)
             const tblobj = document.getElementById(`tbl${tblno}`);
@@ -461,6 +475,33 @@ QRコード読取
             }
         }
 
+        // チェックボックス手配情報の表示切り替え
+        function checkTehaiChange(tblno) {
+            const checkTehai = document.getElementById(`chktehai${tblno}`)
+            const checkZaiko = document.getElementById(`chkzaiko${tblno}`)
+            const checkMaterial = document.getElementById(`chkmate${tblno}`)
+            const tblobj = document.getElementById(`tbl${tblno}`);
+            const rows = tblobj.rows.length;
+            const endcol = tblobj.rows[1].cells.length - 1;
+            let zanqty = 0;
+            // alert(tblobj.rows[2].cells[0].innerText)
+            for( var i = 1; i < rows; i++ ){
+                if (i % 2 != 0) { //通常の行
+                    zanqty = Number(tblobj.rows[i].cells[endcol - 4].innerText); // 注文残数
+                    if (checkTehai.checked == true) {
+                        tblobj.rows[i].style.display = "";
+                        if (checkMaterial.checked) tblobj.rows[i + 1].style.display = "";
+                    } else if (zanqty > 0) {
+                        tblobj.rows[i].style.display = "";
+                        if (checkMaterial.checked == false) tblobj.rows[i + 1].style.display = "none";
+                    } else {
+                        tblobj.rows[i].style.display = "none";
+                        tblobj.rows[i + 1].style.display = "none";
+                    }
+                }
+            }
+        }
+
         /* ポップアップ関連 ここから */
             const inputBox = document.getElementById("inputJIQTY");
             // イベントリスナー（フォーカス時全選択）（アロー関数編）
@@ -481,17 +522,19 @@ QRコード読取
                 const irepoinfo = await this.getDefid(hmcd, mcgcd, mccd);
                 if (!irepoinfo) return;
                 // 直接呼出し工程（値やフラグを渡してあげないといけない）
-                if (mcgcd == "SWTEST") {
+                if (mcgcd == "SW") {
                     const repid = await getHoldid(irepoinfo.DEFID, hmcd, irepoinfo.HMCDCID);
                     iRepoCustomURL(tblno, row, mcgcd, hmcd, irepoinfo.DEFID, irepoinfo.HMCDCID, repid)
 
                 // ポップアップで選択工程
                 } else {
                     const table = document.getElementById("irepoPopupTable");
+                    // ポップアップウィンドウに値をセット
+                    document.getElementById("ipopHMCD").innerText = hmcd;
                     // 一覧を一旦削除
                     do {
-                        if (table.rows.length > 1) {table.deleteRow(-1);}
-                    } while (table.rows.length > 1);
+                        if (table.rows.length > 2) {table.deleteRow(-1);}
+                    } while (table.rows.length > 2);
                     // 一覧の取得
                     const viewreport = await this.getViewReport(irepoinfo.DEFID);
                     if (!viewreport) {
@@ -501,8 +544,8 @@ QRコード読取
                         const msg = `過去に入力した帳票は存在しません．`;
                         document.getElementById("oldReport").innerText = msg;
                     } else {
-                        const msg = "チェックシート一覧（最新の10件を表示、タップして呼び出し）";
-                        document.getElementById("oldReport").innerText = msg;
+                        document.getElementById("oldReport").innerText = 
+                            "チェックシート一覧（最新の10件を表示、タップして過去履歴の呼び出し）";
                         // APIで取得したデータをテーブ行に追加
                         viewreport.rows.forEach(function (d) {
                             let newRow = table.insertRow();
@@ -514,12 +557,14 @@ QRコード読取
                             // 帳票IDを起動
                             newRow.addEventListener("click", () => {
                                 location.href = `jp.co.cimtops.ireporter.openreport:repid=${d.rep_top_id}`;
+                                document.getElementById("irepoPopupWindow").style.display = "none";
                             });
                         });
                     };
                     // 新規帳票起動イベントリスナー設定
                     document.getElementById("newReport").addEventListener("click", () => {
                         location.href = `jp.co.cimtops.ireporter.createreport:defid=${irepoinfo.DEFID}`;
+                        document.getElementById("irepoPopupWindow").style.display = "none";
                     });
                     // 閉じるイベントリスナー設定
                     document.getElementById("irepoClose").addEventListener("click", () => {
@@ -560,18 +605,18 @@ QRコード読取
                     // ポップアップウィンドウに値をセット
                     let odrno = data.ODRNO;
                     let odrsts = data.ODRSTS; //旧：tblobj.rows[row].cells[col].className.substr(1,1);
-                    document.getElementById("popHMCD").innerText = hmcd;
-                    document.getElementById("popODRNO").innerText = odrno;
-                    document.getElementById("popODRSTS").innerText = (odrsts=="1") ? "着手中" : (odrsts=="2") ? "着手前" : (odrsts=="3") ? "着手" : (odrsts=="4") ? "完了" : (odrsts=="9") ? "取消" : "不明";
-                    document.getElementById("popEDDT").innerText = eddttext;
-                    document.getElementById("popODRQTY").innerText = odrqty;
-                    document.getElementById("popJIQTY").innerText = data.JIQTY;
-                    document.getElementById("popFUTUREODR").innerText = data.FUTUREODR;
-                    document.getElementById("popFUTUREQTY").innerText = data.FUTUREQTY;
-                    document.getElementById("popMCCD").value = mccd;
-                    document.getElementById("popTBLNO").value = tblno;
-                    document.getElementById("popROW").value = row;
-                    document.getElementById("popCOL").value = col;
+                    document.getElementById("jpopHMCD").innerText = hmcd;
+                    document.getElementById("jpopODRNO").innerText = odrno;
+                    document.getElementById("jpopODRSTS").innerText = (odrsts=="1") ? "着手中" : (odrsts=="2") ? "着手前" : (odrsts=="3") ? "着手" : (odrsts=="4") ? "完了" : (odrsts=="9") ? "取消" : "不明";
+                    document.getElementById("jpopEDDT").innerText = eddttext;
+                    document.getElementById("jpopODRQTY").innerText = odrqty;
+                    document.getElementById("jpopJIQTY").innerText = data.JIQTY;
+                    document.getElementById("jpopFUTUREODR").innerText = data.FUTUREODR;
+                    document.getElementById("jpopFUTUREQTY").innerText = data.FUTUREQTY;
+                    document.getElementById("jpopMCCD").value = mccd;
+                    document.getElementById("jpopTBLNO").value = tblno;
+                    document.getElementById("jpopROW").value = row;
+                    document.getElementById("jpopCOL").value = col;
                     inputBox.value = "";
                     // 使用可能ボタンを判定
                     const startObj = document.getElementById("jiqtyStart");
@@ -631,16 +676,16 @@ QRコード読取
             }
             // イコール＝処理
             function equalqty() {
-                inputBox.value = document.getElementById("popODRQTY").innerText
+                inputBox.value = document.getElementById("jpopODRQTY").innerText
             }
             // 作業開始
             function orderStart() {
-                let odrno = document.getElementById("popODRNO").innerText;
-                let tblno = document.getElementById("popTBLNO").value;
+                let odrno = document.getElementById("jpopODRNO").innerText;
+                let tblno = document.getElementById("jpopTBLNO").value;
                 let mcgcd = document.getElementById("mcgcd").value;
-                let mccd = document.getElementById("popMCCD").value;
-                let row = document.getElementById("popROW").value;
-                let col = document.getElementById("popCOL").value;
+                let mccd = document.getElementById("jpopMCCD").value;
+                let row = document.getElementById("jpopROW").value;
+                let col = document.getElementById("jpopCOL").value;
                 const tblobj = document.getElementById(`tbl${tblno}`);
                 const popWin = document.getElementById("jiqtyPopupWindow");
                 fetch(`/mysqlsv/startOrder/${odrno}:${mcgcd}:${mccd}:`)
@@ -654,11 +699,11 @@ QRコード読取
             // 実績登録
             async function orderEntry() {
                 if (checkInputBox() == "false") {return;}
-                let odrno = document.getElementById("popODRNO").innerText;
-                let odrqty = Number(document.getElementById("popODRQTY").innerText);
-                let jiqty = Number(document.getElementById("popJIQTY").innerText);
-                let futureodr = Number(document.getElementById("popFUTUREODR").innerText);
-                let futureqty = Number(document.getElementById("popFUTUREQTY").innerText);
+                let odrno = document.getElementById("jpopODRNO").innerText;
+                let odrqty = Number(document.getElementById("jpopODRQTY").innerText);
+                let jiqty = Number(document.getElementById("jpopJIQTY").innerText);
+                let futureodr = Number(document.getElementById("jpopFUTUREODR").innerText);
+                let futureqty = Number(document.getElementById("jpopFUTUREQTY").innerText);
                 // 個別の入力ボックスチェック
                 if ((odrqty - jiqty + futureodr) < Number(inputBox.value)) {
                     const msg = `実績数(${inputBox.value})が注文残数(${odrqty - jiqty + futureodr})をオーバーしています` + 
@@ -668,11 +713,11 @@ QRコード読取
                         return;
                     }
                 }
-                let tblno = document.getElementById("popTBLNO").value;
+                let tblno = document.getElementById("jpopTBLNO").value;
                 let mcgcd = document.getElementById("mcgcd").value;
-                let mccd = document.getElementById("popMCCD").value;
-                let row = document.getElementById("popROW").value;
-                let col = document.getElementById("popCOL").value;
+                let mccd = document.getElementById("jpopMCCD").value;
+                let row = document.getElementById("jpopROW").value;
+                let col = document.getElementById("jpopCOL").value;
                 const tblobj = document.getElementById(`tbl${tblno}`);
                 const popWin = document.getElementById("jiqtyPopupWindow");
                 try {
@@ -719,19 +764,19 @@ QRコード読取
             // 実績訂正
             async function orderModify() {
                 if (checkInputBox() == "false") {return;}
-                let odrno = document.getElementById("popODRNO").innerText;
-                let odrqty = document.getElementById("popODRQTY").innerText;
-                let preqty = document.getElementById("popJIQTY").innerText;
+                let odrno = document.getElementById("jpopODRNO").innerText;
+                let odrqty = document.getElementById("jpopODRQTY").innerText;
+                let preqty = document.getElementById("jpopJIQTY").innerText;
                 if (Number(odrqty) < Number(inputBox.value)) {
                     alert("正しい数値を入力してください");
                     inputBox.focus();
                     return;
                 }
-                let tblno = document.getElementById("popTBLNO").value;
+                let tblno = document.getElementById("jpopTBLNO").value;
                 let mcgcd = document.getElementById("mcgcd").value;
-                let mccd = document.getElementById("popMCCD").value;
-                let row = document.getElementById("popROW").value;
-                let col = document.getElementById("popCOL").value;
+                let mccd = document.getElementById("jpopMCCD").value;
+                let row = document.getElementById("jpopROW").value;
+                let col = document.getElementById("jpopCOL").value;
                 const tblobj = document.getElementById(`tbl${tblno}`);
                 const popWin = document.getElementById("jiqtyPopupWindow");
                 try {
