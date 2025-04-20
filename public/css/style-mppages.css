@@ -3,8 +3,9 @@
 /*  mp-style.css : 主にMPページ群で使用する基本的なスタイルシート
 /* =========================================================================== */
 a {
-    color: cadetblue;
-    text-decoration: none;
+    color: inherit;         /* テキストの色を継承(旧：cadetblue) */
+    cursor: pointer;        /* カーソルをポインターに変更 */
+    text-decoration: none;  /* 下線を削除 */
 }
 /* === Header ================================================================ */
 #gotoswmenu {
@@ -282,6 +283,9 @@ a {
     font-size: 0.4em;
     color: darkgray;
 }
+.normaltitle {
+    font-size: 0.8rem;
+}
 .check-box {
     width: 2.0em;
     height: 2.0em;
@@ -357,19 +361,34 @@ a {
 /* APEM連携用リンク */
 #details .td-apem-a {
     padding: 10px 0 10px 3px;
+    color: cadetblue;
+}
+/* 仕掛かり在庫リンク */
+#details .td-zai-a {
+    display: block;
+    padding: 10px 0;
+    color: cadetblue;
 }
 /* 明細が空のとき用 */
 #details .th-qty {
     height: 40px;
     width: 40px;
 }
-/* 実績入力リンク */
+/* 内示数量 */
+#details .td-qty2 {
+    height: 40px;
+    width: 40px;
+    border: solid 0.5px #1414141c;
+    padding-inline: 2px;
+}
+/* 手配数量 */
 #details .td-qty {
     height: 40px;
     width: 40px;
     border: solid 0.5px #1414141c;
     padding-inline: 2px;
 }
+/* 実績入力リンク */
 #details .td-qty-a {
     display: block;
     padding: 10px 0;
@@ -402,7 +421,7 @@ a {
     width: 865px;
     margin: 0 auto;
 }
-.s1 {
+#details .s1 {
     border-radius: 3px;
     animation: blinkAnimeS1 0.8s  infinite alternate; /*ease infinite;*/
 }
@@ -410,19 +429,22 @@ a {
     0%{ color : rgba(230, 250, 230, 0.8);   background:rgba(20, 120, 20, 0.8) }
   100%{ color : rgba(0, 0, 0, 0.8); background:rgba(100, 250, 120, 0.8)   }
 }
-.s2 {
-    color:rgb(0, 0, 0);
+#details .s2 {
+    color: cadetblue;
 }
-.s3 {
+#details .s3 {
     border-radius: 3px;
-    background: linear-gradient(to bottom, rgb(250, 250, 250, 0.1) 40%, rgb(100, 100, 100, 0.4) 80%);
+    color: #888;
+    background: linear-gradient(to bottom, rgb(255, 105, 180, 0.1) 60%, rgb(255, 105, 180, 0.3) 80%);
 }
-.s4 {
+#details .s4 {
     border-radius: 3px;
-    background-color: rgb(100,100,100,0.4);
+    color: rgba(55, 55, 55, 0.8);
+    background-color: rgba(255, 105, 180, 0.3);
 }
-.s9 {
-    color:rgb(0, 0, 0);
+#details .s9 {
+    color:yellow;
+    background-color: rgba(255, 50, 50, 0.3);
 }
 .warn {
     border-radius: 3px;

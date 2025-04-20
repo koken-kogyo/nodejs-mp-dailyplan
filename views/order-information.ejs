@@ -63,7 +63,7 @@ QRコード読取
                 <span class="floatright">
                 <!-- チェックボックス関連 -->
                 全て表示
-                <span id ="countResult<%= tableno %>">(完了3件 / 105件中)</span>
+                <span id ="countResult<%= tableno %>" class="normaltitle">(完了3件 / 105件中)</span>
                 <input type="checkbox" id="chktehai<%= tableno %>" class="check-box" title="手配情報" value="<%= tableno %>" onchange="checkTehaiChange(this.value)"/>
                 在庫状況
                 <input type="checkbox" id="chkzaiko<%= tableno %>" class="check-box" title="在庫状況" value="<%= tableno %>" onchange="checkZaikoChange(this.value)"/>
@@ -72,13 +72,13 @@ QRコード読取
                 <% let prevsectionid = "jump" + (tableno - 1); %>
                 <% let nextsectionid = "jump" + (tableno + 1); %>
                 <% if (tableno == 2) { %>
-                    <a href="#top">前の設備</a>
+                    <a href="#top" class="td-apem-a">前の設備</a>
                 <% } %>
                 <% if (tableno >= 3) { %>
-                    <a href="javascript:jumpToSection('<%= prevsectionid %>')">&nbsp;&nbsp;前の設備&nbsp;&nbsp;</a>
+                    <a href="javascript:jumpToSection('<%= prevsectionid %>')" class="td-apem-a">&nbsp;&nbsp;前の設備&nbsp;&nbsp;</a>
                 <% } %>
                 <% if (tableno != mccount) { %>
-                    <a href="javascript:jumpToSection('<%= nextsectionid %>')">&nbsp;&nbsp;次の設備&nbsp;&nbsp;</a>
+                    <a href="javascript:jumpToSection('<%= nextsectionid %>')" class="td-apem-a">&nbsp;&nbsp;次の設備&nbsp;&nbsp;</a>
                 <% } %>
                 </span>
             </div>
@@ -322,27 +322,28 @@ QRコード読取
                         for (var j=4; j<=9; j+=5) {
                             let usedlen = Number("0.0"); // 一週間で使用する鋼材長さを集計
                             for (var k=0; k<5; k++) {
-                                if (!isNaN(tblobj.rows[i].cells[j+k].innerHTML)) {
+                                if (!isNaN(tblobj.rows[i].cells[j+k].innerText) && tblobj.rows[i].cells[j+k].innerText != "") {
                                     // 3.1
-                                    if (tblobj.rows[i].cells[j+k].className != "s4") {
-                                        let qty = Number(tblobj.rows[i].cells[j+k].innerHTML);
-                                        usedlen += (productlen + thickness) * qty;
-                                        usedlenttl += (productlen + thickness) * qty;
+                                    if (tblobj.rows[i].cells[j+k].classList.contains("s4") == false) {
+                                        let qty = Number(tblobj.rows[i].cells[j+k].innerText);
+                                        // 製品長さが入っていたら加算
+                                        if (productlen > 0) {
+                                            usedlen += (productlen + thickness) * qty;
+                                            usedlenttl += (productlen + thickness) * qty;
+                                        }
                                     }
-                                    // 3.2 イベントハンドラー（実績入力ポップアップ呼び出し）（SW工程以外xxx）
-                                    if (tblobj.rows[i].cells[j+k].innerText != "" && mcgcd != "SWxxx") {
-                                        const strQTY = tblobj.rows[i].cells[j+k].innerText;
-                                        tblobj.rows[i].cells[j+k].innerHTML =
-                                        `<a href="javascript:jissekiPopup(${tblno},${i},${j+k})" class="td-qty-a">` + strQTY + "</a>" ;
-                                    }
+                                    // 3.2 イベントハンドラー（実績入力ポップアップ呼び出し）
+                                    const strQTY = tblobj.rows[i].cells[j+k].innerText;
+                                    tblobj.rows[i].cells[j+k].innerHTML =
+                                    `<a href="javascript:jissekiPopup(${tblno},${i},${j+k})" class="td-qty-a">` + strQTY + "</a>" ;
                                 }
                             }
                             // 小数点第3位は切り捨て
                             if (usedlen > 0) {
                                 var usedmate = Math.floor(usedlen / (materiallen - scraplen) * 100) / 100;
-                                tblobj.rows[i + 1].cells[(j==4) ? 1 : 2].innerHTML = 
-                                    usedmate + "本 (" + 
-                                    usedlen.toLocaleString() + "mm)";
+                                var usedmaterialtext = (materiallen==0) ? "鋼材長さ設定なし" : usedmate + "本";
+                                tblobj.rows[i + 1].cells[(j==4) ? 1 : 2].innerText = usedmaterialtext + 
+                                    " (" + usedlen.toLocaleString() + "mm)";
                             }
                         }
                         // ４．鋼材使用長さの集計結果を反映
@@ -353,10 +354,10 @@ QRコード読取
                             tblobj.rows[i + 1].cells[0].className = "lef";
                             // 使用集計値 / (材料長さ-端材長さ) 100倍して小数点切り捨てして100で割って小数点以下第２位までを求める
                             var usedmate = Math.floor(usedlenttl / (materiallen - scraplen) * 100) / 100;
-                            tblobj.rows[i + 1].cells[3].innerHTML = 
-                                usedmate + "本 (" + 
-                                usedlenttl.toLocaleString() + "mm)";
-                        }
+                            var usedmaterialtext = (materiallen==0) ? "鋼材長さ設定なし" : usedmate + "本";
+                            tblobj.rows[i + 1].cells[3].innerText = usedmaterialtext + 
+                                " (" + usedlenttl.toLocaleString() + "mm)";
+                            }
                         // ５．材料の種類毎に背景色を変える
                         tblobj.rows[i + 0].style.backgroundColor = (colorno == 0) ? "#FEFEFE" : "#ECECEC";
                         tblobj.rows[i + 1].style.backgroundColor = (colorno == 0) ? "#FEFEFE" : "#ECECEC";
