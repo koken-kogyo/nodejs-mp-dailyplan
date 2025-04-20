@@ -163,21 +163,26 @@ exports.getMCOrderby = getMCOrderby;
 // 設備毎の注文データを2週間分取得
 const getKD8450Orders = async (mcgcd, mccds, ymds) => {
     const orderby = getMCOrderby(mcgcd);
+    
+    // 過去の遅れ分を抽出するSQL分
+    let okure = `(EDDT<'${ymds[0]}' and ODRSTS in ('2', '3')) or`;
+
     // 受注状態[1:作業開始]を新設
     let appendsql = "";
     for (let i=0; i<=9; i++){
-        appendsql +=
-        `,min(case when EDDT='${ymds[i]}' and ` + 
+        let okuremore = (i==0) ? okure : "";
+        appendsql += "" + 
+        `,min(case when (${okuremore} EDDT='${ymds[i]}') and ` + 
             "ifnull(WKSTDT, STR_TO_DATE('1900-01-01', '%Y-%m-%d')) > " + 
             "ifnull(WKEDDT, STR_TO_DATE('1900-01-01', '%Y-%m-%d')) then '1' " + 
-            `else case when EDDT='${ymds[i]}' then ODRSTS else null end end) as 'STS${i}'`;
+            `else case when ${okuremore} EDDT='${ymds[i]}' then ODRSTS else null end end) as 'STS${i}'`;
     }
     const mc = [];
     for (let mccd of mccds) {
         let parameters = [...ymds, ...ymds, ymds[0], ymds[9], mcgcd, mccd.MCCD, ...ymds];
         let sql = "select a.HMCD,b.HMNM,b.MATESIZE,b.LENGTH" +
         ",max(ifnull(b.MATERIALLEN,0)) as 'MATERIALLEN'" + 
-        ",sum(case when EDDT=? then ODRQTY else null end) as 'D0'" +
+        `,sum(case when ${okure} EDDT=? then ODRQTY else null end) as 'D0'` +
         ",sum(case when EDDT=? then ODRQTY else null end) as 'D1'" +
         ",sum(case when EDDT=? then ODRQTY else null end) as 'D2'" +
         ",sum(case when EDDT=? then ODRQTY else null end) as 'D3'" +
@@ -187,23 +192,23 @@ const getKD8450Orders = async (mcgcd, mccds, ymds) => {
         ",sum(case when EDDT=? then ODRQTY else null end) as 'D7'" +
         ",sum(case when EDDT=? then ODRQTY else null end) as 'D8'" +
         ",sum(case when EDDT=? then ODRQTY else null end) as 'D9'" +
-        ",sum(case when EDDT=? and ODRSTS in ('2','31') then ODRQTY else 0 end) as 'D0Z'" +
-        ",sum(case when EDDT=? and ODRSTS in ('2','31') then ODRQTY else 0 end) as 'D1Z'" +
-        ",sum(case when EDDT=? and ODRSTS in ('2','31') then ODRQTY else 0 end) as 'D2Z'" +
-        ",sum(case when EDDT=? and ODRSTS in ('2','31') then ODRQTY else 0 end) as 'D3Z'" +
-        ",sum(case when EDDT=? and ODRSTS in ('2','31') then ODRQTY else 0 end) as 'D4Z'" +
-        ",sum(case when EDDT=? and ODRSTS in ('2','31') then ODRQTY else 0 end) as 'D5Z'" +
-        ",sum(case when EDDT=? and ODRSTS in ('2','31') then ODRQTY else 0 end) as 'D6Z'" +
-        ",sum(case when EDDT=? and ODRSTS in ('2','31') then ODRQTY else 0 end) as 'D7Z'" +
-        ",sum(case when EDDT=? and ODRSTS in ('2','31') then ODRQTY else 0 end) as 'D8Z'" +
-        ",sum(case when EDDT=? and ODRSTS in ('2','31') then ODRQTY else 0 end) as 'D9Z'" +
+        `,sum(case when ${okure} (EDDT=? and ODRSTS in ('2','3')) then ODRQTY-JIQTY else 0 end) as 'D0Z'` +
+        ",sum(case when EDDT=? and ODRSTS in ('2','3') then ODRQTY-JIQTY else 0 end) as 'D1Z'" +
+        ",sum(case when EDDT=? and ODRSTS in ('2','3') then ODRQTY-JIQTY else 0 end) as 'D2Z'" +
+        ",sum(case when EDDT=? and ODRSTS in ('2','3') then ODRQTY-JIQTY else 0 end) as 'D3Z'" +
+        ",sum(case when EDDT=? and ODRSTS in ('2','3') then ODRQTY-JIQTY else 0 end) as 'D4Z'" +
+        ",sum(case when EDDT=? and ODRSTS in ('2','3') then ODRQTY-JIQTY else 0 end) as 'D5Z'" +
+        ",sum(case when EDDT=? and ODRSTS in ('2','3') then ODRQTY-JIQTY else 0 end) as 'D6Z'" +
+        ",sum(case when EDDT=? and ODRSTS in ('2','3') then ODRQTY-JIQTY else 0 end) as 'D7Z'" +
+        ",sum(case when EDDT=? and ODRSTS in ('2','3') then ODRQTY-JIQTY else 0 end) as 'D8Z'" +
+        ",sum(case when EDDT=? and ODRSTS in ('2','3') then ODRQTY-JIQTY else 0 end) as 'D9Z'" +
         appendsql + " " + 
         "from kd8450 a, km8430 b where a.HMCD = b.HMCD" +
-        " and a.EDDT between ? and ?" +
+        " and a.EDDT between (? - interval 7 day) and ?" +
         " and a.MCGCD=? and a.MCCD=? " +
         "group by a.HMCD, b.HMNM, b.MATESIZE, b.LENGTH " + 
         "having " +
-        " sum(case when EDDT<=? then ODRQTY else null end) > 0 or" +
+        ` sum(case when ${okure} EDDT=? then ODRQTY else null end) > 0 or` +
         " sum(case when EDDT=? then ODRQTY else null end) > 0 or" +
         " sum(case when EDDT=? then ODRQTY else null end) > 0 or" +
         " sum(case when EDDT=? then ODRQTY else null end) > 0 or" +

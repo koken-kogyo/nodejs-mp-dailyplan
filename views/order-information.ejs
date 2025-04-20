@@ -38,111 +38,6 @@ QRコード読取
     <div id="gotoswmenu"><a href="javascript:window.close()"><i class="fas fa-home"></i></a></div>
     <input type="hidden" id="mcgcd" name="mcgcd" value="<%= mcgcd %>" />
 
-     <!-- Details -->
-    <div id="details">
-    <% if (kd8450) { %>
-        <% const apemcontenturl = "http://apemsv/PEMasterEM/docspace/sdk/contentView.do?enc=UTF-8&service=cn%3Ddrep_service%40APEMSV%2Cou%3Dcomponents%2Cdc%3DAPEMEM&workspace=図面検索&condition=全図面検索&item=0%3Aoperator%3AexactlyMatch"; %>
-        <% const apemdownloadurl = "http://apemsv/PEMasterEM/docspace/sdk/download.do?enc=UTF-8&service=cn%3Ddrep_service%40APEMSV%2Cou%3Dcomponents%2Cdc%3DAPEMEM&workspace=図面検索&condition=全図面検索&item=0%3Aoperator%3AexactlyMatch"; %>
-        <% const wsenc = encodeURI("図面検索"); %>
-        <% const condenc = encodeURI("全図面検索"); %>
-
-        <% let tableno = 1; %>
-        <% let mccount = Object.keys(kd8450).length; %>
-        <% kd8450.forEach(function (data) { %>
-            <div id="jump<%= tableno %>"></div>
-            <input type="hidden" id="mccd<%= tableno %>" name="mccd<%= tableno %>" value="<%= data[0].MCCD %>" />
-            <!-- 設備タイトル -->
-            <div class="mcnm">
-                <%= data[0].MCCD %>：<%= data[0].MCNM; %>
-                <span class="smalltitle">
-                <%= (data[0].CUTTHICKNESS==0) ? "（設備マスタに刃厚、端材長さの登録なし）" : "（刃厚：" + data[0].CUTTHICKNESS; %>
-                <%= (data[0].SCRAPLEN==0) ? "" : "、端材長さ：" + data[0].SCRAPLEN + "）"; %>
-                <input type="hidden" id="mcthick<%= tableno %>" name="mcthick" value="<%= data[0].CUTTHICKNESS %>" />
-                <input type="hidden" id="mcscrap<%= tableno %>" name="mcscrap" value="<%= data[0].SCRAPLEN %>" />
-                </span>
-                <span class="floatright">
-                <!-- チェックボックス関連 -->
-                全て表示
-                <span id ="countResult<%= tableno %>" class="normaltitle">(完了3件 / 105件中)</span>
-                <input type="checkbox" id="chktehai<%= tableno %>" class="check-box" title="手配情報" value="<%= tableno %>" onchange="checkTehaiChange(this.value)"/>
-                在庫状況
-                <input type="checkbox" id="chkzaiko<%= tableno %>" class="check-box" title="在庫状況" value="<%= tableno %>" onchange="checkZaikoChange(this.value)"/>
-                鋼材情報を表示
-                <input type="checkbox" id="chkmate<%= tableno %>" class="check-box" title="鋼材情報" value="<%= tableno %>" onchange="checkMateChange(this.value)"/>
-                <% let prevsectionid = "jump" + (tableno - 1); %>
-                <% let nextsectionid = "jump" + (tableno + 1); %>
-                <% if (tableno == 2) { %>
-                    <a href="#top" class="td-apem-a">前の設備</a>
-                <% } %>
-                <% if (tableno >= 3) { %>
-                    <a href="javascript:jumpToSection('<%= prevsectionid %>')" class="td-apem-a">&nbsp;&nbsp;前の設備&nbsp;&nbsp;</a>
-                <% } %>
-                <% if (tableno != mccount) { %>
-                    <a href="javascript:jumpToSection('<%= nextsectionid %>')" class="td-apem-a">&nbsp;&nbsp;次の設備&nbsp;&nbsp;</a>
-                <% } %>
-                </span>
-            </div>
-            <hr>
-            <!-- 明細 -->
-            <% if (Object.keys(data[1]).length == 0) { %>
-                <div class="nodata">データありません．</div>
-            <% } else { %>
-                <table id="tbl<%= tableno %>">
-                    <tr>
-                        <th width="160px">品番</th>
-                        <th width="150px">品目名称</th>
-                        <th width="40px">材料</th>
-                        <th width="60px">長さ</th>
-                        <% ymds.forEach(function (e) { %>
-                            <th class="th-qty"><%= myFunc.a(e); %></th>
-                            <!-- a href="/mp/plan/<%- myFunc.b(e); %>"></a -->
-                        <% }); %>
-                        <th width="60px">注文残</th>
-                        <th width="60px">仕掛</th>
-                        <th width="60px">ｽﾄｱ</th>
-                        <th width="100px">鋼材長さ</th>
-                        <th width="80px">ﾁｪｯｸｼｰﾄ</th>
-                        
-                    </tr>
-                    <% data[1].forEach(function (d) { %>
-                    <tr>
-                        <td class="lef td-big">
-                            <% if (osType == "windows") { %>
-                                <a href="<%= apemcontenturl %>&item=0%3Avalue%3A<%= d.HMCD %>&item=7%3Aoperator%3Aboolean&item=7%3Avalue%3Atrue" class="td-apem-a" target="_blank">
-                            <% } else { %>
-                                <a href="<%= apemdownloadurl %>&item=0%3Avalue%3A<%= d.HMCD %>&item=7%3Aoperator%3Aboolean&item=7%3Avalue%3Atrue" class="td-apem-a" target="_blank">
-                            <% }; %>
-                            <%= d.HMCD %></a>
-                        </td>
-                        <td class="lef"><%= d.HMNM %></td>
-                        <td class=""><%= d.MATESIZE %></td>
-                        <td class=""><%= d.LENGTH %></td>
-                        <td class="s<%= d.STS0 %> td-qty"><%= d.D0 %></td>
-                        <td class="s<%= d.STS1 %> td-qty"><%= d.D1 %></td>
-                        <td class="s<%= d.STS2 %> td-qty"><%= d.D2 %></td>
-                        <td class="s<%= d.STS3 %> td-qty"><%= d.D3 %></td>
-                        <td class="s<%= d.STS4 %> td-qty"><%= d.D4 %></td>
-                        <td class="s<%= d.STS5 %> td-qty"><%= d.D5 %></td>
-                        <td class="s<%= d.STS6 %> td-qty"><%= d.D6 %></td>
-                        <td class="s<%= d.STS7 %> td-qty"><%= d.D7 %></td>
-                        <td class="s<%= d.STS8 %> td-qty"><%= d.D8 %></td>
-                        <td class="s<%= d.STS9 %> td-qty"><%= d.D9 %></td>
-                        <td class=""><%= Number(d.D0Z)+Number(d.D1Z)+Number(d.D2Z)+Number(d.D3Z)+Number(d.D4Z)+Number(d.D5Z)+Number(d.D6Z)+Number(d.D7Z)+Number(d.D8Z)+Number(d.D9Z) %></td>
-                        <td class=""><%= (d.ZAIQTY == 0) ? "" : Number(d.ZAIQTY).toLocaleString(); %></td>
-                        <td class=""><%= (d.STORE == 0) ? "" : Number(d.STORE).toLocaleString(); %></td>
-                        <td class=""><%= d.MATERIALLEN %></td>
-                        <td><%= (d.DEFID == 0) ? "" : d.DEFID %></td>
-                    </tr>
-                    <% }); %>
-                </table>
-            <% }; %>
-            <% tableno += 1; %>
-            <br><br>
-        <% }); %>
-    <% }; %>
-    </div>
-    </div>
-
     <!-- 実績入力 Popup Window -->
     <div id="jiqtyPopupWindow" class="popwin-background">
         <div id="jiqtyPopup">
@@ -261,7 +156,105 @@ QRコード読取
         </div>
     </div>
 
-    
+    <!-- Details -->
+    <div id="details">
+    <% if (kd8450) { %>
+        <% let tableno = 1; %>
+        <% let mccount = Object.keys(kd8450).length; %>
+        <% kd8450.forEach(function (data) { %>
+            <div id="jump<%= tableno %>"></div>
+            <input type="hidden" id="mccd<%= tableno %>" name="mccd<%= tableno %>" value="<%= data[0].MCCD %>" />
+            <!-- 設備タイトル -->
+            <div class="mcnm">
+                <%= data[0].MCCD %>：<%= data[0].MCNM; %>
+                <span class="smalltitle">
+                <%= (data[0].CUTTHICKNESS==0) ? "（刃厚設定なし）" : "（刃厚：" + data[0].CUTTHICKNESS; %>
+                <%= (data[0].SCRAPLEN==0) ? "" : "、端材長さ：" + data[0].SCRAPLEN + "）"; %>
+                <input type="hidden" id="mcthick<%= tableno %>" name="mcthick" value="<%= data[0].CUTTHICKNESS %>" />
+                <input type="hidden" id="mcscrap<%= tableno %>" name="mcscrap" value="<%= data[0].SCRAPLEN %>" />
+                </span>
+                <span class="floatright">
+                <!-- チェックボックス関連 -->
+                全て表示
+                <span id ="countResult<%= tableno %>" class="normaltitle">-</span>
+                <input type="checkbox" id="chktehai<%= tableno %>" class="check-box" title="手配情報" value="<%= tableno %>" onchange="checkTehaiChange(this.value)"/>
+                在庫状況
+                <input type="checkbox" id="chkzaiko<%= tableno %>" class="check-box" title="在庫状況" value="<%= tableno %>" onchange="checkZaikoChange(this.value)"/>
+                鋼材情報
+                <input type="checkbox" id="chkmate<%= tableno %>" class="check-box" title="鋼材情報" value="<%= tableno %>" onchange="checkMateChange(this.value)"/>
+                <% let prevsectionid = "jump" + (tableno - 1); %>
+                <% let nextsectionid = "jump" + (tableno + 1); %>
+                <% if (tableno == 2) { %>
+                    <a href="#top" class="td-apem-a">前へ</a>
+                <% } %>
+                <% if (tableno >= 3) { %>
+                    <a href="javascript:jumpToSection('<%= prevsectionid %>')" class="td-apem-a">&nbsp;&nbsp;前へ&nbsp;&nbsp;</a>
+                <% } %>
+                <% if (tableno != mccount) { %>
+                    <a href="javascript:jumpToSection('<%= nextsectionid %>')" class="td-apem-a">&nbsp;&nbsp;次へ&nbsp;&nbsp;</a>
+                <% } %>
+                </span>
+            </div>
+            <hr>
+            <!-- 明細 -->
+            <% if (Object.keys(data[1]).length == 0) { %>
+                <div class="nodata">データありません．</div>
+            <% } else { %>
+                <table id="tbl<%= tableno %>">
+                    <tr>
+                        <th width="160px">品番</th>
+                        <th width="150px">品目名称</th>
+                        <th width="40px">材料</th>
+                        <th width="60px">長さ</th>
+                        <% ymds.forEach(function (e) { %>
+                            <th class="th-qty"><%= (ymds[0]==e) ? '遅れ' : myFunc.a(e); %></th>
+                            <!-- a href="/mp/plan/<%- myFunc.b(e); %>"></a -->
+                        <% }); %>
+                        <th width="60px">注文残</th>
+                        <th width="60px">仕掛</th>
+                        <th width="60px">ｽﾄｱ</th>
+                        <th width="100px">鋼材長さ</th>
+                        <th width="80px">ﾁｪｯｸｼｰﾄ</th>
+                        
+                    </tr>
+                    <% data[1].forEach(function (d) { %>
+                    <tr>
+                        <td class="lef td-big">
+                            <% if (osType == "windows") { %>
+                                <a href="javascript:apemCustomURL(0, '<%= d.HMCD %>')" class="td-apem-a" target="_blank"><%= d.HMCD %></a>
+                            <% } else { %>
+                                <a href="javascript:apemCustomURL(1, '<%= d.HMCD %>')" class="td-apem-a" target="_blank"><%= d.HMCD %></a>
+                            <% }; %>
+                        </td>
+                        <td class="lef"><%= d.HMNM %></td>
+                        <td class=""><%= d.MATESIZE %></td>
+                        <td class=""><%= d.LENGTH %></td>
+                        <td class="s<%= ((Number(d.D0)!=Number(d.D0Z) && Number(d.D0Z)>0)) ? '3' : d.STS0 %> td-qty"><%= d.D0 %></td>
+                        <td class="s<%= ((Number(d.D1)!=Number(d.D1Z) && Number(d.D1Z)>0)) ? '3' : d.STS1 %> td-qty"><%= d.D1 %></td>
+                        <td class="s<%= ((Number(d.D2)!=Number(d.D2Z) && Number(d.D2Z)>0)) ? '3' : d.STS2 %> td-qty"><%= d.D2 %></td>
+                        <td class="s<%= ((Number(d.D3)!=Number(d.D3Z) && Number(d.D3Z)>0)) ? '3' : d.STS3 %> td-qty"><%= d.D3 %></td>
+                        <td class="s<%= ((Number(d.D4)!=Number(d.D4Z) && Number(d.D4Z)>0)) ? '3' : d.STS4 %> td-qty"><%= d.D4 %></td>
+                        <td class="s<%= ((Number(d.D5)!=Number(d.D5Z) && Number(d.D5Z)>0)) ? '3' : d.STS5 %> td-qty"><%= d.D5 %></td>
+                        <td class="s<%= ((Number(d.D6)!=Number(d.D6Z) && Number(d.D6Z)>0)) ? '3' : d.STS6 %> td-qty"><%= d.D6 %></td>
+                        <td class="s<%= ((Number(d.D7)!=Number(d.D7Z) && Number(d.D7Z)>0)) ? '3' : d.STS7 %> td-qty"><%= d.D7 %></td>
+                        <td class="s<%= ((Number(d.D8)!=Number(d.D8Z) && Number(d.D8Z)>0)) ? '3' : d.STS8 %> td-qty"><%= d.D8 %></td>
+                        <td class="s<%= ((Number(d.D9)!=Number(d.D9Z) && Number(d.D9Z)>0)) ? '3' : d.STS9 %> td-qty"><%= d.D9 %></td>
+                        <td class=""><%= Number(d.D0Z)+Number(d.D1Z)+Number(d.D2Z)+Number(d.D3Z)+Number(d.D4Z)+Number(d.D5Z)+Number(d.D6Z)+Number(d.D7Z)+Number(d.D8Z)+Number(d.D9Z) %></td>
+                        <td class=""><%= (d.ZAIQTY == 0) ? "" : Number(d.ZAIQTY).toLocaleString(); %></td>
+                        <td class=""><%= (d.STORE == 0) ? "" : Number(d.STORE).toLocaleString(); %></td>
+                        <td class=""><%= d.MATERIALLEN %></td>
+                        <td><%= (d.DEFID == 0) ? "" : d.DEFID %></td>
+                    </tr>
+                    <% }); %>
+                </table>
+            <% }; %>
+            <% tableno += 1; %>
+            <br><br>
+        <% }); %>
+    <% }; %>
+    </div>
+    </div>
+
     <!-- Footer -->
     <%- include("_footer.ejs", req) %>
     
@@ -413,6 +406,32 @@ QRコード読取
             document.getElementById(sectionId).scrollIntoView({block: "center", behavior: "smooth"});
         }
 
+        // チェックボックス手配情報の表示切り替え
+        function checkTehaiChange(tblno) {
+            const checkTehai = document.getElementById(`chktehai${tblno}`)
+            const checkZaiko = document.getElementById(`chkzaiko${tblno}`)
+            const checkMaterial = document.getElementById(`chkmate${tblno}`)
+            const tblobj = document.getElementById(`tbl${tblno}`);
+            const rows = tblobj.rows.length;
+            const endcol = tblobj.rows[1].cells.length - 1;
+            let zanqty = 0;
+            // alert(tblobj.rows[2].cells[0].innerText)
+            for( var i = 1; i < rows; i++ ){
+                if (i % 2 != 0) { //通常の行
+                    zanqty = Number(tblobj.rows[i].cells[endcol - 4].innerText); // 注文残数
+                    if (checkTehai.checked == true) {
+                        tblobj.rows[i].style.display = "";
+                        if (checkMaterial.checked) tblobj.rows[i + 1].style.display = "";
+                    } else if (zanqty > 0) {
+                        tblobj.rows[i].style.display = "";
+                        if (checkMaterial.checked == false) tblobj.rows[i + 1].style.display = "none";
+                    } else {
+                        tblobj.rows[i].style.display = "none";
+                        tblobj.rows[i + 1].style.display = "none";
+                    }
+                }
+            }
+        }
         // チェックボックス在庫状況の表示切り替え
         function checkZaikoChange(tblno) {
             const checkDisp = document.getElementById(`chkzaiko${tblno}`)
@@ -444,7 +463,6 @@ QRコード読取
                 }
             }
         }
-
         // チェックボックス鋼材情報の表示切り替え
         function checkMateChange(tblno) {
             const checkDisp = document.getElementById(`chkmate${tblno}`)
@@ -476,31 +494,17 @@ QRコード読取
             }
         }
 
-        // チェックボックス手配情報の表示切り替え
-        function checkTehaiChange(tblno) {
-            const checkTehai = document.getElementById(`chktehai${tblno}`)
-            const checkZaiko = document.getElementById(`chkzaiko${tblno}`)
-            const checkMaterial = document.getElementById(`chkmate${tblno}`)
-            const tblobj = document.getElementById(`tbl${tblno}`);
-            const rows = tblobj.rows.length;
-            const endcol = tblobj.rows[1].cells.length - 1;
-            let zanqty = 0;
-            // alert(tblobj.rows[2].cells[0].innerText)
-            for( var i = 1; i < rows; i++ ){
-                if (i % 2 != 0) { //通常の行
-                    zanqty = Number(tblobj.rows[i].cells[endcol - 4].innerText); // 注文残数
-                    if (checkTehai.checked == true) {
-                        tblobj.rows[i].style.display = "";
-                        if (checkMaterial.checked) tblobj.rows[i + 1].style.display = "";
-                    } else if (zanqty > 0) {
-                        tblobj.rows[i].style.display = "";
-                        if (checkMaterial.checked == false) tblobj.rows[i + 1].style.display = "none";
-                    } else {
-                        tblobj.rows[i].style.display = "none";
-                        tblobj.rows[i + 1].style.display = "none";
-                    }
-                }
-            }
+        // カスタムURLスキームによるシステム連携（apem図面サーバーへのリンク）(0:Windows, 1:iPad)
+        function apemCustomURL(mode, hmcd) {
+            const apemurl = "http://apemsv/PEMasterEM/docspace/sdk/";
+            const modetext = (mode == 0) ? "contentView.do" : "download.do";
+            const apemparam1 = 
+                "?enc=UTF-8&service=cn%3Ddrep_service%40APEMSV%2Cou%3Dcomponents%2Cdc%3DAPEMEM" + 
+                `&workspace=${encodeURI("図面検索")}&condition=${encodeURI("全図面検索")}&item=0%3Aoperator%3AexactlyMatch`;
+            const apemparam2 = 
+                `&item=0%3Avalue%3A${hmcd}&item=7%3Aoperator%3Aboolean&item=7%3Avalue%3Atrue`;
+            // 図面表示またはダウンロード
+            location.href = `${apemurl}${modetext}${apemparam1}&${apemparam2}`;
         }
 
         /* ポップアップ関連 ここから */
@@ -573,6 +577,71 @@ QRコード読取
                     });
                     // ポップアップウィンドウを表示
                     document.getElementById("irepoPopupWindow").style.display = "flex";
+                }
+            }
+            // カスタムURLスキームによるシステム連携
+            function iRepoCustomURL(tblno, row, mcgcd, hmcd, defid, clusterno, repid) {
+                // iRepo呼び出し用データの取得
+                const tblobj = document.getElementById(`tbl${tblno}`);
+                const irepourl = "jp.co.cimtops.ireporter";
+                
+                // 新規帳票定義を起動
+                if (repid == 0) {
+                    if (mcgcd == "SW") {
+                        // 選択されたデータをセットして帳票定義IDを起動
+                        const mate = tblobj.rows[row].cells[2].innerText;
+                        const cut = tblobj.rows[row].cells[3].innerText;
+                        const hmcdparam = encodeURI(`スキャン品番=${hmcd}`);
+                        const mateparam = encodeURI(`材料サイズ=${mate}`);
+                        const cutparam = encodeURI(`切断長=${cut}`);
+                        const modeparam = encodeURI("処理モード=order"); // 手配モードで帳票を起動
+                        location.href = `${irepourl}.createreport:defid=${defid}` +
+                            `&${hmcdparam}&${mateparam}&${cutparam}&${modeparam}`;
+                    } else {
+                        // 帳票定義IDをそのまま起動
+                        location.href = `${irepourl}.createreport:defid=${defid}`;
+                    }
+                    /*browserTabClose();*/
+
+                // 保留中の帳票IDから起動
+                } else {
+                    
+                    location.href = `${irepourl}.openreport:repid=${repid}`;
+                    /*browserTabClose();*/
+                }
+            }
+            // 保留中の帳票IDを取得
+            async function getHoldid(defid, hmcd, clusterno) {
+                let customurl = "";
+                if (clusterno == 0) {
+                    customurl = `/ireposv/getHoldid/${defid}`;
+                } else {
+                    customurl = `/ireposv/getHoldid/${defid}:${hmcd}:${clusterno}`;
+                }
+                // irepoサーバーから編集中帳票ID取得API
+                const res = await fetch(customurl);
+                const repid = await res.json();
+                return repid;
+            }
+            // 帳票一覧を取得
+            async function getViewReport(defid) {
+                const res = await fetch(`/ireposv/getViewReport/${defid}`);
+                const viewreport = await res.json();
+                return viewreport;
+            }
+            // 品番と設備Gと設備コードから帳票IDと品番クラスター番号を取得
+            async function getDefid(hmcd, mcgcd, mccd) {
+                try {
+                    const res = await fetch(`/mysqlsv/getDefid/${hmcd}:${mcgcd}:${mccd}:`);
+                    const data = await res.json();
+                    if (data.DEFID == 0) {
+                        alert("起動する帳票IDがマスター登録されていません．");
+                        return null;
+                    }
+                    return data;
+                } catch (err) {
+                    alert(err);
+                    return null;
                 }
             }
             
@@ -791,75 +860,9 @@ QRコード読取
                 }
             }
 
+
+
         /* ポップアップ関連 ここまで */
-        // カスタムURLスキームによるシステム連携
-        function iRepoCustomURL(tblno, row, mcgcd, hmcd, defid, clusterno, repid) {
-            // iRepo呼び出し用データの取得
-            const tblobj = document.getElementById(`tbl${tblno}`);
-            const irepourl = "jp.co.cimtops.ireporter";
-            
-            // 新規帳票定義を起動
-            if (repid == 0) {
-                if (mcgcd == "SW") {
-                    // 選択されたデータをセットして帳票定義IDを起動
-                    const mate = tblobj.rows[row].cells[2].innerText;
-                    const cut = tblobj.rows[row].cells[3].innerText;
-                    const hmcdparam = encodeURI(`スキャン品番=${hmcd}`);
-                    const mateparam = encodeURI(`材料サイズ=${mate}`);
-                    const cutparam = encodeURI(`切断長=${cut}`);
-                    const modeparam = encodeURI("処理モード=order"); // 手配モードで帳票を起動
-                    location.href = `${irepourl}.createreport:defid=${defid}` +
-                        `&${hmcdparam}&${mateparam}&${cutparam}&${modeparam}`;
-                } else {
-                    // 帳票定義IDをそのまま起動
-                    location.href = `${irepourl}.createreport:defid=${defid}`;
-                }
-                /*browserTabClose();*/
-
-            // 保留中の帳票IDから起動
-            } else {
-                
-                location.href = `${irepourl}.openreport:repid=${repid}`;
-                /*browserTabClose();*/
-            }
-        }
-
-        // 保留中の帳票IDを取得
-        async function getHoldid(defid, hmcd, clusterno) {
-            let customurl = "";
-            if (clusterno == 0) {
-                customurl = `/ireposv/getHoldid/${defid}`;
-            } else {
-                customurl = `/ireposv/getHoldid/${defid}:${hmcd}:${clusterno}`;
-            }
-            // irepoサーバーから編集中帳票ID取得API
-            const res = await fetch(customurl);
-            const repid = await res.json();
-            return repid;
-        }
-
-        // 帳票一覧を取得
-        async function getViewReport(defid) {
-            const res = await fetch(`/ireposv/getViewReport/${defid}`);
-            const viewreport = await res.json();
-            return viewreport;
-        }
-
-        // 品番と設備Gと設備コードから帳票IDと品番クラスター番号を取得
-        async function getDefid(hmcd, mcgcd, mccd) {
-            try {
-                const res = await fetch(`/mysqlsv/getDefid/${hmcd}:${mcgcd}:${mccd}:`);
-                const data = await res.json();
-                if (data.DEFID == 0) {
-                    alert("起動する帳票IDがマスター登録されていません．");
-                    return null;
-                }
-                return data;
-            } catch (err) {
-                alert(err);
-                return null;
-            }
-        }
 
         // 時間を置いてからタブを閉じる
         async function browserTabClose(){            
