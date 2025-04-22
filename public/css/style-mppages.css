@@ -146,7 +146,10 @@ a {
     font-weight: 800;
     padding-left: 15px;
 }
-.popwin-modalbody .borderless {
+#jiqtyPopup .popwin-modalbody .borderless {
+    border: solid 0px;
+}
+#zaiqtyPopup .popwin-modalbody .borderless {
     border: solid 0px;
 }
 #jiqtyPopup td a {
@@ -169,7 +172,12 @@ a {
     text-align: right;
 }
 #jiqtyPopupCalc td {
-    border-radius: 5px;    
+    border-radius: 5px;
+    border-width: 8px;
+}
+#zaiqtyPopupCalc td {
+    border-radius: 5px;
+    border-width: 8px;
 }
 .calc-numpad {
     cursor: pointer;
@@ -178,6 +186,7 @@ a {
     color: rgb(225, 238, 253);
     background-color: rgba(0, 171, 250, 0.5);
     font-size: 2.5rem;
+    box-shadow: 2px 4px 4px gray;
     touch-action: manipulation;
 }
 .calc-function {
@@ -187,6 +196,7 @@ a {
     color: rgb(225, 238, 253);
     background-color: rgba(250, 163, 50, 0.6);
     font-size: 2.0rem;
+    box-shadow: 2px 4px 4px gray;
     touch-action: manipulation;
 }
 .calc-btn {
@@ -196,6 +206,7 @@ a {
     color: rgb(50, 50, 50, 0.8);
     background-color: rgba(200, 200, 200, 0.3);
     font-size: 1.0rem;
+    box-shadow: 2px 4px 4px gray;
     touch-action: manipulation;
 }
 #jiqtyPopupButtons {
@@ -207,6 +218,7 @@ a {
     color: rgb(50, 50, 50, 0.8);
     font-size: x-large;
     font-weight: bolder;
+    box-shadow: 2px 4px 4px gray;
 }
 #zaiqtyPopupButtons {
     cursor: pointer;
@@ -214,6 +226,8 @@ a {
     vertical-align: bottom;
     margin-bottom: 5px;
     margin-inline: 5px;
+    border-width: 8px;
+    box-shadow: 2px 4px 4px gray;
     color: rgb(50, 50, 50, 0.8);
     font-size: x-large;
     font-weight: bolder;
@@ -242,6 +256,10 @@ a {
     background: rgba(234, 146, 75, 0.8);
     font-size: large;
     font-weight: bolder;
+}
+#newReport:hover {
+    color:rgba(80, 80, 155, 0.8);
+    background: rgba(234, 146, 75, 0.5);
 }
 #oldReport {
     border: 0px;

@@ -37,6 +37,7 @@ QRコード読取
     <%- include("_header.ejs", { title: mcgcd + "工程　手配一覧", req }) %>
     <div id="gotoswmenu"><a href="javascript:window.close()"><i class="fas fa-home"></i></a></div>
     <input type="hidden" id="mcgcd" name="mcgcd" value="<%= mcgcd %>" />
+    <input type="hidden" id="starteddt" name="starteddt" value="<%= ymds[0] %>" />
 
     <!-- 実績入力 Popup Window -->
     <div id="jiqtyPopupWindow" class="popwin-background">
@@ -221,9 +222,9 @@ QRコード読取
                     <tr>
                         <td class="lef td-big">
                             <% if (osType == "windows") { %>
-                                <a href="javascript:apemCustomURL(0, '<%= d.HMCD %>')" class="td-apem-a" target="_blank"><%= d.HMCD %></a>
+                                <a href="javascript:apemCustomURL(0, '<%= d.HMCD %>')" class="td-apem-a"><%= d.HMCD %></a>
                             <% } else { %>
-                                <a href="javascript:apemCustomURL(1, '<%= d.HMCD %>')" class="td-apem-a" target="_blank"><%= d.HMCD %></a>
+                                <a href="javascript:apemCustomURL(1, '<%= d.HMCD %>')" class="td-apem-a"><%= d.HMCD %></a>
                             <% }; %>
                         </td>
                         <td class="lef"><%= d.HMNM %></td>
@@ -504,7 +505,7 @@ QRコード読取
             const apemparam2 = 
                 `&item=0%3Avalue%3A${hmcd}&item=7%3Aoperator%3Aboolean&item=7%3Avalue%3Atrue`;
             // 図面表示またはダウンロード
-            location.href = `${apemurl}${modetext}${apemparam1}&${apemparam2}`;
+            window.open(`${apemurl}${modetext}${apemparam1}${apemparam2}`, "_blank");
         }
 
         /* ポップアップ関連 ここから */
@@ -653,11 +654,10 @@ QRコード読取
                 let mcgcd = document.getElementById("mcgcd").value;
                 let mccd = document.getElementById(`mccd${tblno}`).value;
                 let hmcd = tblobj.rows[row].cells[0].innerText;
-                let stdttext = tblobj.rows[0].cells[4].innerText;
                 let eddttext = tblobj.rows[0].cells[col].innerText;
                 let d = new Date();
-                let stdt = d.getFullYear() + "-" + stdttext.replace("/", "-");
-                let eddt = d.getFullYear() + "-" + eddttext.replace("/", "-");
+                let stdt = document.getElementById("starteddt").value;
+                let eddt = (col==4) ? stdt : d.getFullYear() + "-" + eddttext.replace("/", "-");
                 let odrqty = tblobj.rows[row].cells[col].innerText;
                 if (flgSubmit) return;
                 flgSubmit = true;

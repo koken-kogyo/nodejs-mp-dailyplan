@@ -5,27 +5,22 @@
 :root {
     --item-title-row: 40px;
 
-    --tablet-top-row: 170px;
-    --tablet-top-img: 150px;
-    --tablet-grid-row: 110px;
     --tablet-item-img: 50px;
+    --tablet-grid-row: 90px;
     --tablet-grid-column: 160px;
     --tabport-grid-column: 120px;
 
-
-    --mobile-grid-column: 180px;
-    --mobile-grid-row: 120px;
     --mobile-item-img: 80px;
+    --mobile-grid-row: 120px;
+    --mobile-grid-column: 90px;
 
-    --notepc-top-row: 160px;
-    --notepc-grid-column: 200px;
-    --notepc-grid-row: 130px;
     --notepc-item-img: 40px;
+    --notepc-grid-row: 130px;
+    --notepc-grid-column: 200px;
 
-    --desktop-top-row: 200px;
-    --desktop-grid-column: 220px;
-    --desktop-grid-row: 140px;
     --desktop-item-img: 60px;
+    --desktop-grid-row: 140px;
+    --desktop-grid-column: 220px;
 }
 /* =========================================================================== */
 /*  レスポンシブレイアウト [Grid] 設定
@@ -47,59 +42,9 @@
     var(--item-title-row) repeat(1, var(--tablet-grid-row))
     var(--item-title-row) repeat(1, var(--tablet-grid-row));
 }
-.containers a {
-    display: inline-block;
-    margin-bottom: 1rem;
-    width: 100%;
-    height: 100%;
-}
-.containers .item-top {
-    background: rgb(230, 230, 230, 0.8);
-    border: 1px solid rgb(230, 230, 230, 1);
-    border-radius: 0.5rem;
-    margin: 0.5rem 0 0.5rem 1rem;
-    text-align: center;
-    grid-column: 1 / 2;
-}
-.containers .item-top:hover{
-    background: rgb(204 ,230 ,250,1);
-}
-.containers .topimg {
-    height: var(--tablet-top-img);
-    padding: 0.3rem 0rem;
-}
-.containers #news-list {
-    grid-column: 2 / 5;
-    margin: 0.5rem 0 0.5rem 1rem;
-    border-radius: 5px;
-    background-color: rgb(255, 255, 255, 1);
-    text-align: left;
-    font-family: "system-ui", sans-serif;
-    font-size: 1.1rem;
-    line-height: 1.5;
-    overflow: auto;
-}
-.containers #news-list p {
-    color: #777;
-    margin: 0 0 0 0.2rem;
-}
-.containers #news-list hr {
-    border-style: none;
-    border-top: 0.1rem solid #ddd;
-    margin: 0.2rem;
-}
-.containers .item-title {
-    color: #555;
-    font-size: 1.3rem;
-    font-weight: 900;
-    margin: 0.5rem 0 0rem 2rem;
-    grid-column: 1 / 7;
-}
 .containers .item {
     background: rgb(0, 168, 169, 0.1);
     border: 0.1rem solid rgb(0, 168, 169, 0.1);
-    /*background: rgb(230, 230, 230, 0.8);*/
-    /*border: 0.2rem solid rgb(230, 230, 230, 0.6);*/
     border-radius: 1rem;
     box-shadow: 2px 2px 4px gray;
     margin: 0rem 0rem 1rem 1rem;
@@ -107,8 +52,18 @@
     font-weight: 600;
     text-align: center;
 }
-.containers .item:hover{
+.containers .item:hover {
     background: rgb(204 ,230 ,250,1);
+}
+.containers .item a {
+    line-height: calc(var(--tablet-grid-row) - 1.2rem);
+}
+.containers .item-title {
+    color: #555;
+    font-size: 1.3rem;
+    font-weight: 900;
+    margin: 0.5rem 0 0rem 2rem;
+    grid-column: 1 / 7;
 }
 .containers .itemimg {
     height: var(--tablet-item-img);
@@ -133,27 +88,16 @@
     }
 }
 /* mobile-landscape(横)-size: ～500px縦 && ～800px横 */
-/* HP表示なし、ニュースリストを最下行に移動 業務[2列 x 2行] + 他[2列 x 1行] + [Topics] */
 @media screen and (orientation: landscape) and (max-height:500px) and (max-width:800px) {
     .responsible:before { content: "MobileSizeW"; }
     .containers {
         width: calc((var(--mobile-grid-column) * 3) + 1rem);
-        grid-template-rows: var(--item-title-row) repeat(3, (--mobile-grid-row)) var(--item-title-row) var(--mobile-grid-row);
         grid-template-columns: repeat(3, var(--mobile-grid-column));
-    }
-    .containers .item-top {
-        display: none;
-    }
-    .containers #news-list {
-        font-size: x-small;
-        margin: 1rem;
-        grid-row: 7 / 8;
-        grid-column: 1 / 4;
-    }
-    .containers .item-title {
-        font-size: medium;
-        margin: 0.2rem 0 0 2rem;
-        grid-column: 1 / 4;
+        grid-template-rows: 
+            var(--item-title-row) repeat(3, var(--mobile-grid-row)) 
+            var(--item-title-row) repeat(2, var(--mobile-grid-row))
+            var(--item-title-row) var(--mobile-grid-row)
+            var(--item-title-row) var(--mobile-grid-row);
     }
     .containers .item {
         margin: 0rem 0rem 0.5rem 1rem;
@@ -167,27 +111,15 @@
     }
 }
 /* mobile-portrait(縦)-size: ～500px横 */
-/* HP表示なし、ニュースリストを最下行に移動 業務[2列 x 2行] + 他[2列 x 1行] + [Topics] */
 @media screen and (orientation: portrait) and (max-height: 800px) {
     .responsible:before { content: "MobileSizeH"; }
     .containers {
-        width: calc((var(--mobile-grid-column) * 2) + 1rem);
-        grid-template-rows: var(--item-title-row) repeat(3, (--mobile-grid-row)) var(--item-title-row) var(--mobile-grid-row);
-        grid-template-columns: repeat(2, var(--mobile-grid-column));
-    }
-    .containers .item-top {
-        display: none;
-    }
-    .containers #news-list {
-        font-size: x-small;
-        margin: 1rem;
-        grid-row: 7 / 8;
-        grid-column: 1 / 3;
-    }
-    .containers .item-title {
-        font-size: medium;
-        margin: 0.2rem 0 0 2rem;
-        grid-column: 1 / 3;
+        width: calc((var(--mobile-grid-column) * 3) + 1rem);
+        grid-template-columns: repeat(3, var(--mobile-grid-column));
+        grid-template-rows: 
+            var(--item-title-row) repeat(3, var(--mobile-grid-row)) 
+            var(--item-title-row) repeat(2, var(--mobile-grid-row))
+            var(--item-title-row) var(--mobile-grid-row);
     }
     .containers .item {
         margin: 0rem 0rem 0.5rem 1rem;
@@ -213,14 +145,11 @@
         var(--item-title-row) repeat(1, var(--notepc-grid-row))
         var(--item-title-row) repeat(1, var(--notepc-grid-row));
     }
+    .containers .item a {
+        line-height: calc(var(--notepc-grid-row) - 1.2rem);
+    }
     .containers a {
         margin-bottom: 0.5rem;
-    }
-        .containers #news-list {
-        height: var(--notepc-top-row);
-        font-size: 1.0rem;
-        margin: 0.8rem 0.5rem 0 1.5rem;
-        grid-column: 2 / 5;
     }
     .containers .itemimg {
         height: var(--notepc-item-img);
@@ -239,9 +168,6 @@
         var(--item-title-row) var(--desktop-grid-row)
         var(--item-title-row) var(--desktop-grid-row);
     }
-    .containers .item-title {
-        grid-column: 1 / 7;
-    }
     .containers .itemimg {
         height: var(--desktop-item-img);
         padding: 0.5rem 0 0 0;
@@ -253,4 +179,34 @@
 /* 27inchMonitor-size: 2560*1440 */
 @media screen and (min-width: 2500px) and (orientation: landscape) {
     .responsible:before { content: "PC27inchSize"; }
+}
+.backshadow {
+    text-align: center;
+    background-color: #0d6d91;
+    line-height: 10em;
+    border-radius: 5px;
+}
+/* 手動機テキスト装飾 */
+.text-amazing-m {
+    text-shadow:
+        0 1px 0 rgba(220, 200, 200, 0.9),
+        0 1.5px 0 rgba(220, 150, 150, 0.7),
+        0 2px 0 rgba(150, 70, 70, 0.5),
+        0 2.5px 0 rgba(220, 150, 150, 0.3),
+        2px 3px 4px rgba(0, 0, 0, 0.1),
+        2px 3px 4px rgba(0, 0, 0, 0.3);
+    color: rgba(220, 150, 100, 0.9);
+    font-size: 2.4rem;
+}
+/* 自動機テキスト装飾 */
+.text-amazing-a {
+    text-shadow:
+        0 1px 0 rgba(200, 200, 220, 0.9),
+        0 1.5px 0 rgba(150, 150, 220, 0.7),
+        0 2px 0 rgba(70, 70, 220, 0.5),
+        0 2.5px 0 rgba(150, 150, 220, 0.3),
+        2px 3px 4px rgba(0, 0, 0, 0.1),
+        2px 3px 4px rgba(0, 0, 0, 0.3);
+    color: rgba(100, 150, 220, 0.9);
+    font-size: 2.4rem;
 }
