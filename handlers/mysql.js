@@ -515,6 +515,8 @@ const getOdrno = async (hmcd, mcgcd, mccd, eddt, stdt) => {
         `where HMCD='${hmcd}' and MCGCD='${mcgcd}' and MCCD='${mccd}' and EDDT='${eddt}' ` + 
         "and ODRSTS in ('1','2','3','4') group by EDDT";
     const kd8450 = await getDatabase(sql);
+    // 過去日付の実績訂正がタップされた場合、処理不可能を返却
+    if (kd8450.length == 0) return kd8450;
     // 同じ日に違う手配番号が複数、１オーダーのロット分割があるのでここでステータス判定
     if (kd8450[0].ODRQTY == kd8450[0].JIQTY) {
         kd8450[0].ODRSTS = "4";

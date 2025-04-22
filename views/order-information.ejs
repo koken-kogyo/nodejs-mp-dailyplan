@@ -153,6 +153,7 @@ QRコード読取
                         <th width="70px">更新日</th>
                     </tr>
                 </table>
+                <input type="hidden" id="ipopDEFID" name="ipopdefid" value="" />
             </div>
         </div>
     </div>
@@ -515,6 +516,7 @@ QRコード読取
             // イベントリスナー（キーダウン）（無名関数編）
             inputBox.addEventListener("keydown", function(event) {
                 if (event.key == "Enter") inputBox.blur();
+                if (event.keyCode == 27) document.getElementById("jiqtyPopupWindow").style.display = "none";
             });
 
             // i-Reporter 選択ポップアップ画面の起動
@@ -524,6 +526,7 @@ QRコード読取
                 const hmcd = tblobj.rows[row].cells[0].innerText;
                 const mcgcd = document.getElementById("mcgcd").value;
                 const mccd = document.getElementById(`mccd${tblno}`).value;
+                //alert(tblno + ":" + row + ":" + hmcd)
                 // iRepo情報の取得API
                 const irepoinfo = await this.getDefid(hmcd, mcgcd, mccd);
                 if (!irepoinfo) return;
@@ -567,11 +570,12 @@ QRコード読取
                             });
                         });
                     };
-                    // 新規帳票起動イベントリスナー設定
+                    // 新規帳票起動イベント設定
+                    document.getElementById("ipopDEFID").value = irepoinfo.DEFID;
                     document.getElementById("newReport").addEventListener("click", () => {
-                        location.href = `jp.co.cimtops.ireporter.createreport:defid=${irepoinfo.DEFID}`;
+                        location.href = `jp.co.cimtops.ireporter.createreport:defid=${document.getElementById("ipopDEFID").value}`;
                         document.getElementById("irepoPopupWindow").style.display = "none";
-                    });
+                    }, { once: true });
                     // 閉じるイベントリスナー設定
                     document.getElementById("irepoClose").addEventListener("click", () => {
                         document.getElementById("irepoPopupWindow").style.display = "none";
@@ -672,17 +676,21 @@ QRコード読取
                         tblobj.rows[row].cells[col].classList.add("highlight"); // タップしたセルが分かるようハイライトを追加
                     }
                     廃止    */
+                    if (data.length == 0) {
+                        alert("遅れ分の実績訂正には対応していません．");
+                        return;
+                    }
                     // ポップアップウィンドウに値をセット
-                    let odrno = data.ODRNO;
-                    let odrsts = data.ODRSTS; //旧：tblobj.rows[row].cells[col].className.substr(1,1);
+                    let odrno = data[0].ODRNO;
+                    let odrsts = data[0].ODRSTS; //旧：tblobj.rows[row].cells[col].className.substr(1,1);
                     document.getElementById("jpopHMCD").innerText = hmcd;
                     document.getElementById("jpopODRNO").innerText = odrno;
                     document.getElementById("jpopODRSTS").innerText = (odrsts=="1") ? "着手中" : (odrsts=="2") ? "着手前" : (odrsts=="3") ? "着手" : (odrsts=="4") ? "完了" : (odrsts=="9") ? "取消" : "不明";
-                    document.getElementById("jpopEDDT").innerText = eddttext;
+                    document.getElementById("jpopEDDT").innerText = eddt;
                     document.getElementById("jpopODRQTY").innerText = odrqty;
-                    document.getElementById("jpopJIQTY").innerText = data.JIQTY;
-                    document.getElementById("jpopFUTUREODR").innerText = data.FUTUREODR;
-                    document.getElementById("jpopFUTUREQTY").innerText = data.FUTUREQTY;
+                    document.getElementById("jpopJIQTY").innerText = data[0].JIQTY;
+                    document.getElementById("jpopFUTUREODR").innerText = data[0].FUTUREODR;
+                    document.getElementById("jpopFUTUREQTY").innerText = data[0].FUTUREQTY;
                     document.getElementById("jpopMCCD").value = mccd;
                     document.getElementById("jpopTBLNO").value = tblno;
                     document.getElementById("jpopROW").value = row;
@@ -697,19 +705,19 @@ QRコード読取
                     modifyObj.classList.remove("disable");
                     if (odrsts == "1") {
                         startObj.classList.add("disable");
-                        if (Number(data.ZANQTY) != 0) finishObj.classList.add("disable");
+                        if (Number(data[0].ZANQTY) != 0) finishObj.classList.add("disable");
                         modifyObj.classList.add("disable");
                     } else if (odrsts == "2") {
-                        if (Number(data.ZANQTY) != 0) startObj.classList.add("disable");
-                        if (Number(data.ZANQTY) != 0) finishObj.classList.add("disable");
+                        if (Number(data[0].ZANQTY) != 0) startObj.classList.add("disable");
+                        if (Number(data[0].ZANQTY) != 0) finishObj.classList.add("disable");
                         modifyObj.classList.add("disable");
                     } else if (odrsts == "3") {
                         startObj.classList.add("disable");
-                        if (Number(data.JIQTY) == 0) modifyObj.classList.add("disable");
+                        if (Number(data[0].JIQTY) == 0) modifyObj.classList.add("disable");
                     } else if (odrsts == "4") {
                         startObj.classList.add("disable");
                         finishObj.classList.add("disable");
-                        if (Number(data.FUTUREQTY) != 0) modifyObj.classList.add("disable");
+                        if (Number(data[0].FUTUREQTY) != 0) modifyObj.classList.add("disable");
                     } else {
                         startObj.classList.add("disable");
                         finishObj.classList.add("disable");
@@ -723,7 +731,8 @@ QRコード読取
                     // ポップアップウィンドウを表示
                     document.getElementById("jiqtyPopupWindow").style.display = "flex";
                     inputBox.focus();
-                }); 
+                })
+                .catch(err => {alert(err);});
             }
             // 表示されているポップアップウィンドウの場所を変更
             function w(justifyname, alignname) {

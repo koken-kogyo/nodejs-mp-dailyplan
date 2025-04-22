@@ -215,7 +215,7 @@ app.get("/mysqlsv/getOdrno/:args", async (req, res, next) => {
     const eddt = args.split(":")[3];
     const stdt = args.split(":")[4];
     const kd8450 = await mysqlHandler.getOdrno(hmcd, mcgcd, mccd, eddt, stdt);
-    res.status(200).json(kd8450[0]);
+    res.status(200).json(kd8450);
 });
 
 // API 作業開始
