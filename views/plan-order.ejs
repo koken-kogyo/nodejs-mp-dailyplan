@@ -109,7 +109,7 @@ QRコード読取
                         <td class="lef"><%= d.HMNM %></td>
                         <td class=""><%= d.MATESIZE %></td>
                         <td class=""><%= d.LENGTH %></td>
-                        <td class="td-qty2"><%= d.DAZ %></td>
+                        <td class="td-qty2"><%= (d.DAZ==0) ? "" : d.DAZ; %></td>
                         <td class="td-qty2"><%= d.D0 %></td>
                         <td class="td-qty2"><%= d.D1 %></td>
                         <td class="td-qty2"><%= d.D2 %></td>

@@ -475,8 +475,8 @@ a {
 }
 /* 手配取消 */
 #details .s9 {
-    color:yellow;
-    background-color: rgba(255, 50, 50, 0.3);
+    color: rgba(55, 55, 55, 0.6);
+    background-color: rgba(150, 150, 150, 0.2);
 }
 /* 在庫不足 */
 .warn {
