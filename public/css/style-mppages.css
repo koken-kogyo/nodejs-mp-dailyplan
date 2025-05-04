@@ -173,11 +173,11 @@ a {
 }
 #jiqtyPopupCalc td {
     border-radius: 5px;
-    border-width: 8px;
+    border-width: 6px;
 }
 #zaiqtyPopupCalc td {
     border-radius: 5px;
-    border-width: 8px;
+    border-width: 6px;
 }
 .calc-numpad {
     cursor: pointer;
@@ -218,7 +218,6 @@ a {
     color: rgb(50, 50, 50, 0.8);
     font-size: x-large;
     font-weight: bolder;
-    box-shadow: 2px 4px 4px gray;
 }
 #zaiqtyPopupButtons {
     cursor: pointer;
@@ -226,8 +225,6 @@ a {
     vertical-align: bottom;
     margin-bottom: 5px;
     margin-inline: 5px;
-    border-width: 8px;
-    box-shadow: 2px 4px 4px gray;
     color: rgb(50, 50, 50, 0.8);
     font-size: x-large;
     font-weight: bolder;
@@ -235,16 +232,28 @@ a {
 #jiqtyStart {
     height: 40px;
     background-color: rgba(179, 247, 188, 0.6);
+    border-radius: 5px;
+    border-width: 6px;
+    box-shadow: 2px 4px 4px gray;
 }
 #jiqtyEntry {
     height: 40px;
     background-color: rgba(160, 160, 160, 0.4);
+    border-radius: 5px;
+    border-width: 6px;
+    box-shadow: 2px 4px 4px gray;
 }
 #jiqtyModify {
-    background-color: rgba(235, 38, 38, 0.404);
+    background-color: rgba(235, 38, 38, 0.4);
+    border-radius: 5px;
+    border-width: 6px;
+    box-shadow: 2px 4px 4px gray;
 }
 #zaiqtyModify {
-    background-color: rgba(235, 38, 38, 0.404);
+    background-color: rgba(235, 38, 38, 0.4);
+    border-radius: 5px;
+    border-width: 6px;
+    box-shadow: 2px 4px 4px gray;
 }
 #jiqtyPopupButtons .disable {
     display: none;
@@ -439,6 +448,7 @@ a {
     width: 865px;
     margin: 0 auto;
 }
+/* 作業開始 */
 #details .s1 {
     border-radius: 3px;
     animation: blinkAnimeS1 0.8s  infinite alternate; /*ease infinite;*/
@@ -447,30 +457,37 @@ a {
     0%{ color : rgba(230, 250, 230, 0.8);   background:rgba(20, 120, 20, 0.8) }
   100%{ color : rgba(0, 0, 0, 0.8); background:rgba(100, 250, 120, 0.8)   }
 }
+/* 手配確定 */
 #details .s2 {
     color: cadetblue;
 }
+/* 手配着手 */
 #details .s3 {
     border-radius: 3px;
     color: #777;
     background: linear-gradient(to bottom, rgb(255, 105, 180, 0.0) 60%, rgb(255, 105, 180, 0.3) 80%);
 }
+/* 手配完了 */
 #details .s4 {
     border-radius: 3px;
     color: rgba(55, 55, 55, 0.8);
     background-color: rgba(255, 105, 180, 0.3);
 }
+/* 手配取消 */
 #details .s9 {
     color:yellow;
     background-color: rgba(255, 50, 50, 0.3);
 }
+/* 在庫不足 */
 .warn {
     border-radius: 3px;
     font-weight: 600;
-    animation: blinkAnimeWarn 1.5s  infinite alternate;
+    color : rgba(55, 55, 0, 1.0);
+    background:rgba(236, 48, 34, 0.2);
+    /*animation: blinkAnimeWarn 1.5s  infinite alternate;*/
 }
 @keyframes blinkAnimeWarn {
-    0%{ color : rgba(71, 71, 59, 1.0);   background:rgba(241, 198, 198, 0.8) }
+    0%{ color : rgba(71, 71, 59, 1.0);  background:rgba(241, 198, 198, 0.8) }
   100%{ color : rgba(255, 255, 0, 1.0); background:rgba(236, 48, 34, 0.8)   }
 }
 .highlight {

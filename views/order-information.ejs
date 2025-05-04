@@ -38,6 +38,8 @@ QRコード読取
     <div id="gotoswmenu"><a href="javascript:window.close()"><i class="fas fa-home"></i></a></div>
     <input type="hidden" id="mcgcd" name="mcgcd" value="<%= mcgcd %>" />
     <input type="hidden" id="starteddt" name="starteddt" value="<%= ymds[0] %>" />
+    <% let idx = 0; %><% ymds.forEach(function (e) { %><input type="hidden" id="eddt<%= idx %>" name="eddt<%= idx %>" value="<%= e %>" />
+    <% idx++; %><% }); %>
 
     <!-- 実績入力 Popup Window -->
     <div id="jiqtyPopupWindow" class="popwin-background">
@@ -208,9 +210,11 @@ QRコード読取
                         <th width="150px">品目名称</th>
                         <th width="40px">材料</th>
                         <th width="60px">長さ</th>
+                        <th class="th-qty">遅れ</th>
                         <% ymds.forEach(function (e) { %>
-                            <th class="th-qty"><%= (ymds[0]==e) ? '遅れ' : myFunc.a(e); %></th>
-                            <!-- a href="/mp/plan/<%- myFunc.b(e); %>"></a -->
+                        <th class="th-qty"><%= myFunc.a(e); %><br><%= myFunc.m(e); %></th>
+                        <!-- th class="th-qty"><%= (ymds[0]==e) ? '遅れ' : myFunc.a(e); %></th -->
+                        <!-- a href="/mp/plan/<%- myFunc.b(e); %>"></a -->
                         <% }); %>
                         <th width="60px">注文残</th>
                         <th width="60px">仕掛</th>
@@ -231,6 +235,7 @@ QRコード読取
                         <td class="lef"><%= d.HMNM %></td>
                         <td class=""><%= d.MATESIZE %></td>
                         <td class=""><%= d.LENGTH %></td>
+                        <td class="s<%= ((Number(d.DA)!=Number(d.DAZ) && Number(d.DAZ)>0)) ? '3' : d.STSA %> td-qty"><%= d.DA %></td>
                         <td class="s<%= ((Number(d.D0)!=Number(d.D0Z) && Number(d.D0Z)>0)) ? '3' : d.STS0 %> td-qty"><%= d.D0 %></td>
                         <td class="s<%= ((Number(d.D1)!=Number(d.D1Z) && Number(d.D1Z)>0)) ? '3' : d.STS1 %> td-qty"><%= d.D1 %></td>
                         <td class="s<%= ((Number(d.D2)!=Number(d.D2Z) && Number(d.D2Z)>0)) ? '3' : d.STS2 %> td-qty"><%= d.D2 %></td>
@@ -241,7 +246,8 @@ QRコード読取
                         <td class="s<%= ((Number(d.D7)!=Number(d.D7Z) && Number(d.D7Z)>0)) ? '3' : d.STS7 %> td-qty"><%= d.D7 %></td>
                         <td class="s<%= ((Number(d.D8)!=Number(d.D8Z) && Number(d.D8Z)>0)) ? '3' : d.STS8 %> td-qty"><%= d.D8 %></td>
                         <td class="s<%= ((Number(d.D9)!=Number(d.D9Z) && Number(d.D9Z)>0)) ? '3' : d.STS9 %> td-qty"><%= d.D9 %></td>
-                        <td class=""><%= Number(d.D0Z)+Number(d.D1Z)+Number(d.D2Z)+Number(d.D3Z)+Number(d.D4Z)+Number(d.D5Z)+Number(d.D6Z)+Number(d.D7Z)+Number(d.D8Z)+Number(d.D9Z) %></td>
+                        <% let zanqty = Number(d.DAZ)+Number(d.D0Z)+Number(d.D1Z)+Number(d.D2Z)+Number(d.D3Z)+Number(d.D4Z)+Number(d.D5Z)+Number(d.D6Z)+Number(d.D7Z)+Number(d.D8Z)+Number(d.D9Z); %>
+                        <td class=""><%= zanqty; %></td>
                         <td class=""><%= (d.ZAIQTY == 0) ? "" : Number(d.ZAIQTY).toLocaleString(); %></td>
                         <td class=""><%= (d.STORE == 0) ? "" : Number(d.STORE).toLocaleString(); %></td>
                         <td class=""><%= d.MATERIALLEN %></td>
@@ -302,19 +308,19 @@ QRコード読取
 
                         // １．５ ストア在庫数のチェック
                         if (zanqty > storeqty) {
-                            tblobj.rows[i].cells[endcol - 4].className = "warn";
+                            tblobj.rows[i].cells[endcol - 2].className = "warn";
                         }
 
                         // ２．鋼材情報行の追加
                         var newrow = tblobj.insertRow(i + 1);
-                        appendTD(newrow, "", "center", 4);
+                        appendTD(newrow, "", "center", 5);
                         appendTD(newrow, "", "center", 5);
                         appendTD(newrow, "", "center", 5);
                         appendTD(newrow, "", "center", 5);
 
                         // ３．鋼材使用長さの集計と、仕掛在庫の消込処理を同時に行う
                         let usedlenttl = Number("0.0");
-                        for (var j=4; j<=9; j+=5) {
+                        for (var j=5; j<=10; j+=5) {
                             let usedlen = Number("0.0"); // 一週間で使用する鋼材長さを集計
                             for (var k=0; k<5; k++) {
                                 if (!isNaN(tblobj.rows[i].cells[j+k].innerText) && tblobj.rows[i].cells[j+k].innerText != "") {
@@ -337,7 +343,7 @@ QRコード読取
                             if (usedlen > 0) {
                                 var usedmate = Math.floor(usedlen / (materiallen - scraplen) * 100) / 100;
                                 var usedmaterialtext = (materiallen==0) ? "鋼材長さ設定なし" : usedmate + "本";
-                                tblobj.rows[i + 1].cells[(j==4) ? 1 : 2].innerText = usedmaterialtext + 
+                                tblobj.rows[i + 1].cells[(j==5) ? 1 : 2].innerText = usedmaterialtext + 
                                     " (" + usedlen.toLocaleString() + "mm)";
                             }
                         }
@@ -657,11 +663,9 @@ QRコード読取
                 let tblobj = document.getElementById(`tbl${tblno}`);
                 let mcgcd = document.getElementById("mcgcd").value;
                 let mccd = document.getElementById(`mccd${tblno}`).value;
+                let stdt = document.getElementById("starteddt").value;      // ymd[0]
+                let eddt = document.getElementById(`eddt${col - 5}`).value; // ymd[0] == col:5 == 遅れ ...
                 let hmcd = tblobj.rows[row].cells[0].innerText;
-                let eddttext = tblobj.rows[0].cells[col].innerText;
-                let d = new Date();
-                let stdt = document.getElementById("starteddt").value;
-                let eddt = (col==4) ? stdt : d.getFullYear() + "-" + eddttext.replace("/", "-");
                 let odrqty = tblobj.rows[row].cells[col].innerText;
                 if (flgSubmit) return;
                 flgSubmit = true;

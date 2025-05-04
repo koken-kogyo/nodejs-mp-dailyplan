@@ -115,6 +115,12 @@ myFunc = {
         return (dateObject.getMonth() + 1) + "/" + dateObject.getDate() + " " + 
                 dateObject.getHours() + ":" + ("0" + dateObject.getMinutes()).slice(-2);
     },
+    // m: 日付形式の文字列を [〇] (曜日)で返却
+    m: function(value){
+        const dayOfWeekStrJP = [ "日", "月", "火", "水", "木", "金", "土" ]; 
+        let dateObject = new Date(value);
+        return dayOfWeekStrJP[dateObject.getDay()];
+    },
 
 }
 myRequestHeader = {

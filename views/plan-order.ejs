@@ -41,11 +41,6 @@ QRコード読取
      <!-- Details -->
     <div id="details">
     <% if (kd8440) { %>
-        <% const apemcontenturl = "http://apemsv/PEMasterEM/docspace/sdk/contentView.do?enc=UTF-8&service=cn%3Ddrep_service%40APEMSV%2Cou%3Dcomponents%2Cdc%3DAPEMEM&workspace=図面検索&condition=全図面検索&item=0%3Aoperator%3AexactlyMatch"; %>
-        <% const apemdownloadurl = "http://apemsv/PEMasterEM/docspace/sdk/download.do?enc=UTF-8&service=cn%3Ddrep_service%40APEMSV%2Cou%3Dcomponents%2Cdc%3DAPEMEM&workspace=図面検索&condition=全図面検索&item=0%3Aoperator%3AexactlyMatch"; %>
-        <% const wsenc = encodeURI("図面検索"); %>
-        <% const condenc = encodeURI("全図面検索"); %>
-
         <% let tableno = 1; %>
         <% let mccount = Object.keys(kd8440).length; %>
         <% kd8440.forEach(function (data) { %>
@@ -90,8 +85,9 @@ QRコード読取
                         <th width="150px">品目名称</th>
                         <th width="40px">材料</th>
                         <th width="60px">長さ</th>
+                        <th>手配<br>残</th>
                         <% ymds.forEach(function (e) { %>
-                            <th><%= myFunc.a(e); %></th>
+                            <th><%= myFunc.a(e); %><br><%= myFunc.m(e); %></th>
                             <!-- a href="/mp/plan/<%- myFunc.b(e); %>"><%= myFunc.a(e); %></a -->
                         <% }); %>
                         <th width="60px">注文残</th>
@@ -105,15 +101,15 @@ QRコード読取
                     <tr>
                         <td class="lef td-big">
                             <% if (osType == "windows") { %>
-                                <a href="<%= apemcontenturl %>&item=0%3Avalue%3A<%= d.HMCD %>&item=7%3Aoperator%3Aboolean&item=7%3Avalue%3Atrue" class="td-apem-a" target="_blank">
+                                <a href="javascript:apemCustomURL(0, '<%= d.HMCD %>')" class="td-apem-a"><%= d.HMCD %></a>
                             <% } else { %>
-                                <a href="<%= apemdownloadurl %>&item=0%3Avalue%3A<%= d.HMCD %>&item=7%3Aoperator%3Aboolean&item=7%3Avalue%3Atrue" class="td-apem-a" target="_blank">
+                                <a href="javascript:apemCustomURL(1, '<%= d.HMCD %>')" class="td-apem-a"><%= d.HMCD %></a>
                             <% }; %>
-                            <%= d.HMCD %></a>
                         </td>
                         <td class="lef"><%= d.HMNM %></td>
                         <td class=""><%= d.MATESIZE %></td>
                         <td class=""><%= d.LENGTH %></td>
+                        <td class="td-qty2"><%= d.DAZ %></td>
                         <td class="td-qty2"><%= d.D0 %></td>
                         <td class="td-qty2"><%= d.D1 %></td>
                         <td class="td-qty2"><%= d.D2 %></td>
@@ -124,7 +120,13 @@ QRコード読取
                         <td class="td-qty2"><%= d.D7 %></td>
                         <td class="td-qty2"><%= d.D8 %></td>
                         <td class="td-qty2"><%= d.D9 %></td>
-                        <td class="td-qty2"><%= Number(d.D0)+Number(d.D1)+Number(d.D2)+Number(d.D3)+Number(d.D4)+Number(d.D5)+Number(d.D6)+Number(d.D7)+Number(d.D8)+Number(d.D9)-Number(d.ZAIQTY) %></td>
+                        <% let planqty = Number(d.D0)+Number(d.D1)+Number(d.D2)+Number(d.D3)+Number(d.D4)+Number(d.D5)+Number(d.D6)+Number(d.D7)+Number(d.D8)+Number(d.D9); %>
+                        <% let zaiqty = Number(d.ZAIQTY); %>
+                        <% if (planqty < zaiqty) { %>
+                            <td class="td-qty2">0</td>
+                        <% } else { %>
+                            <td class="td-qty2"><%= planqty - zaiqty %></td>
+                        <% } %>
                         <td class="td-qty2"><%= (d.ZAIQTY == 0) ? "" : Number(d.ZAIQTY).toLocaleString(); %></td>
                         <td class="td-qty2"><%= (d.STORE == 0) ? "" : Number(d.STORE).toLocaleString(); %></td>
                         <td class=""><%= d.MATERIALLEN %></td>
@@ -140,7 +142,7 @@ QRコード読取
     </div>
     </div>
 
-    <!-- 在庫訂正 Popup Window -->
+    <!-- 仕掛り在庫訂正 Popup Window -->
     <div id="zaiqtyPopupWindow" class="popwin-background">
         <div id="zaiqtyPopup">
             <div class="popwin-modalbody">
@@ -255,12 +257,12 @@ QRコード読取
                         
                         // １．５ ストア在庫数のチェック
                         if (zanqty > storeqty) {
-                            tblobj.rows[i].cells[endcol - 4].className = "warn";
+                            tblobj.rows[i].cells[endcol - 2].className = "warn";
                         }
 
                         // ２．鋼材情報行の追加
                         var newrow = tblobj.insertRow(i + 1);
-                        appendTD(newrow, "", "center", 4);
+                        appendTD(newrow, "", "center", 5);
                         appendTD(newrow, "", "center", 5);
                         appendTD(newrow, "", "center", 5);
                         appendTD(newrow, "", "center", 5);
@@ -268,7 +270,7 @@ QRコード読取
                         // ３．１ 鋼材使用長さの集計と、仕掛在庫の消込処理を同時に行う
                         let usedlenttl = Number("0.0");
                         let zaiqty = Number(tblobj.rows[i].cells[endcol - 3].innerText);          // 仕掛かり済の在庫数
-                        for (var j=4; j<=9; j+=5) {
+                        for (var j=5; j<=10; j+=5) {
                             let usedlen = Number("0.0"); // 一週間で使用する鋼材長さを集計
                             for (var k=0; k<5; k++) {
                                 if (!isNaN(tblobj.rows[i].cells[j+k].innerText) && tblobj.rows[i].cells[j+k].innerText != "") {
@@ -297,7 +299,7 @@ QRコード読取
                             if (usedlen > 0) {
                                 var usedmate = Math.floor(usedlen / (materiallen - scraplen) * 100) / 100;
                                 var usedmaterialtext = (materiallen==0) ? "鋼材長さ設定なし" : usedmate + "本";
-                                tblobj.rows[i + 1].cells[(j==4) ? 1 : 2].innerText = usedmaterialtext + 
+                                tblobj.rows[i + 1].cells[(j==5) ? 1 : 2].innerText = usedmaterialtext + 
                                     " (" + usedlen.toLocaleString() + "mm)";
                             }
                         }
@@ -305,6 +307,9 @@ QRコード読取
                         let waitqty = Number(tblobj.rows[i].cells[endcol - 3].innerText.replace(",",""));
                         if (waitqty > 0) {
                             tblobj.rows[i].cells[endcol - 3].innerHTML = `<a href="javascript:zaiqtyPopup(${tblno},${i})" class="td-zai-a">` + waitqty + "</a>" ;
+                            tblobj.rows[i].cells[endcol - 3].style.cursor = "pointer";
+                        } else {
+                            tblobj.rows[i].cells[endcol - 3].innerHTML = `<a href="javascript:zaiqtyPopup(${tblno},${i})" class="td-zai-a"></a>`;
                             tblobj.rows[i].cells[endcol - 3].style.cursor = "pointer";
                         }
                         // ４．鋼材使用長さの集計結果を反映
@@ -424,6 +429,19 @@ QRコード読取
             }
         }
         
+        // カスタムURLスキームによるシステム連携（apem図面サーバーへのリンク）(0:Windows, 1:iPad)
+        function apemCustomURL(mode, hmcd) {
+            const apemurl = "http://apemsv/PEMasterEM/docspace/sdk/";
+            const modetext = (mode == 0) ? "contentView.do" : "download.do";
+            const apemparam1 = 
+                "?enc=UTF-8&service=cn%3Ddrep_service%40APEMSV%2Cou%3Dcomponents%2Cdc%3DAPEMEM" + 
+                `&workspace=${encodeURI("図面検索")}&condition=${encodeURI("全図面検索")}&item=0%3Aoperator%3AexactlyMatch`;
+            const apemparam2 = 
+                `&item=0%3Avalue%3A${hmcd}&item=7%3Aoperator%3Aboolean&item=7%3Avalue%3Atrue`;
+            // 図面表示またはダウンロード
+            window.open(`${apemurl}${modetext}${apemparam1}${apemparam2}`, "_blank");
+        }
+
         /* ポップアップ関連 ここから */
             const inputBox = document.getElementById("inputZAIQTY");
             // イベントリスナー（フォーカス時全選択）（アロー関数編）
@@ -431,6 +449,7 @@ QRコード読取
             // イベントリスナー（キーダウン）（無名関数編）
             inputBox.addEventListener("keydown", function(event) {
                 if (event.key == "Enter") inputBox.blur();
+                if (event.keyCode == 27) document.getElementById("zaiqtyPopupWindow").style.display = "none";
             });
 
             // 仕掛り在庫の表示
@@ -440,7 +459,8 @@ QRコード読取
                 const mccd = document.getElementById(`mccd${tblno}`).value;
                 const hmcd = tblobj.rows[row].cells[0].innerText;
                 const endcol = tblobj.rows[1].cells.length - 1;
-                const zaiqty = tblobj.rows[row].cells[endcol - 3].innerText;
+                let zaiqty = tblobj.rows[row].cells[endcol - 3].innerText;
+                if (zaiqty == "") zaiqty = "0";
                 // ポップアップウィンドウに値をセット
                 document.getElementById("popHMCD").innerText = hmcd;
                 document.getElementById("popZAIQTY").innerText = zaiqty;
@@ -505,8 +525,8 @@ QRコード読取
                 const popWin = document.getElementById("zaiqtyPopupWindow");
                 try {
                     const response = await fetch(`/mysqlsv/modifyZaiko/${hmcd}:${mcgcd}:${mccd}:${zaiqty}:`)
-                    // 訂正在庫数で消込な直し
-                    for (var j=4; j<=9; j+=5) {
+                    // 訂正在庫数で消し込みし直し
+                    for (var j=5; j<=9; j+=5) {
                         for (var k=0; k<5; k++) {
                             if (!isNaN(tblobj.rows[row].cells[j+k].innerText) && tblobj.rows[row].cells[j+k].innerText != "") {
                                 let qty = Number(tblobj.rows[row].cells[j+k].innerText);
@@ -527,7 +547,7 @@ QRコード読取
                     }
                     // 訂正在庫数でDOM更新
                     const endcol = tblobj.rows[1].cells.length - 1;
-                    tblobj.rows[row].cells[endcol - 3].innerHTML = `<a href="javascript:zaiqtyPopup(${tblno},${row})" class="td-qty-a">` + inputBox.value + "</a>" ;
+                    tblobj.rows[row].cells[endcol - 3].innerHTML = `<a href="javascript:zaiqtyPopup(${tblno},${row})" class="td-zai-a">` + inputBox.value + "</a>" ;
                     popWin.style.display = "none";
                 } catch (err) {
                     alert(err);

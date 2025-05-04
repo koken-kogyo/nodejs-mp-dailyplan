@@ -286,8 +286,8 @@ app.get("/mysqlsv/modifyZaiko/:args", async function (req, res, next) {
     logger.debug(`/mysqlsv/modifyZaiko/${args}`);
 
     try {
-        const updateresult = await mysqlHandler.modifyZaiko(hmcd, mcgcd, mccd, modqty);
-        res.status(200).json(updateresult);
+        const result = await mysqlHandler.modifyZaiko(hmcd, mcgcd, mccd, modqty);
+        res.status(200).json(result);
     } catch (err) {
         next(err);
     }
