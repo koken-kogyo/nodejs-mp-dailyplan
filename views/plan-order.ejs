@@ -40,6 +40,11 @@ QRコード読取
 
      <!-- Details -->
     <div id="details">
+    <% if (locals.err) { %>
+        <ul class="alert">
+            <li><%= err.message %></li>
+        </ul>
+    <% } %>
     <% if (kd8440) { %>
         <% let tableno = 1; %>
         <% let mccount = Object.keys(kd8440).length; %>

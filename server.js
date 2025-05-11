@@ -4,10 +4,12 @@ const session = require("express-session");
 const path = require("path");
 const bodyParser = require("body-parser");
 const favicon = require("serve-favicon");
+const net = require("net");
 // User定義
 const { PORT, log4jsConfig } = require("./config.js");
 const mysqlHandler = require("./handlers/mysql.js");
 const pgHandler = require("./handlers/postgresql.js");
+const oracleTanaHandler = require("./handlers/oracle-tana.js");
 
 const userid = "";
 const { login, login2, csvread, loginCheck, csvwrite, sendMail } = require("./handlers/server.js");
@@ -64,24 +66,6 @@ app.get("/mp", async (req, res) => {
 
 
 
-// 内示一覧
-app.get("/mp/plan/:mcgcd", async (req, res, next) => {
-    const mcgcd = req.params.mcgcd.toUpperCase();
-    req.session.nextaddr = `/mp/plan/${mcgcd}`;
-    if (!loginCheck(req, res)) return;
-    req.session.mcgcd = mcgcd;
-    Promise.all([mysqlHandler.getMCCDs(mcgcd), mysqlHandler.getYMDPlans()])
-    .then( async ([mccds, ymds]) => {
-        // 内示情報取得
-        const kd8440 = await mysqlHandler.getKD8440Plans(mcgcd, mccds, ymds);
-        res.render("plan-order.ejs", {req, ymds, mcgcd, mccds, kd8440});
-    }).catch((err) => {
-        next(err);
-    });
-});
-
-
-
 // 手配一覧
 app.get("/mp/order/:mcgcd", async (req, res, next) => {
     const mcgcd = req.params.mcgcd.toUpperCase();
@@ -90,9 +74,78 @@ app.get("/mp/order/:mcgcd", async (req, res, next) => {
     req.session.mcgcd = mcgcd;
     Promise.all([mysqlHandler.getMCCDs(mcgcd), mysqlHandler.getYMDOrders()])
     .then( async ([mccds, ymds]) => {
+
         // 手配情報取得
         const kd8450 = await mysqlHandler.getKD8450Orders(mcgcd, mccds, ymds);
-        res.render("order-information.ejs", {req, ymds, mcgcd, mccds, kd8450});
+
+        // タナコンサーバー接続確認
+        const socket = new net.Socket();
+        socket.setTimeout(3000); // タイムアウト時間を設定（ミリ秒）
+        socket.connect(oracleTanaHandler.PORT, oracleTanaHandler.HOST, async () => {
+            socket.end(); // 接続を閉じる
+
+            // タナコン在庫情報取得
+            const tioitem = await oracleTanaHandler.getTIOitem();
+            const kd8450new = oracleTanaHandler.setTIOitem(kd8450, tioitem); // 手配情報にタナコン在庫情報をセット
+
+            // 手配一覧の表示
+            res.render("order-information.ejs", {req, ymds, mcgcd, mccds, kd8450: kd8450new});
+        });
+        socket.on('error', (e) => {
+            const err = {"message" : "タナコンサーバー接続失敗: " + e.message};
+            // 手配一覧の表示
+            res.render("order-information.ejs", {req, ymds, mcgcd, mccds, kd8450, err});
+        });
+        socket.on('timeout', () => {
+            const err = {"message" : "タナコンサーバー接続タイムアウト"};
+            socket.destroy(); // タイムアウト時にソケットを破棄
+            // 手配一覧の表示
+            res.render("order-information.ejs", {req, ymds, mcgcd, mccds, kd8450, err});
+        });
+    }).catch((err) => {
+        next(err);
+    });
+});
+
+
+
+// 内示一覧
+app.get("/mp/plan/:mcgcd", async (req, res, next) => {
+    const mcgcd = req.params.mcgcd.toUpperCase();
+    req.session.nextaddr = `/mp/plan/${mcgcd}`;
+    if (!loginCheck(req, res)) return;
+    req.session.mcgcd = mcgcd;
+    Promise.all([mysqlHandler.getMCCDs(mcgcd), mysqlHandler.getYMDPlans()])
+    .then( async ([mccds, ymds]) => {
+
+        // 内示情報取得
+        const kd8440 = await mysqlHandler.getKD8440Plans(mcgcd, mccds, ymds);
+
+        // タナコンサーバー接続確認
+        const socket = new net.Socket();
+        socket.setTimeout(3000); // タイムアウト時間を設定（ミリ秒）
+        socket.connect(oracleTanaHandler.PORT, oracleTanaHandler.HOST, async () => {
+            socket.end(); // 接続を閉じる
+
+            // タナコン在庫情報取得
+            const tioitem = await oracleTanaHandler.getTIOitem();
+            const kd8440new = oracleTanaHandler.setTIOitem(kd8440, tioitem); // 手配情報にタナコン在庫情報をセット
+
+            // 内示一覧の表示
+            res.render("plan-order.ejs", {req, ymds, mcgcd, mccds, kd8440: kd8440new});
+        });
+        socket.on('error', (e) => {
+            const err = {"message" : "タナコンサーバー接続失敗: " + e.message};
+            // 内示一覧の表示
+            res.render("plan-order.ejs", {req, ymds, mcgcd, mccds, kd8440, err});
+        });
+        socket.on('timeout', () => {
+            const err = {"message" : "タナコンサーバー接続タイムアウト"};
+            socket.destroy(); // タイムアウト時にソケットを破棄
+            // 内示一覧の表示
+            res.render("plan-order.ejs", {req, ymds, mcgcd, mccds, kd8440, err});
+        });
+
     }).catch((err) => {
         next(err);
     });
