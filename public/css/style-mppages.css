@@ -319,7 +319,6 @@ a {
     vertical-align: text-bottom;
     margin-bottom: -3px;
 }
-/*
 #details li {
     display: inline-block;
     color: white;
@@ -337,7 +336,6 @@ a {
 #details a li:hover {
     background-color: #ddd;
 }
-*/
 #details .allow {
     border-radius: 3px;
     background-color: rgb(40, 40, 40);
@@ -442,6 +440,14 @@ a {
 #details .lef {
     text-align: left;
 }
+.nodata {
+    color: #a94442;
+    background-color: #f2dede;
+    border-color: #ebccd1;
+    display: flex;
+    width: 865px;
+    margin: 0 auto;
+}
 /* 作業開始 */
 #details .s1 {
     border-radius: 3px;
@@ -472,14 +478,6 @@ a {
     color: rgba(55, 55, 55, 0.6);
     background-color: rgba(150, 150, 150, 0.2);
 }
-
-.input-number-qty {
-    width: 2.5em;
-}
-
-/* =========================================================================== */
-/*  ワーニング
-/* =========================================================================== */
 /* 在庫不足 */
 .warn {
     border-radius: 3px;
@@ -499,19 +497,7 @@ a {
     0%{ color : rgba(71, 71, 59, 1.0);   background:rgba(241, 241, 241, 0.8) }
   100%{ color : rgba(0, 0, 0, 1.0); background:rgba(255, 255, 0, 1.0)   }
 }
-/* データなし */
-.nodata {
-    color: #a94442;
-    background-color: #f2dede;
-    border-color: #ebccd1;
-    text-align: center;
-    width: 865px;
-    margin: 0 auto;
-}
-.alert {
-    color: #a94442;
-    background-color: #f2dede;
-    border-color: #ebccd1;
-    margin: 0px 0px 12px 0px;
-    font-weight: bold;
+
+.input-number-qty {
+    width: 2.5em;
 }
