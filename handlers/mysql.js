@@ -231,23 +231,23 @@ const getKD8450Orders = async (mcgcd, mccds, ymds) => {
         `,min(case when (EDDT='${ymds[i]}') and ` + 
         "ifnull(WKSTDT, STR_TO_DATE('1900-01-01', '%Y-%m-%d')) > " + 
         "ifnull(WKEDDT, STR_TO_DATE('1900-01-01', '%Y-%m-%d')) then '1' " + 
-        `else case when EDDT='${ymds[i]}' then ODRSTS else null end end) as 'STS${i}'`;
+        `else case when EDDT='${ymds[i]}' and ODRSTS != '9' then ODRSTS else null end end) as 'STS${i}'`;
     }
     const mc = [];
     for (let mccd of mccds) {
         let sql = "select a.HMCD,b.HMNM,b.MATESIZE,b.LENGTH" +
         ",max(ifnull(b.MATERIALLEN,0)) as 'MATERIALLEN'" + 
         `,sum(case when EDDT<'${ymds[0]}' and ODRSTS in ('2','3') then ODRQTY else null end) as 'DA'` +
-        `,sum(case when EDDT='${ymds[0]}' then ODRQTY else null end) as 'D0'` +
-        `,sum(case when EDDT='${ymds[1]}' then ODRQTY else null end) as 'D1'` +
-        `,sum(case when EDDT='${ymds[2]}' then ODRQTY else null end) as 'D2'` +
-        `,sum(case when EDDT='${ymds[3]}' then ODRQTY else null end) as 'D3'` +
-        `,sum(case when EDDT='${ymds[4]}' then ODRQTY else null end) as 'D4'` +
-        `,sum(case when EDDT='${ymds[5]}' then ODRQTY else null end) as 'D5'` +
-        `,sum(case when EDDT='${ymds[6]}' then ODRQTY else null end) as 'D6'` +
-        `,sum(case when EDDT='${ymds[7]}' then ODRQTY else null end) as 'D7'` +
-        `,sum(case when EDDT='${ymds[8]}' then ODRQTY else null end) as 'D8'` +
-        `,sum(case when EDDT='${ymds[9]}' then ODRQTY else null end) as 'D9'` +
+        `,sum(case when EDDT='${ymds[0]}' and ODRSTS != '9' then ODRQTY else null end) as 'D0'` +
+        `,sum(case when EDDT='${ymds[1]}' and ODRSTS != '9' then ODRQTY else null end) as 'D1'` +
+        `,sum(case when EDDT='${ymds[2]}' and ODRSTS != '9' then ODRQTY else null end) as 'D2'` +
+        `,sum(case when EDDT='${ymds[3]}' and ODRSTS != '9' then ODRQTY else null end) as 'D3'` +
+        `,sum(case when EDDT='${ymds[4]}' and ODRSTS != '9' then ODRQTY else null end) as 'D4'` +
+        `,sum(case when EDDT='${ymds[5]}' and ODRSTS != '9' then ODRQTY else null end) as 'D5'` +
+        `,sum(case when EDDT='${ymds[6]}' and ODRSTS != '9' then ODRQTY else null end) as 'D6'` +
+        `,sum(case when EDDT='${ymds[7]}' and ODRSTS != '9' then ODRQTY else null end) as 'D7'` +
+        `,sum(case when EDDT='${ymds[8]}' and ODRSTS != '9' then ODRQTY else null end) as 'D8'` +
+        `,sum(case when EDDT='${ymds[9]}' and ODRSTS != '9' then ODRQTY else null end) as 'D9'` +
         `,sum(case when EDDT<'${ymds[0]}' and ODRSTS in ('2','3') then ODRQTY-JIQTY else 0 end) as 'DAZ'` +
         `,sum(case when EDDT='${ymds[0]}' and ODRSTS in ('2','3') then ODRQTY-JIQTY else 0 end) as 'D0Z'` +
         `,sum(case when EDDT='${ymds[1]}' and ODRSTS in ('2','3') then ODRQTY-JIQTY else 0 end) as 'D1Z'` +
@@ -266,16 +266,16 @@ const getKD8450Orders = async (mcgcd, mccds, ymds) => {
         "group by a.HMCD, b.HMNM, b.MATESIZE, b.LENGTH " + 
         "having " +
         " sum(case when EDDT<? and ODRSTS in ('2','3') then ODRQTY else null end) > 0 or" +
-        " sum(case when EDDT=? then ODRQTY else null end) > 0 or" +
-        " sum(case when EDDT=? then ODRQTY else null end) > 0 or" +
-        " sum(case when EDDT=? then ODRQTY else null end) > 0 or" +
-        " sum(case when EDDT=? then ODRQTY else null end) > 0 or" +
-        " sum(case when EDDT=? then ODRQTY else null end) > 0 or" +
-        " sum(case when EDDT=? then ODRQTY else null end) > 0 or" +
-        " sum(case when EDDT=? then ODRQTY else null end) > 0 or" +
-        " sum(case when EDDT=? then ODRQTY else null end) > 0 or" +
-        " sum(case when EDDT=? then ODRQTY else null end) > 0 or" +
-        " sum(case when EDDT=? then ODRQTY else null end) > 0 " + orderby;
+        " sum(case when EDDT=? and ODRSTS != '9' then ODRQTY else null end) > 0 or" +
+        " sum(case when EDDT=? and ODRSTS != '9' then ODRQTY else null end) > 0 or" +
+        " sum(case when EDDT=? and ODRSTS != '9' then ODRQTY else null end) > 0 or" +
+        " sum(case when EDDT=? and ODRSTS != '9' then ODRQTY else null end) > 0 or" +
+        " sum(case when EDDT=? and ODRSTS != '9' then ODRQTY else null end) > 0 or" +
+        " sum(case when EDDT=? and ODRSTS != '9' then ODRQTY else null end) > 0 or" +
+        " sum(case when EDDT=? and ODRSTS != '9' then ODRQTY else null end) > 0 or" +
+        " sum(case when EDDT=? and ODRSTS != '9' then ODRQTY else null end) > 0 or" +
+        " sum(case when EDDT=? and ODRSTS != '9' then ODRQTY else null end) > 0 or" +
+        " sum(case when EDDT=? and ODRSTS != '9' then ODRQTY else null end) > 0 " + orderby;
         let kd8450 = await getDatabase(sql,
             [okure[0].YMD , ymds[9], mcgcd, mccd.MCCD, ymds[0], ...ymds]);
 
@@ -336,16 +336,16 @@ const getKD8440Plans = async (mcgcd, mccds, ymds) => {
         // 各設備の内示一覧を取得
         let sql = "select a.HMCD,b.HMNM,b.MATESIZE,b.LENGTH" +
         ",max(ifnull(b.MATERIALLEN,0)) as 'MATERIALLEN'" + 
-        `,sum(case when EDDT='${ymds[0]}' then ODRQTY else null end) as 'D0'` +
-        `,sum(case when EDDT='${ymds[1]}' then ODRQTY else null end) as 'D1'` +
-        `,sum(case when EDDT='${ymds[2]}' then ODRQTY else null end) as 'D2'` +
-        `,sum(case when EDDT='${ymds[3]}' then ODRQTY else null end) as 'D3'` +
-        `,sum(case when EDDT='${ymds[4]}' then ODRQTY else null end) as 'D4'` +
-        `,sum(case when EDDT='${ymds[5]}' then ODRQTY else null end) as 'D5'` +
-        `,sum(case when EDDT='${ymds[6]}' then ODRQTY else null end) as 'D6'` +
-        `,sum(case when EDDT='${ymds[7]}' then ODRQTY else null end) as 'D7'` +
-        `,sum(case when EDDT='${ymds[8]}' then ODRQTY else null end) as 'D8'` +
-        `,sum(case when EDDT='${ymds[9]}' then ODRQTY else null end) as 'D9'` +
+        `,sum(case when EDDT='${ymds[0]}' and ODRSTS != '9' then ODRQTY else null end) as 'D0'` +
+        `,sum(case when EDDT='${ymds[1]}' and ODRSTS != '9' then ODRQTY else null end) as 'D1'` +
+        `,sum(case when EDDT='${ymds[2]}' and ODRSTS != '9' then ODRQTY else null end) as 'D2'` +
+        `,sum(case when EDDT='${ymds[3]}' and ODRSTS != '9' then ODRQTY else null end) as 'D3'` +
+        `,sum(case when EDDT='${ymds[4]}' and ODRSTS != '9' then ODRQTY else null end) as 'D4'` +
+        `,sum(case when EDDT='${ymds[5]}' and ODRSTS != '9' then ODRQTY else null end) as 'D5'` +
+        `,sum(case when EDDT='${ymds[6]}' and ODRSTS != '9' then ODRQTY else null end) as 'D6'` +
+        `,sum(case when EDDT='${ymds[7]}' and ODRSTS != '9' then ODRQTY else null end) as 'D7'` +
+        `,sum(case when EDDT='${ymds[8]}' and ODRSTS != '9' then ODRQTY else null end) as 'D8'` +
+        `,sum(case when EDDT='${ymds[9]}' and ODRSTS != '9' then ODRQTY else null end) as 'D9'` +
         `,sum(case when EDDT='${ymds[0]}' and ODRSTS in ('2','31') then ODRQTY else 0 end) as 'D0Z'` +
         `,sum(case when EDDT='${ymds[1]}' and ODRSTS in ('2','31') then ODRQTY else 0 end) as 'D1Z'` +
         `,sum(case when EDDT='${ymds[2]}' and ODRSTS in ('2','31') then ODRQTY else 0 end) as 'D2Z'` +
@@ -372,16 +372,16 @@ const getKD8440Plans = async (mcgcd, mccds, ymds) => {
         " and a.HMCD in (select hmcd from km8430 where ktkey like ? ) " +
         "group by a.HMCD, b.HMNM, b.MATESIZE, b.LENGTH " + 
         "having " +
-        " sum(case when EDDT=? then ODRQTY else null end) > 0 or" +
-        " sum(case when EDDT=? then ODRQTY else null end) > 0 or" +
-        " sum(case when EDDT=? then ODRQTY else null end) > 0 or" +
-        " sum(case when EDDT=? then ODRQTY else null end) > 0 or" +
-        " sum(case when EDDT=? then ODRQTY else null end) > 0 or" +
-        " sum(case when EDDT=? then ODRQTY else null end) > 0 or" +
-        " sum(case when EDDT=? then ODRQTY else null end) > 0 or" +
-        " sum(case when EDDT=? then ODRQTY else null end) > 0 or" +
-        " sum(case when EDDT=? then ODRQTY else null end) > 0 or" +
-        " sum(case when EDDT=? then ODRQTY else null end) > 0 " + orderby;
+        " sum(case when EDDT=? and ODRSTS != '9' then ODRQTY else null end) > 0 or" +
+        " sum(case when EDDT=? and ODRSTS != '9' then ODRQTY else null end) > 0 or" +
+        " sum(case when EDDT=? and ODRSTS != '9' then ODRQTY else null end) > 0 or" +
+        " sum(case when EDDT=? and ODRSTS != '9' then ODRQTY else null end) > 0 or" +
+        " sum(case when EDDT=? and ODRSTS != '9' then ODRQTY else null end) > 0 or" +
+        " sum(case when EDDT=? and ODRSTS != '9' then ODRQTY else null end) > 0 or" +
+        " sum(case when EDDT=? and ODRSTS != '9' then ODRQTY else null end) > 0 or" +
+        " sum(case when EDDT=? and ODRSTS != '9' then ODRQTY else null end) > 0 or" +
+        " sum(case when EDDT=? and ODRSTS != '9' then ODRQTY else null end) > 0 or" +
+        " sum(case when EDDT=? and ODRSTS != '9' then ODRQTY else null end) > 0 " + orderby;
         const kd8440 = await getDatabase(sql
             , [ymds[0], ymds[9]
             , "%" + mcgcd + "-" + mccd.MCCD + ":%"
@@ -483,8 +483,8 @@ const getKD8440Plans = async (mcgcd, mccds, ymds) => {
                 var key1B = b.MATESIZE;
                 var key2A = a.HMCD;
                 var key2B = b.HMCD;
-                if (key1A > key1B) return 1;
-                if (key1A < key1B) return -1;
+                if (key1A > key1B) return -1;
+                if (key1A < key1B) return 1;
                 if (key2A > key2B) return 1;
                 if (key2A < key2B) return -1;
                 return 0;
