@@ -306,7 +306,7 @@ const getKD8450Orders = async (mcgcd, mccds, ymds) => {
                 row.STORE = 0;
             } else {
                 row.ZAIQTY = kd8460[idx].ZAIQTY === null ? 0 : kd8460[idx].ZAIQTY;
-                row.STORE = kd8460[idx].STORE === null ? 0 : kd8460[idx].STORE;
+                row.STORE = 0; // kd8460[idx].STORE === null ? 0 : kd8460[idx].STORE; タナコンサーバーから直接取得するよう変更
             }
         }
         mc.push([mccd, kd8450]);
@@ -324,8 +324,8 @@ const getKD8440Plans = async (mcgcd, mccds, ymds) => {
         ") a where a.LINENO=5";
     let okure = await getDatabase(okureSql);
 
-    // まず在庫テーブルのSTORE情報全件を取得（おまけ３）
-    const kd8460store = await getDatabase("select HMCD, ZAIQTY as 'STORE' from kd8460 where MCGCD='STORE'");
+    // まず在庫テーブルのSTORE情報全件を取得（おまけ３）・・・ タナコンサーバーからリアルタイム情報を取得するため廃止
+    // const kd8460store = await getDatabase("select HMCD, ZAIQTY as 'STORE' from kd8460 where MCGCD='STORE'");
 
     // グループの設備一覧を取得
     const orderby = await getMCOrderby(mcgcd);
@@ -432,13 +432,16 @@ const getKD8440Plans = async (mcgcd, mccds, ymds) => {
             } else {
                 row.ZAIQTY = kd8460mccd[idx].ZAIQTY === null ? 0 : kd8460mccd[idx].ZAIQTY;
             }
-            // 在庫テーブルSTORE情報を付与（おまけ３）
+            /*
+            // 在庫テーブルSTORE情報を付与（おまけ３）・・・ タナコンサーバーからリアルタイム情報を取得するため廃止            
             idx = kd8460store.findIndex(t => t.HMCD === row.HMCD);
             if (idx < 0) {
                 row.STORE = 0;
             } else {
                 row.STORE = kd8460store[idx].STORE === null ? 0 : kd8460store[idx].STORE;
             }
+            */
+            row.STORE = 0;
             // IREPO帳票IDを付与（おまけ４）
             idx = km8430.findIndex(t => t.HMCD === row.HMCD);
             if (idx < 0) {
@@ -455,6 +458,7 @@ const getKD8440Plans = async (mcgcd, mccds, ymds) => {
             // 内示情報を検索
             idx = kd8440.findIndex(t => t.HMCD === row.HMCD && row.ZAIQTY > 0);
             if (idx < 0) {
+                /*
                 // 在庫テーブルSTORE情報を付与（おまけ３）
                 idx = kd8460store.findIndex(t => t.HMCD === row.HMCD);
                 if (idx < 0) {
@@ -462,6 +466,8 @@ const getKD8440Plans = async (mcgcd, mccds, ymds) => {
                 } else {
                     row.STORE = kd8460store[idx].STORE === null ? 0 : kd8460store[idx].STORE;
                 }
+                */
+                row.STORE = 0;
                 // IREPO帳票IDを付与（おまけ４）
                 idx = km8430.findIndex(t => t.HMCD === row.HMCD);
                 if (idx < 0) {

@@ -18,7 +18,10 @@
     "iconv-lite": "^0.6.3",
     "log4js": "^6.9.1",
     "mysql2": "^3.13.0",
+    "net": "^1.0.2",
     "nodemailer": "^6.10.0",
+    "odbc": "^2.4.9",
+    "oracledb": "^6.8.0",
     "pg": "^8.14.1",
     "serve-favicon": "^2.5.0"
   }
