@@ -14,7 +14,7 @@ const getDatabase = async (sql, param) => {
 const getHoldReportIDSingle = async (defid) => {
     const result = await isViewReport(defid);
     if (result == false) {
-        return ans;
+        return getDatabase("select 0 as repid");
     } else {
         const sql = "select COALESCE(max(rep_top_id),0) as repid " + 
             `from view_report_${defid} ` + 
@@ -28,7 +28,7 @@ exports.getHoldReportIDSingle = getHoldReportIDSingle;
 const getHoldReportID = async (defid, hmcd, clusterno) => {
     const result = await isViewReport(defid);
     if (result == false) {
-        return vr;
+        return getDatabase("select 0 as repid");
     } else {
         const sql = "select COALESCE(max(rep_top_id),0) as repid " + 
         `from view_report_${defid} ` + 
