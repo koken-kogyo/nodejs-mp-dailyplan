@@ -85,21 +85,20 @@ app.get("/mp/order/:mcgcd", async (req, res, next) => {
             socket.end(); // 接続を閉じる
 
             // タナコン在庫情報取得
-            const tioitem = await oracleODBCHandler.getTLOCStock();
-            if (tioitem) 
+            try
             {
+                const tioitem = await oracleODBCHandler.getTLOCStock();
                 const kd8450new = await oracleODBCHandler.setTLOCStock(kd8450, tioitem); // 手配情報にタナコン在庫情報をセット
                 // 手配一覧の表示
                 res.render("order-information.ejs", {req, ymds, mcgcd, mccds, kd8450: kd8450new});
-            } else {
-                const err = {"message" : "タナコンサーバー接続失敗: "};
-                // 手配一覧の表示
+            } catch (e) {
+                const err = {"message" : "タナコンデータベースへの接続失敗: " + e.message};
                 res.render("order-information.ejs", {req, ymds, mcgcd, mccds, kd8450, err});
             }
 
         });
         socket.on('error', (e) => {
-            const err = {"message" : "タナコンサーバー接続失敗: " + e.message};
+            const err = {"message" : "タナコンサーバーへの接続失敗: " + e.message};
             // 手配一覧の表示
             res.render("order-information.ejs", {req, ymds, mcgcd, mccds, kd8450, err});
         });
@@ -136,15 +135,20 @@ app.get("/mp/plan/:mcgcd", async (req, res, next) => {
             socket.end(); // 接続を閉じる
 
             // タナコン在庫情報取得
-            const tioitem = await oracleODBCHandler.getTLOCStock();
-            const kd8440new = oracleODBCHandler.setTLOCStock(kd8440, tioitem); // 手配情報にタナコン在庫情報をセット
-
-            // 内示一覧の表示
-            res.render("plan-order.ejs", {req, ymds, mcgcd, mccds, kd8440: kd8440new});
+            try
+            {
+                const tioitem = await oracleODBCHandler.getTLOCStock();
+                const kd8440new = oracleODBCHandler.setTLOCStock(kd8440, tioitem); // 手配情報にタナコン在庫情報をセット
+                // 内示一覧の表示
+                res.render("plan-order.ejs", {req, ymds, mcgcd, mccds, kd8440: kd8440new});
+            } catch (e) {
+                const err = {"message" : "タナコンデータベースへの接続失敗: " + e.message};
+                res.render("plan-order.ejs", {req, ymds, mcgcd, mccds, kd8440, err});
+            }
+    
         });
         socket.on('error', (e) => {
-            const err = {"message" : "タナコンサーバー接続失敗: " + e.message};
-            // 内示一覧の表示
+            const err = {"message" : "タナコンサーバーへの接続失敗: " + e.message};
             res.render("plan-order.ejs", {req, ymds, mcgcd, mccds, kd8440, err});
         });
         socket.on('timeout', () => {

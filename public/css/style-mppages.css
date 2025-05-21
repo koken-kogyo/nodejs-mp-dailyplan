@@ -319,23 +319,6 @@ a {
     vertical-align: text-bottom;
     margin-bottom: -3px;
 }
-#details li {
-    display: inline-block;
-    color: white;
-    list-style: none;
-    padding-top: 7px;
-    height: 25px;
-    width: 48px;
-    text-align: center;
-}
-#details a li {
-    border-radius: 3px;
-    background-color: black;
-    color: #eee;
-}
-#details a li:hover {
-    background-color: #ddd;
-}
 #details .allow {
     border-radius: 3px;
     background-color: rgb(40, 40, 40);
@@ -511,4 +494,5 @@ a {
     border-color: #ebccd1;
     margin: 0px 0px 12px 0px;
     font-weight: bold;
+    list-style: none; /* 本来ここではないが */
 }

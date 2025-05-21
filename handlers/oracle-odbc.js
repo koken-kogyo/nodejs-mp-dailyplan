@@ -17,6 +17,7 @@ const getTLOCStock = async () => {
         return JSON.parse(JSON.stringify(results));
     } catch (err) {
         console.log("エラーが発生しました:", err.message);
+        throw err; // 再スロー
     } finally {
         // リソースを解放
         if (connection) {
