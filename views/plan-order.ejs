@@ -216,38 +216,6 @@ QRコード読取
         </div>
     </div>
 
-    <!-- i-Reporter選択 Popup Window width: 700px -->
-    <div id="irepoPopupWindow" class="popwin-background">
-        <div id="irepoPopup">
-            <div class="popwin-modalbody">
-                <div class="popwin-Title">
-                    <div class="center">　　　i-Reporter 帳票選択</div>
-                    <div id="irepoClose" class="popwin-close">閉じる</div>
-                </div>
-                <table id="irepoPopupTitle">
-                    <tr>
-                        <th height="60px" width="60px">品番</th>
-                        <td id="ipopHMCD" class="popHMCD lef" width="300px">-</td>
-                        <td id="newReport" colspan="3">新規チェックシート記入</td>
-                    </tr>
-                </table>
-                <table id="irepoPopupTable">
-                    <tr>
-                        <th id="oldReport" colspan="5" class="lef">Javascript可変メッセージ</th>
-                    </tr>
-                    <tr>
-                        <th width="30px">ID</th>
-                        <th width="200px">帳票名称</th>
-                        <th width="50px">状態</th>
-                        <th width="70px">登録日</th>
-                        <th width="70px">更新日</th>
-                    </tr>
-                </table>
-                <input type="hidden" id="ipopDEFID" name="ipopdefid" value="" />
-            </div>
-        </div>
-    </div>
-
     <!-- Footer -->
     <%- include("_footer.ejs", req) %>
     
@@ -267,7 +235,6 @@ QRコード読取
 
             // ポップアップウィンドウを非表示
             document.getElementById("zaiqtyPopupWindow").style.display = "none";
-            document.getElementById("irepoPopupWindow").style.display = "none";
 
             // テーブルの数分ループ処理
             for (tblno = 1; tblno < 15; tblno++){
@@ -490,137 +457,6 @@ QRコード読取
                 if (event.keyCode == 27) document.getElementById("zaiqtyPopupWindow").style.display = "none";
             });
 
-                        // i-Reporter 選択ポップアップ画面の起動
-            async function iReporter(tblno, row) {
-                // 呼び出し元の基本情報取得
-                const tblobj = document.getElementById(`tbl${tblno}`);
-                const hmcd = tblobj.rows[row].cells[0].innerText;
-                const mcgcd = document.getElementById("mcgcd").value;
-                const mccd = document.getElementById(`mccd${tblno}`).value;
-                //alert(tblno + ":" + row + ":" + hmcd)
-                // iRepo情報の取得API
-                const irepoinfo = await this.getDefid(hmcd, mcgcd, mccd);
-                if (!irepoinfo) return;
-                // 直接呼出し工程（値やフラグを渡してあげないといけない）
-                if (mcgcd == "SW") {
-                    const repid = await getHoldid(irepoinfo.DEFID, hmcd, irepoinfo.HMCDCID);
-                    iRepoCustomURL(tblno, row, mcgcd, hmcd, irepoinfo.DEFID, irepoinfo.HMCDCID, repid)
-
-                // ポップアップで選択工程
-                } else {
-                    const table = document.getElementById("irepoPopupTable");
-                    // ポップアップウィンドウに値をセット
-                    document.getElementById("ipopHMCD").innerText = hmcd;
-                    // 一覧を一旦削除
-                    do {
-                        if (table.rows.length > 2) {table.deleteRow(-1);}
-                    } while (table.rows.length > 2);
-                    // 一覧の取得
-                    const viewreport = await this.getViewReport(irepoinfo.DEFID);
-                    if (!viewreport) {
-                        const msg = `帳票定義ID:${irepoinfo.DEFID} が本番環境に移行されていません．`;
-                        document.getElementById("oldReport").innerText = msg;
-                    } else if (viewreport.rowCount == 0) {
-                        const msg = `過去に入力した帳票は存在しません．`;
-                        document.getElementById("oldReport").innerText = msg;
-                    } else {
-                        document.getElementById("oldReport").innerText = 
-                            "チェックシート一覧（最新の10件を表示、タップして過去履歴の呼び出し）";
-                        // APIで取得したデータをテーブ行に追加
-                        viewreport.rows.forEach(function (d) {
-                            let newRow = table.insertRow();
-                            appendTD(newRow, d.rep_top_id, "small", 1);
-                            appendTD(newRow, d.rep_top_name, "small lef", 1);
-                            appendTD(newRow, d.edit_refer_status, "", 1);
-                            appendTD(newRow, d.sys_regist_time, "small", 1);
-                            appendTD(newRow, d.sys_update_time, "small", 1);
-                            // 帳票IDを起動
-                            newRow.addEventListener("click", () => {
-                                location.href = `jp.co.cimtops.ireporter.openreport:repid=${d.rep_top_id}`;
-                                document.getElementById("irepoPopupWindow").style.display = "none";
-                            });
-                        });
-                    };
-                    // 新規帳票起動イベント設定
-                    document.getElementById("ipopDEFID").value = irepoinfo.DEFID;
-                    document.getElementById("newReport").addEventListener("click", () => {
-                        location.href = `jp.co.cimtops.ireporter.createreport:defid=${document.getElementById("ipopDEFID").value}`;
-                        document.getElementById("irepoPopupWindow").style.display = "none";
-                    }, { once: true });
-                    // 閉じるイベントリスナー設定
-                    document.getElementById("irepoClose").addEventListener("click", () => {
-                        document.getElementById("irepoPopupWindow").style.display = "none";
-                    });
-                    // ポップアップウィンドウを表示
-                    document.getElementById("irepoPopupWindow").style.display = "flex";
-                }
-            }
-            // カスタムURLスキームによるシステム連携
-            function iRepoCustomURL(tblno, row, mcgcd, hmcd, defid, clusterno, repid) {
-                // iRepo呼び出し用データの取得
-                const tblobj = document.getElementById(`tbl${tblno}`);
-                const irepourl = "jp.co.cimtops.ireporter";
-                
-                // 新規帳票定義を起動
-                if (repid == 0) {
-                    if (mcgcd == "SW") {
-                        // 選択されたデータをセットして帳票定義IDを起動
-                        const mate = tblobj.rows[row].cells[2].innerText;
-                        const cut = tblobj.rows[row].cells[3].innerText;
-                        const hmcdparam = encodeURI(`スキャン品番=${hmcd}`);
-                        const mateparam = encodeURI(`材料サイズ=${mate}`);
-                        const cutparam = encodeURI(`切断長=${cut}`);
-                        const modeparam = encodeURI("処理モード=order"); // 手配モードで帳票を起動
-                        location.href = `${irepourl}.createreport:defid=${defid}` +
-                            `&${hmcdparam}&${mateparam}&${cutparam}&${modeparam}`;
-                    } else {
-                        // 帳票定義IDをそのまま起動
-                        location.href = `${irepourl}.createreport:defid=${defid}`;
-                    }
-                    /*browserTabClose();*/
-
-                // 保留中の帳票IDから起動
-                } else {
-                    
-                    location.href = `${irepourl}.openreport:repid=${repid}`;
-                    /*browserTabClose();*/
-                }
-            }
-            // 保留中の帳票IDを取得
-            async function getHoldid(defid, hmcd, clusterno) {
-                let customurl = "";
-                if (clusterno == 0) {
-                    customurl = `/ireposv/getHoldid/${defid}`;
-                } else {
-                    customurl = `/ireposv/getHoldid/${defid}:${hmcd}:${clusterno}`;
-                }
-                // irepoサーバーから編集中帳票ID取得API
-                const res = await fetch(customurl);
-                const repid = await res.json();
-                return repid;
-            }
-            // 帳票一覧を取得
-            async function getViewReport(defid) {
-                const res = await fetch(`/ireposv/getViewReport/${defid}`);
-                const viewreport = await res.json();
-                return viewreport;
-            }
-            // 品番と設備Gと設備コードから帳票IDと品番クラスター番号を取得
-            async function getDefid(hmcd, mcgcd, mccd) {
-                try {
-                    const res = await fetch(`/mysqlsv/getDefid/${hmcd}:${mcgcd}:${mccd}:`);
-                    const data = await res.json();
-                    if (data.DEFID == 0) {
-                        alert("起動する帳票IDがマスター登録されていません．");
-                        return null;
-                    }
-                    return data;
-                } catch (err) {
-                    alert(err);
-                    return null;
-                }
-            }
-
             // 仕掛り在庫の表示
             function zaiqtyPopup(tblno, row) {
                 const tblobj = document.getElementById(`tbl${tblno}`);
@@ -725,7 +561,6 @@ QRコード読取
 
         /* ポップアップ関連 ここまで */
         
-        /*
         // i-Reporter の起動
         async function iReporter(tblno, row) {
             // 呼び出し元の基本情報取得
@@ -774,19 +609,18 @@ QRコード読取
                             // 帳票定義IDをそのまま起動
                             location.href = `${irepourl}.createreport:defid=${defid}`;
                         }
-                        /*browserTabClose();
+                        /*browserTabClose();*/
                     } else {
                         // 保留中の帳票があれば帳票IDから起動
                         location.href = `${irepourl}.openreport:repid=${repid}`;
-                        /*browserTabClose();
+                        /*browserTabClose();*/
                     }
                 })
                 .catch(err => {alert(err);});
             })
             .catch(err => {alert(err);});
         }
-        */
-
+        
         // 時間を置いてからタブを閉じる
         async function browserTabClose(){            
             const sleepByPromise = (ms) => new Promise(resolve => setTimeout(resolve, ms));
