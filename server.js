@@ -230,23 +230,25 @@ app.get("/ireporegist/sw/:id/:args", async function (req, res, next) {
 
         } else if (mode == "order") {
             // 実績登録
-            // https://pc090n:53030/ireporegist/sw/10841/RP801-63142-2:105:order:
-            // https://pc090n:53030/ireporegist/sw/10841/05719-52741-1:94:order:
+            // https://pc090n:53030/ireporegist/sw/11014/RD479-63171-1:20:order:
             // https://pc090n:53030/ireporegist/sw/10841/05719-52741-1:100:order:
             // １．スタート日付を取得
             const ymds = await mysqlHandler.getYMDOrders();
             // ２．更新対象の注文番号を取得
             const kd8450 = await mysqlHandler.getWaitOdrno(hmcd, "SW", "SW", ymds[0])
-            // ３．実績登録
-            await mysqlHandler.finishOrder(kd8450[0].ODRNO, "SW", "SW", jiqty);
-            // ４．仕掛り在庫の消込
-            await mysqlHandler.updateKD8460(hmcd, "SW", "SW", (jiqty * -1), operator);
+            if (kd8450[0].ODRNO) {
+                // ３．実績登録
+                await mysqlHandler.finishOrder(kd8450[0].ODRNO, "SW", "SW", jiqty, operator);
+            } else {
+                // ４．仕掛り在庫に追加（消し込み対象の注文番号がない場合）
+                await mysqlHandler.updateKD8460(hmcd, "SW", "SW", jiqty, operator);
+            }
         }
 
         //    res.writeHead(301, {Location: `jp.co.cimtops.ireporter.openreport:repid=187146`}); // 入力帳票を開く
 
         // 処理モードに応じて画面遷移
-       res.redirect(`/mp/${mode}/sw`);
+       res.redirect(`/mp/confirm`);
 
     }
     catch (err) {
@@ -254,6 +256,10 @@ app.get("/ireporegist/sw/:id/:args", async function (req, res, next) {
     }
 });
 
+// 登録後の確認画面
+app.get("/mp/confirm", async (req, res, next) => {
+    res.render("confirm.ejs");
+});
 
 // API コード票マスタから帳票定義ID、品番のクラスター番号を取得
 // i-Repoマニュアル：データー連携テーブル機能を参照の事
@@ -298,6 +304,7 @@ app.get("/mysqlsv/startOrder/:args", async function (req, res, next) {
 
 // API 実績登録
 app.get("/mysqlsv/finishOrder/:args", async function (req, res, next) {
+    const userid = req.session.userid;
     const args = req.params.args;
     const odrno = args.split(":")[0];
     const mcgcd = args.split(":")[1];
@@ -309,7 +316,7 @@ app.get("/mysqlsv/finishOrder/:args", async function (req, res, next) {
     logger.debug(`/mysqlsv/finishOrder/${args}`);
 
     try {
-        const updateresult = await mysqlHandler.finishOrder(odrno, mcgcd, mccd, jiqty);
+        const updateresult = await mysqlHandler.finishOrder(odrno, mcgcd, mccd, jiqty, userid);
         res.status(200).json(updateresult);
     } catch (err) {
         next(err);
@@ -318,6 +325,7 @@ app.get("/mysqlsv/finishOrder/:args", async function (req, res, next) {
 
 // API 実績訂正
 app.get("/mysqlsv/modifyOrder/:args", async function (req, res, next) {
+    const userid = req.session.userid;
     const args = req.params.args;
     const odrno = args.split(":")[0];
     const mcgcd = args.split(":")[1];
@@ -330,15 +338,16 @@ app.get("/mysqlsv/modifyOrder/:args", async function (req, res, next) {
     logger.debug(`/mysqlsv/modifyOrder/${args}`);
 
     try {
-        const updateresult = await mysqlHandler.modifyOrder(odrno, mcgcd, mccd, preqty, modqty);
+        const updateresult = await mysqlHandler.modifyOrder(odrno, mcgcd, mccd, preqty, modqty, userid);
         res.status(200).json(updateresult);
     } catch (err) {
         next(err);
     }
 });
 
-// API 在庫訂正
+// API 仕掛り在庫訂正
 app.get("/mysqlsv/modifyZaiko/:args", async function (req, res, next) {
+    const userid = req.session.userid;
     const args = req.params.args;
     const hmcd = args.split(":")[0];
     const mcgcd = args.split(":")[1];
@@ -350,7 +359,7 @@ app.get("/mysqlsv/modifyZaiko/:args", async function (req, res, next) {
     logger.debug(`/mysqlsv/modifyZaiko/${args}`);
 
     try {
-        const result = await mysqlHandler.modifyZaiko(hmcd, mcgcd, mccd, modqty);
+        const result = await mysqlHandler.modifyZaiko(hmcd, mcgcd, mccd, modqty, userid);
         res.status(200).json(result);
     } catch (err) {
         next(err);
@@ -388,7 +397,7 @@ app.get("/ireposv/getViewReport/:defid", async (req, res, next) => {
 
 app.get("/error/:msg", async (req, res, next) => {
     res.render("error.ejs", {err : req.params.msg});
-});　
+});
 
 app.get("/settings", async (req, res, next) => {
     res.render("settings.ejs", {req});

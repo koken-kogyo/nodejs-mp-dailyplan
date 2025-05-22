@@ -267,6 +267,7 @@ QRコード読取
 
             // ポップアップウィンドウを非表示
             document.getElementById("zaiqtyPopupWindow").style.display = "none";
+            document.getElementById("irepoPopupWindow").style.display = "none";
 
             // テーブルの数分ループ処理
             for (tblno = 1; tblno < 15; tblno++){
@@ -304,7 +305,7 @@ QRコード読取
                         appendTD(newrow, "", "center", 5);
                         appendTD(newrow, "", "center", 5);
 
-                        // ３．１ 鋼材使用長さの集計と、仕掛在庫の消込処理を同時に行う
+                        // ３．鋼材使用長さの集計と、仕掛在庫の消込処理を同時に行う
                         let usedlenttl = Number("0.0");
                         let zaiqty = Number(tblobj.rows[i].cells[endcol - 3].innerText);          // 仕掛かり済の在庫数
                         for (var j=5; j<=10; j+=5) {
@@ -313,7 +314,7 @@ QRコード読取
                                 if (!isNaN(tblobj.rows[i].cells[j+k].innerText) && tblobj.rows[i].cells[j+k].innerText != "") {
                                     let qty = Number(tblobj.rows[i].cells[j+k].innerText);
                                     if (qty > 0) {
-                                        // 仕掛かり在庫判定（ステータスを済に変更）
+                                        // 3.1 仕掛かり在庫判定（ステータスを済に変更）
                                         if (zaiqty >= qty) {
                                             tblobj.rows[i].cells[j+k].className = "s4";
                                             zaiqty -= qty;
@@ -324,11 +325,15 @@ QRコード読取
                                             qty -= zaiqty;
                                             zaiqty = 0;
                                         }
-                                        // 製品長さが入っていたら加算
+                                        // 3.2 製品長さが入っていたら加算
                                         if (productlen > 0) {
                                             usedlen += (productlen + thickness) * qty;
                                             usedlenttl += (productlen + thickness) * qty;
                                         }
+                                        // 3.3 イベントハンドラー（仕掛り在庫訂正ポップアップ呼び出し）
+                                        const strQTY = tblobj.rows[i].cells[j+k].innerText;
+                                        tblobj.rows[i].cells[j+k].innerHTML =
+                                        `<a href="javascript:zaiqtyPopup(${tblno},${i},${j+k})" class="td-zai-a">` + strQTY + "</a>" ;
                                     }
                                 }
                             }

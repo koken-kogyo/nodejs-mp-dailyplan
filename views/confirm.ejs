@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>登録確認</title>
+    <style>
+        body {
+            font-family: Arial, "メイリオ", sans-serif;
+        }
+        body {
+            width: 500px;
+            margin: 100px auto;
+        }
+    </style>
+</head>
+<body>
+    <h2>登録が完了しました．</h2>
+    <br>
+    <h3>更新ボタンを押して、最新のデータを取得してください．</h3>
+</body>
+<script>
+    // 時間を置いてからタブを閉じる
+    async function browserTabClose() {          
+        const sleepByPromise = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+        await sleepByPromise(3000);
+        window.close();
+        if (!window.closed) {
+            alert("xボタンを押して閉じて下さい．\n\n(ブラウザの履歴が残っていると自動で閉じることが出来ない)");
+        }
+    }
+    browserTabClose();
+</script>
+</html>
