@@ -207,7 +207,7 @@ app.get("/ireporegist/sw/:id/:args", async function (req, res, next) {
         const operator = req.params.id;
         const args = req.params.args;
         const hmcd = args.split(":")[0];
-        const jiqty = args.split(":")[1];
+        const jiqty = Number(args.split(":")[1]);
         const mode = args.split(":")[2];
 
         //　i-Reporter登録内容をデバッグログに記録
@@ -240,7 +240,7 @@ app.get("/ireporegist/sw/:id/:args", async function (req, res, next) {
             // ３．実績登録
             await mysqlHandler.finishOrder(kd8450[0].ODRNO, "SW", "SW", jiqty);
             // ４．仕掛り在庫の消込
-            await mysqlHandler.updateKD8460(hmcd, "SW", "SW", Number(jiqty) * -1, operator);
+            await mysqlHandler.updateKD8460(hmcd, "SW", "SW", (jiqty * -1), operator);
         }
 
         //    res.writeHead(301, {Location: `jp.co.cimtops.ireporter.openreport:repid=187146`}); // 入力帳票を開く
@@ -409,7 +409,7 @@ app.get("/pg", async (req, res, next) => {
 // Oracle ODBC Test
 const odbc = require('odbc');
 app.get("/odbc", async (req, res, next) => {
-    const connection = await odbc.connect("DSN=TANACON;UID=ST20240601;PWD=ssit;");
+    const connection = await odbc.connect("DSN=TANACON;UID=STxxxxxxxx;PWD=xxxx;");
     const data = await connection.query("select * from TIO_ITEM")
     console.log(data);
     return;
