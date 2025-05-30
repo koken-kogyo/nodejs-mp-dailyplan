@@ -368,6 +368,13 @@ a {
     font-weight: bold;
     text-decoration: none;
 }
+/* 曜日列の縦線を強調 */
+#details th:nth-child(5), th:nth-child(5) {border-right: 3px solid rgb(200, 190, 200, 0.5);}
+#details td:nth-child(5), th:nth-child(5) {border-right: 3px solid rgb(220, 210, 220, 0.5);}
+#details th:nth-child(10), th:nth-child(10) {border-right: 3px solid rgb(200, 190, 200, 0.5);}
+#details td:nth-child(10), th:nth-child(10) {border-right: 3px solid rgb(220, 210, 220, 0.5);}
+#details th:nth-child(15), th:nth-child(15) {border-right: 3px solid rgb(200, 190, 200, 0.5);}
+#details td:nth-child(15), th:nth-child(15) {border-right: 3px solid rgb(220, 210, 220, 0.5);}
 /* APEM連携用リンク */
 #details .td-apem-a {
     padding: 10px 0 10px 3px;
@@ -416,7 +423,7 @@ a {
     background: rgba(234, 146, 75, 0.8);
     border-radius: 0.5em;
     box-shadow: 2px 2px 4px gray;
-    font-size: small;
+    font-size: smaller;
     color: white;
     padding: 7px 14px;
 }
