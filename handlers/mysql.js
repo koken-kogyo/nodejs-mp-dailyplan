@@ -246,7 +246,7 @@ const getKD8450Orders = async (mcgcd, mccds, ymds) => {
         `,sum(case when EDDT='${ymds[7]}' and ODRSTS in ('1','2','3') then ODRQTY-JIQTY else 0 end) as 'D7Z'` +
         `,sum(case when EDDT='${ymds[8]}' and ODRSTS in ('1','2','3') then ODRQTY-JIQTY else 0 end) as 'D8Z'` +
         `,sum(case when EDDT='${ymds[9]}' and ODRSTS in ('1','2','3') then ODRQTY-JIQTY else 0 end) as 'D9Z'` +
-        `,min(case when EDDT<'${ymds[0]}' then ODRSTS else null end) as 'STSA'` + 
+        `,min(case when EDDT<'${ymds[0]}' and ODRSTS in ('1','2','3') then ODRSTS else null end) as 'STSA'` + 
         `,min(case when EDDT='${ymds[0]}' then ODRSTS else null end) as 'STS0'` + 
         `,min(case when EDDT='${ymds[1]}' then ODRSTS else null end) as 'STS1'` + 
         `,min(case when EDDT='${ymds[2]}' then ODRSTS else null end) as 'STS2'` + 
