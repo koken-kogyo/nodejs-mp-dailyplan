@@ -694,7 +694,7 @@ QRコード読取
                     let odrsts = data[0].ODRSTS; //旧：tblobj.rows[row].cells[col].className.substr(1,1);
                     document.getElementById("jpopHMCD").innerText = hmcd;
                     document.getElementById("jpopODRNO").innerText = odrno;
-                    document.getElementById("jpopODRSTS").innerText = (odrsts=="1") ? "着手中" : (odrsts=="2") ? "着手前" : (odrsts=="3") ? "着手" : (odrsts=="4") ? "完了" : (odrsts=="9") ? "取消" : "不明";
+                    document.getElementById("jpopODRSTS").innerText = (odrsts=="1") ? "追加分" : (odrsts=="2") ? "着手前" : (odrsts=="3") ? "着手中" : (odrsts=="4") ? "完了" : (odrsts=="9") ? "取消" : "不明";
                     document.getElementById("jpopEDDT").innerText = eddt;
                     document.getElementById("jpopODRQTY").innerText = odrqty;
                     document.getElementById("jpopJIQTY").innerText = data[0].JIQTY;
@@ -779,7 +779,7 @@ QRコード読取
                 fetch(`/mysqlsv/startOrder/${odrno}:${mcgcd}:${mccd}:`)
                 .then(res => {if(!res.ok) {throw new Error(`${res.status} ${res.statusText}`);}})
                 .then(data => {
-                    tblobj.rows[row].cells[col].className = "s1";
+                    //廃止 tblobj.rows[row].cells[col].className = "s1";
                     popWin.style.display = "none";
                 })
                 .catch(err => {alert(err);});

@@ -220,24 +220,11 @@ const getKD8450Orders = async (mcgcd, mccds, ymds) => {
         ") a where a.LINENO=10";
     let okure = await getDatabase(okureSql);
     
-    // 受注状態[1:作業開始]を新設
-    let appendsql = 
-        `,min(case when (EDDT<'${ymds[0]}' and ODRSTS in ('2', '3')) and ` + 
-        "ifnull(WKSTDT, STR_TO_DATE('1900-01-01', '%Y-%m-%d')) > " + 
-        "ifnull(WKEDDT, STR_TO_DATE('1900-01-01', '%Y-%m-%d')) then '1' " + 
-        `else case when EDDT<'${ymds[0]}' and ODRSTS in ('2', '3') then ODRSTS else null end end) as 'STSA'`;
-    for (let i=0; i<=9; i++){
-        appendsql += 
-        `,min(case when (EDDT='${ymds[i]}') and ` + 
-        "ifnull(WKSTDT, STR_TO_DATE('1900-01-01', '%Y-%m-%d')) > " + 
-        "ifnull(WKEDDT, STR_TO_DATE('1900-01-01', '%Y-%m-%d')) then '1' " + 
-        `else case when EDDT='${ymds[i]}' and ODRSTS != '9' then ODRSTS else null end end) as 'STS${i}'`;
-    }
     const mc = [];
     for (let mccd of mccds) {
         let sql = "select a.HMCD,b.HMNM,b.MATESIZE,b.LENGTH" +
         ",max(ifnull(b.MATERIALLEN,0)) as 'MATERIALLEN'" + 
-        `,sum(case when EDDT<'${ymds[0]}' and ODRSTS in ('2','3') then ODRQTY else null end) as 'DA'` +
+        `,sum(case when EDDT<'${ymds[0]}' and ODRSTS in ('1','2','3') then ODRQTY else null end) as 'DA'` +
         `,sum(case when EDDT='${ymds[0]}' and ODRSTS != '9' then ODRQTY else null end) as 'D0'` +
         `,sum(case when EDDT='${ymds[1]}' and ODRSTS != '9' then ODRQTY else null end) as 'D1'` +
         `,sum(case when EDDT='${ymds[2]}' and ODRSTS != '9' then ODRQTY else null end) as 'D2'` +
@@ -248,24 +235,34 @@ const getKD8450Orders = async (mcgcd, mccds, ymds) => {
         `,sum(case when EDDT='${ymds[7]}' and ODRSTS != '9' then ODRQTY else null end) as 'D7'` +
         `,sum(case when EDDT='${ymds[8]}' and ODRSTS != '9' then ODRQTY else null end) as 'D8'` +
         `,sum(case when EDDT='${ymds[9]}' and ODRSTS != '9' then ODRQTY else null end) as 'D9'` +
-        `,sum(case when EDDT<'${ymds[0]}' and ODRSTS in ('2','3') then ODRQTY-JIQTY else 0 end) as 'DAZ'` +
-        `,sum(case when EDDT='${ymds[0]}' and ODRSTS in ('2','3') then ODRQTY-JIQTY else 0 end) as 'D0Z'` +
-        `,sum(case when EDDT='${ymds[1]}' and ODRSTS in ('2','3') then ODRQTY-JIQTY else 0 end) as 'D1Z'` +
-        `,sum(case when EDDT='${ymds[2]}' and ODRSTS in ('2','3') then ODRQTY-JIQTY else 0 end) as 'D2Z'` +
-        `,sum(case when EDDT='${ymds[3]}' and ODRSTS in ('2','3') then ODRQTY-JIQTY else 0 end) as 'D3Z'` +
-        `,sum(case when EDDT='${ymds[4]}' and ODRSTS in ('2','3') then ODRQTY-JIQTY else 0 end) as 'D4Z'` +
-        `,sum(case when EDDT='${ymds[5]}' and ODRSTS in ('2','3') then ODRQTY-JIQTY else 0 end) as 'D5Z'` +
-        `,sum(case when EDDT='${ymds[6]}' and ODRSTS in ('2','3') then ODRQTY-JIQTY else 0 end) as 'D6Z'` +
-        `,sum(case when EDDT='${ymds[7]}' and ODRSTS in ('2','3') then ODRQTY-JIQTY else 0 end) as 'D7Z'` +
-        `,sum(case when EDDT='${ymds[8]}' and ODRSTS in ('2','3') then ODRQTY-JIQTY else 0 end) as 'D8Z'` +
-        `,sum(case when EDDT='${ymds[9]}' and ODRSTS in ('2','3') then ODRQTY-JIQTY else 0 end) as 'D9Z'` +
-        appendsql + " " + 
+        `,sum(case when EDDT<'${ymds[0]}' and ODRSTS in ('1','2','3') then ODRQTY-JIQTY else 0 end) as 'DAZ'` +
+        `,sum(case when EDDT='${ymds[0]}' and ODRSTS in ('1','2','3') then ODRQTY-JIQTY else 0 end) as 'D0Z'` +
+        `,sum(case when EDDT='${ymds[1]}' and ODRSTS in ('1','2','3') then ODRQTY-JIQTY else 0 end) as 'D1Z'` +
+        `,sum(case when EDDT='${ymds[2]}' and ODRSTS in ('1','2','3') then ODRQTY-JIQTY else 0 end) as 'D2Z'` +
+        `,sum(case when EDDT='${ymds[3]}' and ODRSTS in ('1','2','3') then ODRQTY-JIQTY else 0 end) as 'D3Z'` +
+        `,sum(case when EDDT='${ymds[4]}' and ODRSTS in ('1','2','3') then ODRQTY-JIQTY else 0 end) as 'D4Z'` +
+        `,sum(case when EDDT='${ymds[5]}' and ODRSTS in ('1','2','3') then ODRQTY-JIQTY else 0 end) as 'D5Z'` +
+        `,sum(case when EDDT='${ymds[6]}' and ODRSTS in ('1','2','3') then ODRQTY-JIQTY else 0 end) as 'D6Z'` +
+        `,sum(case when EDDT='${ymds[7]}' and ODRSTS in ('1','2','3') then ODRQTY-JIQTY else 0 end) as 'D7Z'` +
+        `,sum(case when EDDT='${ymds[8]}' and ODRSTS in ('1','2','3') then ODRQTY-JIQTY else 0 end) as 'D8Z'` +
+        `,sum(case when EDDT='${ymds[9]}' and ODRSTS in ('1','2','3') then ODRQTY-JIQTY else 0 end) as 'D9Z'` +
+        `,min(case when EDDT<'${ymds[0]}' then ODRSTS else null end) as 'STSA'` + 
+        `,min(case when EDDT='${ymds[0]}' then ODRSTS else null end) as 'STS0'` + 
+        `,min(case when EDDT='${ymds[1]}' then ODRSTS else null end) as 'STS1'` + 
+        `,min(case when EDDT='${ymds[2]}' then ODRSTS else null end) as 'STS2'` + 
+        `,min(case when EDDT='${ymds[3]}' then ODRSTS else null end) as 'STS3'` + 
+        `,min(case when EDDT='${ymds[4]}' then ODRSTS else null end) as 'STS4'` + 
+        `,min(case when EDDT='${ymds[5]}' then ODRSTS else null end) as 'STS5'` + 
+        `,min(case when EDDT='${ymds[6]}' then ODRSTS else null end) as 'STS6'` + 
+        `,min(case when EDDT='${ymds[7]}' then ODRSTS else null end) as 'STS7'` + 
+        `,min(case when EDDT='${ymds[8]}' then ODRSTS else null end) as 'STS8'` + 
+        `,min(case when EDDT='${ymds[9]}' then ODRSTS else null end) as 'STS9'` + " " + 
         "from kd8450 a, km8430 b where a.HMCD = b.HMCD" +
         " and a.EDDT between ? and ?" +
         " and a.MCGCD=? and a.MCCD=? " +
         "group by a.HMCD, b.HMNM, b.MATESIZE, b.LENGTH " + 
         "having " +
-        " sum(case when EDDT<? and ODRSTS in ('2','3') then ODRQTY else null end) > 0 or" +
+        " sum(case when EDDT<? and ODRSTS in ('1','2','3') then ODRQTY else null end) > 0 or" +
         " sum(case when EDDT=? and ODRSTS != '9' then ODRQTY else null end) > 0 or" +
         " sum(case when EDDT=? and ODRSTS != '9' then ODRQTY else null end) > 0 or" +
         " sum(case when EDDT=? and ODRSTS != '9' then ODRQTY else null end) > 0 or" +
@@ -392,7 +389,7 @@ const getKD8440Plans = async (mcgcd, mccds, ymds) => {
         const kd8450 = await getDatabase(
             "select HMCD, sum(ODRQTY) as 'ODRQTY', sum(ODRQTY-JIQTY) as 'ZANQTY', min(ODRSTS) as 'ODRSTS' " + 
             "from kd8450 " + 
-            "where MCGCD=? and MCCD=? and ODRSTS in ('2','3') and EDDT>?" + 
+            "where MCGCD=? and MCCD=? and ODRSTS in ('1','2','3') and EDDT>?" + 
             "group by HMCD"
             , [mcgcd, mccd.MCCD, okure[0].YMD]
         );
@@ -731,8 +728,8 @@ exports.dandori = async (userid, odrno, planday, mcgcd, mccd) => {
 exports.startOrder = async (odrno, mcgcd, mccd) => {
     const kd8430 = await getDatabase("select EDDT, HMCD from kd8430 where ODRNO=?",[odrno]);
     const update = await getDatabase(
-        "update kd8450 set ODRSTS='1', WKSTDT=current_timestamp " +
-        "where HMCD=? and EDDT=? and MCGCD=? and MCCD=? and ODRSTS='2'"
+        "update kd8450 set WKSTDT=current_timestamp " +
+        "where HMCD=? and EDDT=? and MCGCD=? and MCCD=? and ODRSTS in ('1,','2')"
         , [kd8430[0].HMCD, kd8430[0].EDDT, mcgcd, mccd]);
 };
 
