@@ -307,7 +307,7 @@ QRコード読取
 
                         // ３．鋼材使用長さの集計と、仕掛在庫の消込処理を同時に行う
                         let usedlenttl = Number("0.0");
-                        let zaiqty = Number(tblobj.rows[i].cells[endcol - 3].innerText);          // 仕掛かり済の在庫数
+                        let zaiqty = Number(tblobj.rows[i].cells[endcol - 3].innerText.replace(",",""));          // 仕掛かり済の在庫数
                         for (var j=5; j<=10; j+=5) {
                             let usedlen = Number("0.0"); // 一週間で使用する鋼材長さを集計
                             for (var k=0; k<5; k++) {

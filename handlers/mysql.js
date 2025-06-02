@@ -888,7 +888,7 @@ exports.modifyZaiko = async (hmcd, mcgcd, mccd, modqty, userid) => {
         const insert = await getDatabase(
             "insert into kd8460 " +
             "(HMCD, MCGCD, MCCD, ZAIQTY, INDT, MPINSTID, MPINSTDT, MPUPDTID, MPUPDTDT)" + 
-            "select ?, ?, ?, ?, now(), ?, now(), ? now()"
+            "select ?, ?, ?, ?, now(), ?, now(), ?, now()"
             , [hmcd, mcgcd, mccd, modqty, userid, userid]
         );
         return insert;
