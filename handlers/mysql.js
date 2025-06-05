@@ -211,15 +211,23 @@ exports.getMCOrderby = getMCOrderby;
 
 // 設備毎の注文データを2週間分取得
 const getKD8450Orders = async (mcgcd, mccds, ymds) => {
+
+    // 検索を高速化する為に開始ODRNOを決定
+    const targetday = new Date();
+    targetday.setMonth(targetday.getMonth() - 4); // 4カ月前を取得
+    const startodrno = ("00" + (targetday.getFullYear())).slice(-2) + 
+                        ("00" + (targetday.getMonth()+1)).slice(-2) + "000000";
+
+    // グループの設備一覧を取得
     const orderby = getMCOrderby(mcgcd);
     
-    // 過去の遅れ分を抽出する為の日付を取得（当日から過去10営業日でさかのぼる）
+    // 過去の遅れ分を抽出する為の日付を取得（開始日から過去10営業日でさかのぼる）
     let okureSql = "select YMD from (" + 
         "select row_number() over (order by YMD desc) as LINENO, YMD from s0820 " + 
-        "where CALTYP='00001' and WKKBN='1' and YMD between now() - interval 30 day and now()" +  
+        "where CALTYP='00001' and WKKBN='1' and YMD between ? - interval 30 day and ?" +  
         ") a where a.LINENO=10";
-    let okure = await getDatabase(okureSql);
-    
+    let okure = await getDatabase(okureSql, [ymds[0], ymds[0]]);
+
     const mc = [];
     for (let mccd of mccds) {
         let sql = "select a.HMCD,b.HMNM,b.MATESIZE,b.LENGTH" +
@@ -314,15 +322,12 @@ exports.getKD8450Orders = getKD8450Orders;
 
 // 設備毎の内示データを2週間分取得
 const getKD8440Plans = async (mcgcd, mccds, ymds) => {
-    // 手配残を抽出する為の日付を取得（当日から過去5日間営業日でさかのぼる）（おまけ１）
-    let okureSql = "select YMD from (" + 
-        "select row_number() over (order by YMD desc) as LINENO, YMD from s0820 " + 
-        "where CALTYP='00001' and WKKBN='1' and YMD between now() - interval 30 day and now()" +  
-        ") a where a.LINENO=5";
-    let okure = await getDatabase(okureSql);
 
-    // まず在庫テーブルのSTORE情報全件を取得（おまけ３）・・・ タナコンサーバーからリアルタイム情報を取得するため廃止
-    // const kd8460store = await getDatabase("select HMCD, ZAIQTY as 'STORE' from kd8460 where MCGCD='STORE'");
+    // 検索を高速化する為に開始ODRNOを決定
+    const targetday = new Date();
+    targetday.setMonth(targetday.getMonth() - 4); // 4カ月前を取得
+    const startodrno = ("00" + (targetday.getFullYear())).slice(-2) + 
+                       ("00" + (targetday.getMonth()+1)).slice(-2) + "000000";
 
     // グループの設備一覧を取得
     const orderby = await getMCOrderby(mcgcd);
@@ -389,9 +394,9 @@ const getKD8440Plans = async (mcgcd, mccds, ymds) => {
         const kd8450 = await getDatabase(
             "select HMCD, sum(ODRQTY) as 'ODRQTY', sum(ODRQTY-JIQTY) as 'ZANQTY', min(ODRSTS) as 'ODRSTS' " + 
             "from kd8450 " + 
-            "where MCGCD=? and MCCD=? and ODRSTS in ('1','2','3') and EDDT>?" + 
+            "where MCGCD=? and MCCD=? and ODRSTS in ('1','2','3') and EDDT<? and ODRNO>?" + 
             "group by HMCD"
-            , [mcgcd, mccd.MCCD, okure[0].YMD]
+            , [mcgcd, mccd.MCCD, ymds[0], startodrno]
         );
 
         // 在庫テーブルの仕掛り在庫情報を取得（おまけ２）
@@ -429,15 +434,6 @@ const getKD8440Plans = async (mcgcd, mccds, ymds) => {
             } else {
                 row.ZAIQTY = kd8460mccd[idx].ZAIQTY === null ? 0 : kd8460mccd[idx].ZAIQTY;
             }
-            /*
-            // 在庫テーブルSTORE情報を付与（おまけ３）・・・ タナコンサーバーからリアルタイム情報を取得するため廃止            
-            idx = kd8460store.findIndex(t => t.HMCD === row.HMCD);
-            if (idx < 0) {
-                row.STORE = 0;
-            } else {
-                row.STORE = kd8460store[idx].STORE === null ? 0 : kd8460store[idx].STORE;
-            }
-            */
             row.STORE = 0;
             // IREPO帳票IDを付与（おまけ４）
             idx = km8430.findIndex(t => t.HMCD === row.HMCD);
@@ -455,15 +451,17 @@ const getKD8440Plans = async (mcgcd, mccds, ymds) => {
             // 内示情報を検索
             idx = kd8440.findIndex(t => t.HMCD === row.HMCD && row.ZAIQTY > 0);
             if (idx < 0) {
-                /*
-                // 在庫テーブルSTORE情報を付与（おまけ３）
-                idx = kd8460store.findIndex(t => t.HMCD === row.HMCD);
+                // 手配残データを付与（おまけ１）
+                idx = kd8450.findIndex(t => t.HMCD === row.HMCD);
                 if (idx < 0) {
-                    row.STORE = 0;
+                    row.DA = null;
+                    row.DAZ = 0;
+                    row.STSA = null;
                 } else {
-                    row.STORE = kd8460store[idx].STORE === null ? 0 : kd8460store[idx].STORE;
+                    row.DA = kd8450[idx].ODRQTY;
+                    row.DAZ = kd8450[idx].ZANQTY;
+                    row.STSA = kd8450[idx].ODRSTS;
                 }
-                */
                 row.STORE = 0;
                 // IREPO帳票IDを付与（おまけ４）
                 idx = km8430.findIndex(t => t.HMCD === row.HMCD);
@@ -501,6 +499,7 @@ const getKD8440Plans = async (mcgcd, mccds, ymds) => {
 };
 exports.getKD8440Plans = getKD8440Plans;
 
+// 指定された設備の品番一覧と帳票定義ID一覧のデータを取得
 const getKM8430Defids =  async (mcgcd, mccd) => {
     const sql = "select HMCD, case " + 
     "when KT1MCGCD=? and KT1MCCD=? then KT1IREPO " + 
