@@ -191,7 +191,7 @@ const getMCOrderby = (mcgcd) => {
         SS: "order by a.HMCD ",
         XT: "order by a.HMCD ",
         CN: "order by b.MATESIZE, a.HMCD ",
-        MS: "order by b.MATESIZE, a.HMCD ",
+        MS: "order by b.MATESIZE desc, a.HMCD ",
         LA: "",
         NC: "order by a.HMCD ",
         ON: "order by a.HMCD ",
