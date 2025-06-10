@@ -61,8 +61,8 @@ const getYMDOrders = async () => {
             continue;
         }
         if (s0820[0].WKCNT > 0) {
-            let d = new Date(baseday);
             for (let i = 0; i < 5; i++) {
+                let d = new Date(baseday);
                 d.setDate(baseday.getDate() + i);
                 ymd.push(d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate());
             }
@@ -104,8 +104,8 @@ const getYMDPlans = async () => {
         // 手配の2week分は内示一覧の対象外とする
         if (s0820[0].WKCNT > 0) weekcount++;
         if (weekcount > 2) {
-            let d = new Date(baseday);
             for (let i = 0; i < 5; i++) {
+                let d = new Date(baseday);
                 d.setDate(baseday.getDate() + i);
                 ymd.push(d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate());
             }
