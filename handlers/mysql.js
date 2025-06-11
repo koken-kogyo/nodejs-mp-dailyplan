@@ -162,7 +162,7 @@ const getMCCDs = async (mcgcd) => {
     const sql = 
         "select MCCD, MCNM, ifnull(CUTTHICKNESS,0) CUTTHICKNESS, ifnull(SCRAPLEN,0) SCRAPLEN " + 
         "from km8420 where MCGCD=? and FLG1='1' order by MCSEQ asc";
-    return getDatabase(sql, [mcgcd]);
+    return getDatabase(sql, mcgcd);
 };
 exports.getMCCDs = getMCCDs;
 
@@ -196,6 +196,7 @@ const getMCOrderby = (mcgcd) => {
         NC: "order by a.HMCD ",
         ON: "order by a.HMCD ",
         ON3:"order by a.HMCD ",
+        "3BP":"order by a.HMCD ",
         MD: "order by a.HMCD ",
         D:  "order by a.HMCD ",
         MC: "order by a.HMCD ",

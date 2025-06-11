@@ -72,11 +72,13 @@ app.get("/mp/order/:mcgcd", async (req, res, next) => {
     req.session.nextaddr = `/mp/order/${mcgcd}`;
     if (!loginCheck(req, res)) return;
     req.session.mcgcd = mcgcd;
-    Promise.all([mysqlHandler.getMCCDs(mcgcd), mysqlHandler.getYMDOrders()])
-    .then( async ([mccds, ymds]) => {
 
-        // 手配情報取得
-        const kd8450 = await mysqlHandler.getKD8450Orders(mcgcd, mccds, ymds);
+    // バインド変数 に 3BP(先頭数値) を入れると Promise.all が効かなくなるので個別実行に戻す
+    const mccds = await mysqlHandler.getMCCDs(mcgcd);
+    const ymds = await mysqlHandler.getYMDOrders();
+
+    // 手配情報取得
+    const kd8450 = await mysqlHandler.getKD8450Orders(mcgcd, mccds, ymds);
 
         // タナコンサーバー接続確認
         const socket = new net.Socket();
@@ -109,9 +111,6 @@ app.get("/mp/order/:mcgcd", async (req, res, next) => {
             res.render("order-information.ejs", {req, ymds, mcgcd, mccds, kd8450, err});
         });
 
-    }).catch((err) => {
-        next(err);
-    });
 });
 
 
