@@ -62,10 +62,14 @@ QRコード読取
                 </span>
                 <span class="floatright">
                 <!-- チェックボックス -->
-                在庫状況
-                <input type="checkbox" id="chkzaiko<%= tableno %>" class="check-box" title="在庫状況" value="<%= tableno %>" onchange="checkZaikoChange(this.value)"/>
-                鋼材情報を表示
-                <input type="checkbox" id="chkmate<%= tableno %>" class="check-box" title="鋼材情報" value="<%= tableno %>" onchange="checkMateChange(this.value)"/>
+                <label class="check-disp">
+                    <input type="checkbox" id="chkzaiko<%= tableno %>" class="check-box" title="在庫状況" value="<%= tableno %>" onchange="checkZaikoChange(this.value)"/>
+                    在庫状況&nbsp;&nbsp;
+                </label>
+                <label class="check-disp">
+                    <input type="checkbox" id="chkmate<%= tableno %>" class="check-box" title="鋼材情報" value="<%= tableno %>" onchange="checkMateChange(this.value)"/>
+                    鋼材情報を表示
+                </label>
                 <% let prevsectionid = "jump" + (tableno - 1); %>
                 <% let nextsectionid = "jump" + (tableno + 1); %>
                 <% if (tableno == 2) { %>
@@ -102,42 +106,103 @@ QRコード読取
                         <th width="80px">ﾁｪｯｸｼｰﾄ</th>
                         
                     </tr>
+                    <% let cntA = 0; %>
+                    <% let cnt0 = 0; %>
+                    <% let cnt1 = 0; %>
+                    <% let cnt2 = 0; %>
+                    <% let cnt3 = 0; %>
+                    <% let cnt4 = 0; %>
+                    <% let cnt5 = 0; %>
+                    <% let cnt6 = 0; %>
+                    <% let cnt7 = 0; %>
+                    <% let cnt8 = 0; %>
+                    <% let cnt9 = 0; %>
+                    <% let sumA = 0; %>
+                    <% let sum0 = 0; %>
+                    <% let sum1 = 0; %>
+                    <% let sum2 = 0; %>
+                    <% let sum3 = 0; %>
+                    <% let sum4 = 0; %>
+                    <% let sum5 = 0; %>
+                    <% let sum6 = 0; %>
+                    <% let sum7 = 0; %>
+                    <% let sum8 = 0; %>
+                    <% let sum9 = 0; %>
                     <% data[1].forEach(function (d) { %>
                     <tr>
-                        <td class="lef td-big">
+                        <td class="tdrow lef td-big">
                             <% if (osType == "windows") { %>
                                 <a href="javascript:apemCustomURL(0, '<%= d.HMCD %>')" class="td-apem-a"><%= d.HMCD %></a>
                             <% } else { %>
                                 <a href="javascript:apemCustomURL(1, '<%= d.HMCD %>')" class="td-apem-a"><%= d.HMCD %></a>
                             <% }; %>
                         </td>
-                        <td class="lef"><%= d.HMNM %></td>
-                        <td class=""><%= d.MATESIZE %></td>
-                        <td class=""><%= d.LENGTH %></td>
-                        <td class="td-qty2"><%= (d.DAZ==0) ? "" : d.DAZ; %></td>
-                        <td class="td-qty2"><%= d.D0 %></td>
-                        <td class="td-qty2"><%= d.D1 %></td>
-                        <td class="td-qty2"><%= d.D2 %></td>
-                        <td class="td-qty2"><%= d.D3 %></td>
-                        <td class="td-qty2"><%= d.D4 %></td>
-                        <td class="td-qty2"><%= d.D5 %></td>
-                        <td class="td-qty2"><%= d.D6 %></td>
-                        <td class="td-qty2"><%= d.D7 %></td>
-                        <td class="td-qty2"><%= d.D8 %></td>
-                        <td class="td-qty2"><%= d.D9 %></td>
+                        <td class="tdrow lef"><%= d.HMNM %></td>
+                        <td class="tdrow"><%= d.MATESIZE %></td>
+                        <td class="tdrow"><%= d.LENGTH %></td>
+                        <td class="tdrow td-qty2"><%= (d.DAZ==0) ? "" : d.DAZ; %></td>
+                        <td class="tdrow td-qty2"><%= d.D0 %></td>
+                        <td class="tdrow td-qty2"><%= d.D1 %></td>
+                        <td class="tdrow td-qty2"><%= d.D2 %></td>
+                        <td class="tdrow td-qty2"><%= d.D3 %></td>
+                        <td class="tdrow td-qty2"><%= d.D4 %></td>
+                        <td class="tdrow td-qty2"><%= d.D5 %></td>
+                        <td class="tdrow td-qty2"><%= d.D6 %></td>
+                        <td class="tdrow td-qty2"><%= d.D7 %></td>
+                        <td class="tdrow td-qty2"><%= d.D8 %></td>
+                        <td class="tdrow td-qty2"><%= d.D9 %></td>
                         <% let planqty = Number(d.D0)+Number(d.D1)+Number(d.D2)+Number(d.D3)+Number(d.D4)+Number(d.D5)+Number(d.D6)+Number(d.D7)+Number(d.D8)+Number(d.D9); %>
                         <% let zaiqty = Number(d.ZAIQTY); %>
                         <% if (planqty < zaiqty) { %>
-                            <td class="td-qty2">0</td>
+                            <td class="tdrow td-qty2">0</td>
                         <% } else { %>
-                            <td class="td-qty2"><%= planqty - zaiqty %></td>
+                            <td class="tdrow td-qty2"><%= planqty - zaiqty %></td>
                         <% } %>
-                        <td class="td-qty2"><%= (d.ZAIQTY == 0) ? "" : Number(d.ZAIQTY).toLocaleString(); %></td>
-                        <td class="td-qty2"><%= (d.STORE == 0) ? "" : Number(d.STORE).toLocaleString(); %></td>
-                        <td class=""><%= d.MATERIALLEN %></td>
-                        <td><%= (d.DEFID == 0) ? "" : d.DEFID %></td>
+                        <td class="tdrow td-qty2"><%= (d.ZAIQTY == 0) ? "" : Number(d.ZAIQTY).toLocaleString(); %></td>
+                        <td class="tdrow td-qty2"><%= (d.STORE == 0) ? "" : Number(d.STORE).toLocaleString(); %></td>
+                        <td class="tdrow"><%= d.MATERIALLEN %></td>
+                        <td class="tdrow"><%= (d.DEFID == 0) ? "" : d.DEFID %></td>
                     </tr>
+                    <% cntA += (Number(d.DAZ) > 0) ? 1 : 0; %>
+                    <% cnt0 += (Number(d.D0) > 0) ? 1 : 0; %>
+                    <% cnt1 += (Number(d.D1) > 0) ? 1 : 0; %>
+                    <% cnt2 += (Number(d.D2) > 0) ? 1 : 0; %>
+                    <% cnt3 += (Number(d.D3) > 0) ? 1 : 0; %>
+                    <% cnt4 += (Number(d.D4) > 0) ? 1 : 0; %>
+                    <% cnt5 += (Number(d.D5) > 0) ? 1 : 0; %>
+                    <% cnt6 += (Number(d.D6) > 0) ? 1 : 0; %>
+                    <% cnt7 += (Number(d.D7) > 0) ? 1 : 0; %>
+                    <% cnt8 += (Number(d.D8) > 0) ? 1 : 0; %>
+                    <% cnt9 += (Number(d.D9) > 0) ? 1 : 0; %>
+                    <% sumA += (Number(d.DAZ) > 0) ? Number(d.DAZ) : 0; %>
+                    <% sum0 += (Number(d.D0) > 0) ? Number(d.D0) : 0; %>
+                    <% sum1 += (Number(d.D1) > 0) ? Number(d.D1) : 0; %>
+                    <% sum2 += (Number(d.D2) > 0) ? Number(d.D2) : 0; %>
+                    <% sum3 += (Number(d.D3) > 0) ? Number(d.D3) : 0; %>
+                    <% sum4 += (Number(d.D4) > 0) ? Number(d.D4) : 0; %>
+                    <% sum5 += (Number(d.D5) > 0) ? Number(d.D5) : 0; %>
+                    <% sum6 += (Number(d.D6) > 0) ? Number(d.D6) : 0; %>
+                    <% sum7 += (Number(d.D7) > 0) ? Number(d.D7) : 0; %>
+                    <% sum8 += (Number(d.D8) > 0) ? Number(d.D8) : 0; %>
+                    <% sum9 += (Number(d.D9) > 0) ? Number(d.D9) : 0; %>
                     <% }); %>
+                    <tr>
+                        <td colspan="3">合計</td>
+                        <td></td>
+                        <td class="tdsum"><%= (sumA > 0) ? sumA.toLocaleString() : ""; %><br><%= (cntA > 0) ? "(" + cntA + ")" : "" %></td>
+                        <td class="tdsum"><%= (sum0 > 0) ? sum0.toLocaleString() : ""; %><br><%= (cnt0 > 0) ? "(" + cnt0 + ")" : "" %></td>
+                        <td class="tdsum"><%= (sum1 > 0) ? sum1.toLocaleString() : ""; %><br><%= (cnt1 > 0) ? "(" + cnt1 + ")" : "" %></td>
+                        <td class="tdsum"><%= (sum2 > 0) ? sum2.toLocaleString() : ""; %><br><%= (cnt2 > 0) ? "(" + cnt2 + ")" : "" %></td>
+                        <td class="tdsum"><%= (sum3 > 0) ? sum3.toLocaleString() : ""; %><br><%= (cnt3 > 0) ? "(" + cnt3 + ")" : "" %></td>
+                        <td class="tdsum"><%= (sum4 > 0) ? sum4.toLocaleString() : ""; %><br><%= (cnt4 > 0) ? "(" + cnt4 + ")" : "" %></td>
+                        <td class="tdsum"><%= (sum5 > 0) ? sum5.toLocaleString() : ""; %><br><%= (cnt5 > 0) ? "(" + cnt5 + ")" : "" %></td>
+                        <td class="tdsum"><%= (sum6 > 0) ? sum6.toLocaleString() : ""; %><br><%= (cnt6 > 0) ? "(" + cnt6 + ")" : "" %></td>
+                        <td class="tdsum"><%= (sum7 > 0) ? sum7.toLocaleString() : ""; %><br><%= (cnt7 > 0) ? "(" + cnt7 + ")" : "" %></td>
+                        <td class="tdsum"><%= (sum8 > 0) ? sum8.toLocaleString() : ""; %><br><%= (cnt8 > 0) ? "(" + cnt8 + ")" : "" %></td>
+                        <td class="tdsum"><%= (sum9 > 0) ? sum9.toLocaleString() : ""; %><br><%= (cnt9 > 0) ? "(" + cnt9 + ")" : "" %></td>
+                        <td colspan="4"></td>
+                        <td></td>
+                    </tr>
                 </table>
             <% }; %>
             <% tableno += 1; %>
@@ -279,12 +344,12 @@ QRコード読取
                     const scraplen = Number(document.getElementById(`mcscrap${tblno}`).value);      // 端材長さ
                     let mateold = tblobj.rows[1].cells[2].innerHTML;
                     let colorno = 0;
-                    for ( var i = 1; i < tblobj.rows.length; i++ ) {
+                    for ( var i = 1; i < tblobj.rows.length - 1; i++ ) {
                         // ０．変数セット
                         const productlen = Number(tblobj.rows[i].cells[3].innerHTML);               // 製品長さ
                         const materiallen = Number(tblobj.rows[i].cells[endcol - 1].innerHTML);     // 材料長さ
                         const zanqty = Number(tblobj.rows[i].cells[endcol - 4].innerHTML);          // 注文残数
-                        const storeqty = Number(tblobj.rows[i].cells[endcol - 2].innerHTML);        // ストア在庫数
+                        const storeqty = Number(tblobj.rows[i].cells[endcol - 2].innerHTML);        // タナコン在庫数
 
                         // １．材料サイズ毎の色分け処理
                         const matenow = tblobj.rows[i].cells[2].innerHTML;
@@ -293,7 +358,7 @@ QRコード読取
                             mateold = matenow;
                         }
                         
-                        // １．５ ストア在庫数のチェック
+                        // １．５ タナコン在庫数のチェック
                         if (zanqty > storeqty) {
                             tblobj.rows[i].cells[endcol - 2].className = "warn";
                         }
@@ -389,6 +454,9 @@ QRコード読取
                     // ヘッダー(TH)の非表示化
                     tblobj.rows[0].cells[3].style.display = "none";                     // 長さ
                     tblobj.rows[0].cells[endcol - 1].style.display = "none";            // 鋼材長さ
+                    // 合計行の非表示化
+                    tblobj.rows[i].cells[14].style.display = "none";                    // 鋼材長さ
+                    tblobj.rows[i].cells[1].style.display = "none";                     // 長さ
                     if (myos != "windows") {
                         tblobj.rows[0].cells[endcol - 4].style.display = "none";        // 注文残
                         tblobj.rows[0].cells[endcol - 3].style.display = "none";        // 仕掛かり在庫数
@@ -449,9 +517,13 @@ QRコード読取
             if (checkDisp.checked == false) {
                 tblobj.rows[0].cells[3].style.display = "none";             // 長さ非表示
                 tblobj.rows[0].cells[endcol - 1].style.display = "none";    // 鋼材長さ非表示
+                tblobj.rows[row - 1].cells[14].style.display = "none";      // 鋼材長さ非表示
+                tblobj.rows[row - 1].cells[1].style.display = "none";       // 長さ非表示
             } else {
                 tblobj.rows[0].cells[3].style.display = "";
                 tblobj.rows[0].cells[endcol - 1].style.display = "";
+                tblobj.rows[row - 1].cells[1].style.display = "";
+                tblobj.rows[row - 1].cells[14].style.display = "";
             }
             for( var i = 1; i < row; i++ ){
                 if (checkDisp.checked == false) {
