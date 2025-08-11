@@ -2,6 +2,9 @@
 /* =========================================================================== */
 /*  mp-style.css : 主にMPページ群で使用する基本的なスタイルシート
 /* =========================================================================== */
+:root {
+    --remain-per: 60%;
+}
 a {
     color: inherit;         /* テキストの色を継承(旧：cadetblue) */
     cursor: pointer;        /* カーソルをポインターに変更 */
@@ -314,11 +317,23 @@ a {
     font-size: 0.8rem;
 }
 .check-box {
+    cursor: pointer;
     width: 2.0em;
     height: 2.0em;
     vertical-align: text-bottom;
     margin-bottom: -3px;
 }
+.check-disp {
+    cursor: pointer;
+}
+.check-sel-anime {
+    animation: blinkAnimeCheck 2.0s ease-in-out 3;
+}
+@keyframes blinkAnimeCheck {
+    0%{ color : rgba(190, 38, 38, 0.8);   background:rgba(225, 238, 253, 0.3) }
+  100%{ color : rgba(25, 38, 53, 0.8); background:rgba(225, 238, 253, 0.9)   }
+}
+
 #details .allow {
     border-radius: 3px;
     background-color: rgb(40, 40, 40);
@@ -369,17 +384,27 @@ a {
     text-decoration: none;
 }
 /* 曜日列の縦線を強調 */
-#details th:nth-child(5), th:nth-child(5) {border-right: 3px solid rgb(200, 190, 200, 0.5);}
-#details .tdrow:nth-child(5), th:nth-child(5) {border-right: 3px solid rgb(220, 210, 220, 0.5);}
-#details th:nth-child(10), th:nth-child(10) {border-right: 3px solid rgb(200, 190, 200, 0.5);}
-#details .tdrow:nth-child(10), th:nth-child(10) {border-right: 3px solid rgb(220, 210, 220, 0.5);}
-#details th:nth-child(15), th:nth-child(15) {border-right: 3px solid rgb(200, 190, 200, 0.5);}
-#details .tdrow:nth-child(15), th:nth-child(15) {border-right: 3px solid rgb(220, 210, 220, 0.5);}
-#details .tdsum:nth-child(3) {border-right: 3px solid rgb(220, 210, 220, 0.5);}
-#details .tdsum:nth-child(8) {border-right: 3px solid rgb(220, 210, 220, 0.5);}
-#details .tdsum:nth-child(13) {border-right: 3px solid rgb(220, 210, 220, 0.5);}
+#details th:nth-child(6), th:nth-child(6) {border-left: 3px solid rgb(200, 190, 200, 0.5);}
+#details .tdrow:nth-child(6), th:nth-child(6) {border-left: 3px solid rgb(220, 210, 220, 0.5);}
+#details th:nth-child(12), th:nth-child(12) {border-left: 3px solid rgb(200, 190, 200, 0.5);}
+#details .tdrow:nth-child(12), th:nth-child(12) {border-left: 3px solid rgb(220, 210, 220, 0.5);}
+#details th:nth-child(18), th:nth-child(18) {border-left: 3px solid rgb(200, 190, 200, 0.5);}
+#details .tdrow:nth-child(18), th:nth-child(18) {border-left: 3px solid rgb(220, 210, 220, 0.5);}
+#details th:nth-child(19), th:nth-child(19) {border-left: 3px solid rgb(200, 190, 200, 0.5);}
+#details .tdrow:nth-child(19), th:nth-child(19) {border-left: 3px solid rgb(220, 210, 220, 0.5);}
+/* 合計行の縦線*/
+#details .tdsum:nth-child(4) {border-left: 3px solid rgb(220, 210, 220, 0.5);}
+#details .tdsum:nth-child(10) {border-left: 3px solid rgb(220, 210, 220, 0.5);}
+#details .tdsum:nth-child(16) {border-left: 3px solid rgb(220, 210, 220, 0.5);}
+#details .tdsum:nth-child(17) {border-left: 3px solid rgb(220, 210, 220, 0.5);}
+/* 合計行の文字を小さく */
 #details .tdsum {
     font-size: smaller;
+}
+#details .thsum {
+    font-weight: bold;
+    border: solid 0.5px #1414141c;
+    background-color: rgb(225, 238, 253);
 }
 /* APEM連携用リンク */
 #details .td-apem-a {
@@ -453,7 +478,7 @@ a {
 #details .s3 {
     border-radius: 3px;
     color: #777;
-    background: linear-gradient(to bottom, rgb(255, 105, 180, 0.0) 60%, rgb(255, 105, 180, 0.3) 80%);
+    background: linear-gradient(to bottom, rgb(255, 105, 180, 0.0) var(--remain-per), rgb(255, 105, 180, 0.3) 5%);
 }
 /* 手配完了 */
 #details .s4 {

@@ -63,6 +63,10 @@ QRコード読取
                 <span class="floatright">
                 <!-- チェックボックス -->
                 <label class="check-disp">
+                    <input type="checkbox" id="chkcycletime<%= tableno %>" class="check-box" title="CT" value="<%= tableno %>" onchange="checkCTChange(this.value)"/>
+                    CT&nbsp;&nbsp;
+                </label>
+                <label class="check-disp">
                     <input type="checkbox" id="chkzaiko<%= tableno %>" class="check-box" title="在庫状況" value="<%= tableno %>" onchange="checkZaikoChange(this.value)"/>
                     在庫状況&nbsp;&nbsp;
                 </label>
@@ -95,10 +99,13 @@ QRコード読取
                         <th width="40px">材料</th>
                         <th width="60px">長さ</th>
                         <th>手配<br>残</th>
-                        <% ymds.forEach(function (e) { %>
-                            <th><%= myFunc.a(e); %><br><%= myFunc.m(e); %></th>
-                            <!-- a href="/mp/plan/<%- myFunc.b(e); %>"><%= myFunc.a(e); %></a -->
-                        <% }); %>
+                        <% for (let i = 1; i <= 10; i++) { %>
+                            <th class="th-qty"><%= myFunc.a(ymds[i-1]); %><br><%= myFunc.m(ymds[i-1]); %></th>
+                            <% if (i % 5 == 0) { %>
+                                <th width="40px">合計<br>時間</th>
+                            <% } %>
+                        <% } %>
+                        <th width="40px">CT</th>
                         <th width="60px">注文残</th>
                         <th width="60px">仕掛</th>
                         <th width="60px">ﾀﾅｺﾝ</th>
@@ -128,6 +135,8 @@ QRコード読取
                     <% let sum7 = 0; %>
                     <% let sum8 = 0; %>
                     <% let sum9 = 0; %>
+                    <% let sumct1 = 0; %>
+                    <% let sumct2 = 0; %>
                     <% data[1].forEach(function (d) { %>
                     <tr>
                         <td class="tdrow lef td-big">
@@ -146,11 +155,16 @@ QRコード読取
                         <td class="tdrow td-qty2"><%= d.D2 %></td>
                         <td class="tdrow td-qty2"><%= d.D3 %></td>
                         <td class="tdrow td-qty2"><%= d.D4 %></td>
+                        <% let ct1 = (Number(d.D0)+Number(d.D1)+Number(d.D2)+Number(d.D3)+Number(d.D4)) * d.CT; %>
+                        <td class="tdrow"><%= (ct1 == 0) ? "" : (Math.round((ct1 / 3600) * 10) / 10).toFixed(1); %></td>
                         <td class="tdrow td-qty2"><%= d.D5 %></td>
                         <td class="tdrow td-qty2"><%= d.D6 %></td>
                         <td class="tdrow td-qty2"><%= d.D7 %></td>
                         <td class="tdrow td-qty2"><%= d.D8 %></td>
                         <td class="tdrow td-qty2"><%= d.D9 %></td>
+                        <% let ct2 = (Number(d.D5)+Number(d.D6)+Number(d.D7)+Number(d.D8)+Number(d.D9)) * d.CT; %>
+                        <td class="tdrow"><%= (ct2 == 0) ? "" : (Math.round((ct2 / 3600) * 10) / 10).toFixed(1); %></td>
+                        <td class="tdrow"><%= (d.CT == 0) ? "" : d.CT + "s"; %></td>
                         <% let planqty = Number(d.D0)+Number(d.D1)+Number(d.D2)+Number(d.D3)+Number(d.D4)+Number(d.D5)+Number(d.D6)+Number(d.D7)+Number(d.D8)+Number(d.D9); %>
                         <% let zaiqty = Number(d.ZAIQTY); %>
                         <% if (planqty < zaiqty) { %>
@@ -185,23 +199,38 @@ QRコード読取
                     <% sum7 += (Number(d.D7) > 0) ? Number(d.D7) : 0; %>
                     <% sum8 += (Number(d.D8) > 0) ? Number(d.D8) : 0; %>
                     <% sum9 += (Number(d.D9) > 0) ? Number(d.D9) : 0; %>
+                    <% sumct1 += (ct1 > 0) ? ct1 : 0; %>
+                    <% sumct2 += (ct2 > 0) ? ct2 : 0; %>
                     <% }); %>
                     <tr>
-                        <td colspan="3">合計</td>
+                        <td class="thsum" colspan="3">合計</td>
                         <td></td>
                         <td class="tdsum"><%= (sumA > 0) ? sumA.toLocaleString() : ""; %><br><%= (cntA > 0) ? "(" + cntA + ")" : "" %></td>
+
                         <td class="tdsum"><%= (sum0 > 0) ? sum0.toLocaleString() : ""; %><br><%= (cnt0 > 0) ? "(" + cnt0 + ")" : "" %></td>
                         <td class="tdsum"><%= (sum1 > 0) ? sum1.toLocaleString() : ""; %><br><%= (cnt1 > 0) ? "(" + cnt1 + ")" : "" %></td>
                         <td class="tdsum"><%= (sum2 > 0) ? sum2.toLocaleString() : ""; %><br><%= (cnt2 > 0) ? "(" + cnt2 + ")" : "" %></td>
                         <td class="tdsum"><%= (sum3 > 0) ? sum3.toLocaleString() : ""; %><br><%= (cnt3 > 0) ? "(" + cnt3 + ")" : "" %></td>
                         <td class="tdsum"><%= (sum4 > 0) ? sum4.toLocaleString() : ""; %><br><%= (cnt4 > 0) ? "(" + cnt4 + ")" : "" %></td>
+                        <td class="thsum">
+                            <%= (sumct1 > 0) ? (Math.round((sumct1 / 3600) * 10) / 10).toFixed(1) : ""; %><br>
+                            <%= (sumct1 > 0) ? "(" + (Math.round((sumct1 / 3600) * 10 / 5) / 10).toFixed(1) + ")" : ""; %>
+                        </td>
                         <td class="tdsum"><%= (sum5 > 0) ? sum5.toLocaleString() : ""; %><br><%= (cnt5 > 0) ? "(" + cnt5 + ")" : "" %></td>
                         <td class="tdsum"><%= (sum6 > 0) ? sum6.toLocaleString() : ""; %><br><%= (cnt6 > 0) ? "(" + cnt6 + ")" : "" %></td>
                         <td class="tdsum"><%= (sum7 > 0) ? sum7.toLocaleString() : ""; %><br><%= (cnt7 > 0) ? "(" + cnt7 + ")" : "" %></td>
                         <td class="tdsum"><%= (sum8 > 0) ? sum8.toLocaleString() : ""; %><br><%= (cnt8 > 0) ? "(" + cnt8 + ")" : "" %></td>
                         <td class="tdsum"><%= (sum9 > 0) ? sum9.toLocaleString() : ""; %><br><%= (cnt9 > 0) ? "(" + cnt9 + ")" : "" %></td>
-                        <td colspan="4"></td>
-                        <td></td>
+                        <td class="thsum">
+                            <%= (sumct2 > 0) ? (Math.round((sumct2 / 3600) * 10) / 10).toFixed(1) : ""; %><br>
+                            <%= (sumct2 > 0) ? "(" + (Math.round((sumct2 / 3600) * 10 / 5) / 10).toFixed(1) + ")" : ""; %>
+                        </td>
+                        <td class="tdsum">*</td>
+                        <td class="tdsum"></td>
+                        <td class="tdsum"></td>
+                        <td class="tdsum"></td>
+                        <td class="tdsum"></td>
+                        <td class="tdsum"></td>
                     </tr>
                 </table>
             <% }; %>
@@ -340,6 +369,7 @@ QRコード読取
                 if (tblobj) {
                     // 各テーブル内のデータ数分ループ処理
                     const endcol = tblobj.rows[1].cells.length - 1;
+                    const endcol2 = tblobj.rows[tblobj.rows.length - 1].cells.length - 1;
                     const thickness = Number(document.getElementById(`mcthick${tblno}`).value);     // 刃厚さ
                     const scraplen = Number(document.getElementById(`mcscrap${tblno}`).value);      // 端材長さ
                     let mateold = tblobj.rows[1].cells[2].innerHTML;
@@ -367,13 +397,15 @@ QRコード読取
                         var newrow = tblobj.insertRow(i + 1);
                         appendTD(newrow, "", "center", 5);
                         appendTD(newrow, "", "center", 5);
+                        appendTD(newrow, "", "center", 1);
                         appendTD(newrow, "", "center", 5);
-                        appendTD(newrow, "", "center", 5);
+                        appendTD(newrow, "", "center", 1);
+                        appendTD(newrow, "", "center", 7);
 
                         // ３．鋼材使用長さの集計と、仕掛在庫の消込処理を同時に行う
                         let usedlenttl = Number("0.0");
                         let zaiqty = Number(tblobj.rows[i].cells[endcol - 3].innerText.replace(",",""));          // 仕掛かり済の在庫数
-                        for (var j=5; j<=10; j+=5) {
+                        for (var j=5; j<=11; j+=6) {
                             let usedlen = Number("0.0"); // 一週間で使用する鋼材長さを集計
                             for (var k=0; k<5; k++) {
                                 if (!isNaN(tblobj.rows[i].cells[j+k].innerText) && tblobj.rows[i].cells[j+k].innerText != "") {
@@ -386,6 +418,8 @@ QRコード読取
                                             qty = 0;
 
                                         } else if (zaiqty > 0 && qty > 0) {
+                                            let remainper = 100 - Math.round(zaiqty / qty * 100);
+                                            tblobj.rows[i].cells[j+k].style = "--remain-per: " + remainper + "%;";
                                             tblobj.rows[i].cells[j+k].className = "s3";
                                             qty -= zaiqty;
                                             zaiqty = 0;
@@ -406,7 +440,7 @@ QRコード読取
                             if (usedlen > 0) {
                                 var usedmate = Math.floor(usedlen / (materiallen - scraplen) * 100) / 100;
                                 var usedmaterialtext = (materiallen==0) ? "鋼材長さ設定なし" : usedmate + "本";
-                                tblobj.rows[i + 1].cells[(j==5) ? 1 : 2].innerText = usedmaterialtext + 
+                                tblobj.rows[i + 1].cells[(j==5) ? 1 : 3].innerText = usedmaterialtext + 
                                     " (" + usedlen.toLocaleString() + "mm)";
                             }
                         }
@@ -428,7 +462,7 @@ QRコード読取
                             // 使用集計値 / (材料長さ-端材長さ) 100倍して小数点切り捨てして100で割って小数点以下第２位までを求める
                             var usedmate = Math.floor(usedlenttl / (materiallen - scraplen) * 100) / 100;
                             var usedmaterialtext = (materiallen==0) ? "鋼材長さ設定なし" : usedmate + "本";
-                            tblobj.rows[i + 1].cells[3].innerText = usedmaterialtext + 
+                            tblobj.rows[i + 1].cells[5].innerText = usedmaterialtext + 
                                 " (" + usedlenttl.toLocaleString() + "mm)";
                         }
                         // ５．材料の種類毎に背景色を変える
@@ -443,6 +477,9 @@ QRコード読取
                         // ８．列(TD)の非表示化
                         tblobj.rows[i].cells[3].style.display = "none";                 // 長さ
                         tblobj.rows[i].cells[endcol - 1].style.display = "none";        // 鋼材長さ
+                        tblobj.rows[i].cells[10].style.display = "none";                // CT1
+                        tblobj.rows[i].cells[16].style.display = "none";                // CT2
+                        tblobj.rows[i].cells[17].style.display = "none";                // CT
                         if (myos != "windows") {
                             tblobj.rows[i].cells[endcol - 4].style.display = "none";    // 注文残
                             tblobj.rows[i].cells[endcol - 3].style.display = "none";    // 仕掛かり在庫数
@@ -454,9 +491,16 @@ QRコード読取
                     // ヘッダー(TH)の非表示化
                     tblobj.rows[0].cells[3].style.display = "none";                     // 長さ
                     tblobj.rows[0].cells[endcol - 1].style.display = "none";            // 鋼材長さ
+                    tblobj.rows[0].cells[10].style.display = "none";                    // CT1
+                    tblobj.rows[0].cells[16].style.display = "none";                    // CT2
+                    tblobj.rows[0].cells[17].style.display = "none";                    // CT
                     // 合計行の非表示化
-                    tblobj.rows[i].cells[14].style.display = "none";                    // 鋼材長さ
                     tblobj.rows[i].cells[1].style.display = "none";                     // 長さ
+                    tblobj.rows[i].cells[endcol2 - 1].style.display = "none";           // 鋼材長さ
+                    tblobj.rows[i].cells[8].style.display = "none";                     // CT1
+                    tblobj.rows[i].cells[14].style.display = "none";                    // CT2
+                    tblobj.rows[i].cells[15].style.display = "none";                    // CT
+                    // windows以外は非表示化
                     if (myos != "windows") {
                         tblobj.rows[0].cells[endcol - 4].style.display = "none";        // 注文残
                         tblobj.rows[0].cells[endcol - 3].style.display = "none";        // 仕掛かり在庫数
@@ -476,71 +520,51 @@ QRコード読取
             if (name != "") newCell.className = name;
         }
 
-        // 在庫状況の表示
+        // チェックボックス表示切り替え共通関数
+        function checkedChange(tblno, flg, headercols, footercols) {
+            const checkCT = document.getElementById(`chkcycletime${tblno}`)
+            const checkMaterial = document.getElementById(`chkmate${tblno}`)
+            const tblobj = document.getElementById(`tbl${tblno}`);
+            headercols.forEach(col => {
+                tblobj.rows[0].cells[col].style.display = (flg == false) ? "none" : "";
+                if (flg)  tblobj.rows[0].cells[col].classList.add("check-sel-anime");
+                if (!flg) tblobj.rows[0].cells[col].classList.remove("check-sel-anime");
+            });
+            for( let row = 1; row < tblobj.rows.length - 1; row++ ){
+                if (row % 2 != 0) {
+                    headercols.forEach(col => 
+                        tblobj.rows[row].cells[col].style.display = (flg == false) ? "none" : ""
+                    );
+                }
+                else 
+                {
+                    // 鋼材集計行をコントロール
+                    tblobj.rows[row].style.display = (checkMaterial.checked == false) ? "none" : "";
+                    if (checkMaterial.checked)
+                    {
+                        tblobj.rows[row].cells[2].style.display = (checkCT.checked == false) ? "none" : "";
+                        tblobj.rows[row].cells[4].style.display = (checkCT.checked == false) ? "none" : "";
+                    }
+                }
+            }
+            footercols.forEach(col =>
+                tblobj.rows[tblobj.rows.length - 1].cells[col].style.display = (flg == false) ? "none" : ""
+            );
+        }
+        // チェックボックスCT表示切り替え
+        function checkCTChange(tblno) {
+            const checkDisp = document.getElementById(`chkcycletime${tblno}`)
+            checkedChange(tblno, checkDisp.checked, [10,16,17], [8,14,15]);
+        }
+        // チェックボックス在庫状況の表示切り替え
         function checkZaikoChange(tblno) {
             const checkDisp = document.getElementById(`chkzaiko${tblno}`)
-            const tblobj = document.getElementById(`tbl${tblno}`);
-            const row = tblobj.rows.length;
-            const endcol = tblobj.rows[1].cells.length - 1;
-            if (checkDisp.checked == false) {
-                tblobj.rows[0].cells[endcol - 2].style.display = "none";
-                tblobj.rows[0].cells[endcol - 3].style.display = "none";
-                tblobj.rows[0].cells[endcol - 4].style.display = "none";
-            } else {
-                tblobj.rows[0].cells[endcol - 2].style.display = "";
-                tblobj.rows[0].cells[endcol - 3].style.display = "";
-                tblobj.rows[0].cells[endcol - 4].style.display = "";
-            }
-            for( var i = 1; i < row; i++ ){
-                if (checkDisp.checked == false) {
-                    if (i % 2 != 0) {
-                        tblobj.rows[i].cells[endcol - 2].style.display = "none";
-                        tblobj.rows[i].cells[endcol - 3].style.display = "none";
-                        tblobj.rows[i].cells[endcol - 4].style.display = "none";
-                    }
-                } else {
-                    if (i % 2 != 0) {
-                        tblobj.rows[i].cells[endcol - 2].style.display = "";
-                        tblobj.rows[i].cells[endcol - 3].style.display = "";
-                        tblobj.rows[i].cells[endcol - 4].style.display = "";
-                    }
-                }
-            }
+            checkedChange(tblno, checkDisp.checked, [18,19,20], [16,17,18]);
         }
-
-        // 鋼材情報の表示
+        // チェックボックス鋼材情報の表示切り替え
         function checkMateChange(tblno) {
             const checkDisp = document.getElementById(`chkmate${tblno}`)
-            const tblobj = document.getElementById(`tbl${tblno}`);
-            const row = tblobj.rows.length;
-            const endcol = tblobj.rows[1].cells.length - 1;
-            if (checkDisp.checked == false) {
-                tblobj.rows[0].cells[3].style.display = "none";             // 長さ非表示
-                tblobj.rows[0].cells[endcol - 1].style.display = "none";    // 鋼材長さ非表示
-                tblobj.rows[row - 1].cells[14].style.display = "none";      // 鋼材長さ非表示
-                tblobj.rows[row - 1].cells[1].style.display = "none";       // 長さ非表示
-            } else {
-                tblobj.rows[0].cells[3].style.display = "";
-                tblobj.rows[0].cells[endcol - 1].style.display = "";
-                tblobj.rows[row - 1].cells[1].style.display = "";
-                tblobj.rows[row - 1].cells[14].style.display = "";
-            }
-            for( var i = 1; i < row; i++ ){
-                if (checkDisp.checked == false) {
-                    if (i % 2 == 0) {
-                        tblobj.rows[i].style.display = "none";
-                    } else {
-                        tblobj.rows[i].cells[3].style.display = "none";
-                        tblobj.rows[i].cells[endcol - 1].style.display = "none";
-                    }
-                } else {
-                    tblobj.rows[i].style.display = "";
-                    if (i % 2 != 0) {
-                        tblobj.rows[i].cells[3].style.display = "";
-                        tblobj.rows[i].cells[endcol - 1].style.display = "";
-                    }
-                }
-            }
+            checkedChange(tblno, checkDisp.checked, [3,21], [1,19]);
         }
         
         // カスタムURLスキームによるシステム連携（apem図面サーバーへのリンク）(0:Windows, 1:iPad)
@@ -771,7 +795,7 @@ QRコード読取
                 try {
                     const response = await fetch(`/mysqlsv/modifyZaiko/${hmcd}:${mcgcd}:${mccd}:${zaiqty}:`)
                     // 訂正在庫数で消し込みし直し
-                    for (var j=5; j<=9; j+=5) {
+                    for (var j=5; j<=11; j+=6) {
                         for (var k=0; k<5; k++) {
                             if (!isNaN(tblobj.rows[row].cells[j+k].innerText) && tblobj.rows[row].cells[j+k].innerText != "") {
                                 let qty = Number(tblobj.rows[row].cells[j+k].innerText);
@@ -781,6 +805,8 @@ QRコード読取
                                         tblobj.rows[row].cells[j+k].className = "s4 td-qty";
                                         zaiqty -= qty;
                                     } else if (zaiqty > 0 && qty > 0) {
+                                        let remainper = 100 - Math.round(zaiqty / qty * 100);
+                                        tblobj.rows[i].cells[j+k].style = "--remain-per: " + remainper + "%;";
                                         tblobj.rows[row].cells[j+k].className = "s3 td-qty";
                                         zaiqty = 0;
                                     } else {

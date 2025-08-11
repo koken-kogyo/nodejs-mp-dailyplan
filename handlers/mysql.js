@@ -298,12 +298,14 @@ const getKD8450Orders = async (mcgcd, mccds, ymds) => {
         );
         for await (row of kd8450) {
             let idx = 0;
-            // IREPO帳票IDを付与
+            // IREPO帳票IDとCTを付与
             idx = km8430.findIndex(t => t.HMCD === row.HMCD);
             if (idx < 0) {
                 row.DEFID = 0;
+                row.CT = 0;
             } else {
                 row.DEFID = km8430[idx].DEFID === null ? 0 : km8430[idx].DEFID;
+                row.CT = km8430[idx].CT === null ? 0 : km8430[idx].CT;
             }
             // 在庫情報を付与
             idx = kd8460.findIndex(t => t.HMCD === row.HMCD);
@@ -436,12 +438,14 @@ const getKD8440Plans = async (mcgcd, mccds, ymds) => {
                 row.ZAIQTY = kd8460mccd[idx].ZAIQTY === null ? 0 : kd8460mccd[idx].ZAIQTY;
             }
             row.STORE = 0;
-            // IREPO帳票IDを付与（おまけ４）
+            // IREPO帳票IDとCTを付与（おまけ４）
             idx = km8430.findIndex(t => t.HMCD === row.HMCD);
             if (idx < 0) {
                 row.DEFID = 0;
+                row.CT = 0;
             } else {
                 row.DEFID = km8430[idx].DEFID === null ? 0 : km8430[idx].DEFID;
+                row.CT = km8430[idx].CT === null ? 0 : km8430[idx].CT;
             }
         }
 
@@ -468,8 +472,10 @@ const getKD8440Plans = async (mcgcd, mccds, ymds) => {
                 idx = km8430.findIndex(t => t.HMCD === row.HMCD);
                 if (idx < 0) {
                     row.DEFID = 0;
+                    row.CT = 0;
                 } else {
                     row.DEFID = km8430[idx].DEFID === null ? 0 : km8430[idx].DEFID;
+                    row.CT = km8430[idx].CT === null ? 0 : km8430[idx].CT;
                 }
                 // 通常の内示一覧に仕掛かり在庫のみのデータを追加する
                 kd8440.push(row);
@@ -502,22 +508,24 @@ exports.getKD8440Plans = getKD8440Plans;
 
 // 指定された設備の品番一覧と帳票定義ID一覧のデータを取得
 const getKM8430Defids =  async (mcgcd, mccd) => {
-    const sql = "select HMCD, case " + 
-    "when KT1MCGCD=? and KT1MCCD=? then KT1IREPO " + 
-    "when KT2MCGCD=? and KT2MCCD=? then KT2IREPO " + 
-    "when KT3MCGCD=? and KT3MCCD=? then KT3IREPO " + 
-    "when KT4MCGCD=? and KT4MCCD=? then KT4IREPO " + 
-    "when KT5MCGCD=? and KT1MCCD=? then KT5IREPO " + 
-    "else 0 end DEFID " + 
-    "from km8430 where KTKEY like ? " + 
-    "having DEFID > 0";
-    const km8430 = await getDatabase(sql, [
-        mcgcd, mccd, 
-        mcgcd, mccd, 
-        mcgcd, mccd, 
-        mcgcd, mccd, 
-        mcgcd, mccd, 
-        `%${mcgcd}-${mccd}:%`]);
+    const sql = "select HMCD, " + 
+        "case " + 
+            `when KT1MCGCD='${mcgcd}' and KT1MCCD='${mccd}' then KT1IREPO ` + 
+            `when KT2MCGCD='${mcgcd}' and KT2MCCD='${mccd}' then KT2IREPO ` + 
+            `when KT3MCGCD='${mcgcd}' and KT3MCCD='${mccd}' then KT3IREPO ` + 
+            `when KT4MCGCD='${mcgcd}' and KT4MCCD='${mccd}' then KT4IREPO ` + 
+            `when KT5MCGCD='${mcgcd}' and KT5MCCD='${mccd}' then KT5IREPO ` + 
+            "else 0 end DEFID, " + 
+        "case " + 
+            `when KT1MCGCD='${mcgcd}' and KT1MCCD='${mccd}' then KT1CT ` + 
+            `when KT2MCGCD='${mcgcd}' and KT2MCCD='${mccd}' then KT2CT ` + 
+            `when KT3MCGCD='${mcgcd}' and KT3MCCD='${mccd}' then KT3CT ` + 
+            `when KT4MCGCD='${mcgcd}' and KT4MCCD='${mccd}' then KT4CT ` + 
+            `when KT5MCGCD='${mcgcd}' and KT5MCCD='${mccd}' then KT5CT ` + 
+            "else 0 end CT " + 
+        "from km8430 where KTKEY like ? " + 
+        "having DEFID > 0 or CT > 0";
+    const km8430 = await getDatabase(sql, [`%${mcgcd}-${mccd}:%`]);
     return km8430;
 }
 
