@@ -806,7 +806,7 @@ QRコード読取
                                         zaiqty -= qty;
                                     } else if (zaiqty > 0 && qty > 0) {
                                         let remainper = 100 - Math.round(zaiqty / qty * 100);
-                                        tblobj.rows[i].cells[j+k].style = "--remain-per: " + remainper + "%;";
+                                        tblobj.rows[row].cells[j+k].style = "--remain-per: " + remainper + "%;";
                                         tblobj.rows[row].cells[j+k].className = "s3 td-qty";
                                         zaiqty = 0;
                                     } else {
