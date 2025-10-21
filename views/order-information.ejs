@@ -140,7 +140,7 @@ QRコード読取
                     <tr>
                         <th height="60px" width="60px">品番</th>
                         <td id="ipopHMCD" class="popHMCD lef" width="300px">-</td>
-                        <td id="newReport" colspan="3">新規チェックシート記入</td>
+                        <td tabindex="0" id="newReport" colspan="3">新規チェックシート記入</td>
                     </tr>
                 </table>
                 <table id="irepoPopupTable">
@@ -701,7 +701,6 @@ QRコード読取
                 if (event.key == "Enter") inputBox.blur();
                 if (event.keyCode == 27) document.getElementById("jiqtyPopupWindow").style.display = "none";
             });
-
             // i-Reporter 選択ポップアップ画面の起動
             async function iReporter(tblno, row) {
                 // 呼び出し元の基本情報取得
@@ -755,9 +754,14 @@ QRコード読取
                     };
                     // 新規帳票起動イベント設定
                     document.getElementById("ipopDEFID").value = irepoinfo.DEFID;
-                    document.getElementById("newReport").addEventListener("click", () => {
+                    const btnNewReport = document.getElementById("newReport");
+                    btnNewReport.addEventListener("click", () => {
                         location.href = `jp.co.cimtops.ireporter.createreport:defid=${document.getElementById("ipopDEFID").value}`;
                         document.getElementById("irepoPopupWindow").style.display = "none";
+                    }, { once: true });
+                    btnNewReport.addEventListener("keydown", function(event) {
+                        if (event.key == "Enter") btnNewReport.click();
+                        if (event.keyCode == 27) document.getElementById("irepoPopupWindow").style.display = "none";
                     }, { once: true });
                     // 閉じるイベントリスナー設定
                     document.getElementById("irepoClose").addEventListener("click", () => {
@@ -765,6 +769,7 @@ QRコード読取
                     });
                     // ポップアップウィンドウを表示
                     document.getElementById("irepoPopupWindow").style.display = "flex";
+                    btnNewReport.focus(); // TD要素にフォーカスをセットするにはtabindex属性が必要です。
                 }
             }
             // カスタムURLスキームによるシステム連携
