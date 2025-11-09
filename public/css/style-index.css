@@ -1,5 +1,17 @@
 @charset "UTF-8";
 /* =========================================================================== */
+/*  レスポンシブル設定
+/*  モニター絶対解像度 [レスポンシブル名]
+/*    HD    : 1280*720  [HD]
+/*    FullHD: 1536*864  [FHD125] (1920*1080 の 125%拡大)
+/*    FullHD: 1920*1080 [FHD100]
+/*    WQHD  : 2560*1440 [WQHD]
+/*    4K    : 3840*2160 [4K]
+/*    iPad 第5世代 2017  9.7 1536×2048 3:4
+/*    iPad 第6世代 2018  9.7 1536×2048 3:4 (768x1024 表示倍率50%) (portrait縦の場合 TabBar+AddrBar 分の 120px 引き min-height: 900px)
+/*    iPad 第7世代 2019 10.2 1620×2160 3:4
+/*    iPad 第8世代 2020 10.2 1620×2160 3:4 (810x1080 表示倍率50%) (portrait縦の場合 TabBar+AddrBar 分の 120px 引き min-height: 960px)
+/* =========================================================================== */
 /*  style-index.css : 切削工程メニューで使用するスタイルシート
 /* =========================================================================== */
 :root {
@@ -26,7 +38,7 @@
 /*  レスポンシブレイアウト [Grid] 設定
 /* =========================================================================== */
 /* Tablet [default] [Topics] + [4列 x 2行] + [4列 x 1行] */
-.responsible:before { content: "TabletSize"; }
+#responsible:before { content: "Default "; }
 .containers {
     display: grid;
     background: rgb(250, 250, 250);
@@ -72,9 +84,9 @@
 .containers .itemtext {
     font-size: 1.2rem;
 }
-/* tablet-portrait(縦)-size: 900px～1199px 業務[2行 x 3列] + 他[1行 x 3列] + [Topics] */
+/* tablet-portrait(縦) 900px～1199px */
 @media screen and (orientation: portrait) and (min-height: 900px) and (max-height: 1199px) {
-    .responsible:before { content: "TabletPortrait"; }
+    #responsible:before { content: "Tablet縦 "; }
     .containers {
         width: calc((var(--tabport-grid-column) * 6) + 1rem);
         grid-template-columns: repeat(6, var(--tabport-grid-column));
@@ -87,9 +99,9 @@
         var(--item-title-row) repeat(1, var(--tablet-grid-row));
     }
 }
-/* mobile-landscape(横)-size: ～500px縦 && ～800px横 */
+/* mobile-landscape(横): 縦～500px && 横～800px */
 @media screen and (orientation: landscape) and (max-height:500px) and (max-width:800px) {
-    .responsible:before { content: "MobileSizeW"; }
+    #responsible:before { content: "Mobile横 "; }
     .containers {
         width: calc((var(--mobile-grid-column) * 3) + 1rem);
         grid-template-columns: repeat(3, var(--mobile-grid-column));
@@ -110,9 +122,9 @@
         font-size: 0.8rem;
     }
 }
-/* mobile-portrait(縦)-size: ～500px横 */
+/* mobile-portrait(縦) 横～500px */
 @media screen and (orientation: portrait) and (max-height: 800px) {
-    .responsible:before { content: "MobileSizeH"; }
+    #responsible:before { content: "Mobile縦 "; }
     .containers {
         width: calc((var(--mobile-grid-column) * 3) + 1rem);
         grid-template-columns: repeat(3, var(--mobile-grid-column));
@@ -132,9 +144,9 @@
         font-size: 0.8rem;
     }
 }
-/* NotePC-size: 1200px～1899px */
+/* notepc-landscape 1200px～1599px */
 @media screen and (min-width: 1200px) and (max-width: 1599px) and (orientation: landscape) {
-    .responsible:before { content: "NotePCSize"; }
+    #responsible:before { content: "FHD125% "; }
     .containers {
         width: calc((var(--notepc-grid-column) * 6) + 1rem);
         grid-template-columns: repeat(6, var(--notepc-grid-column));
@@ -156,9 +168,9 @@
         padding: 1.0rem 0 0 0;
     }
 }
-/* desktop-pc-size: 1700px～ (各ブラウザのサイドバー、垂直タブバー、コレクション、エッセンシャル等を考慮) */
-@media screen and (orientation: landscape) and (min-width: 1600px) {
-    .responsible:before { content: "PC24inchSize"; }
+/* desktoppc-landscape 1600px～2199px */
+@media screen and (min-width: 1600px) and (max-width: 2199px) and (orientation: landscape) {
+    #responsible:before { content: "FHD "; }
     .containers {
         width: calc((var(--desktop-grid-column) * 6) + 1rem);
         grid-template-columns: repeat(6, var(--desktop-grid-column));
@@ -176,10 +188,13 @@
         font-size: 1.4rem;
     }
 }
-/* 27inchMonitor-size: 2560*1440 */
-@media screen and (min-width: 2500px) and (orientation: landscape) {
-    .responsible:before { content: "PC27inchSize"; }
+/* 2200px～ (2560*1440,3840*2160) */
+@media screen and (min-width: 2200px) and (orientation: landscape) {
+    #responsible:before { content: "WQHD "; }
 }
+
+
+
 .backshadow {
     text-align: center;
     background-color: #0d6d91;

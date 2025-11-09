@@ -52,7 +52,7 @@ app.get("/directerror/:userid", (req, res) => {
 
 // ******************************* ハンドラー *********************************
 // Top Page
-app.get( "/", (req, res) => res.redirect("/mp")); // `https://${req.hostname}/`
+app.get( "/", (req, res) => res.redirect(`https://${req.hostname}/`));
 
 // 切削業務メニュー
 app.get("/mp", async (req, res) => {
@@ -64,6 +64,66 @@ app.get("/mp", async (req, res) => {
     }
 });
 
+// ダッシュボード
+app.get("/mp/dashboard", async (req, res, next) => {
+    try {
+        let animation = "";
+        if (typeof req.session.data === "undefined") {
+            animation = "";
+        } else {
+            const data = req.session.data;
+            animation = (data.screen.includes("history")) ? "slidein_fromright" : (data.screen.includes("future")) ? "slidein_fromleft" : "";
+            delete req.session.data;
+        }
+        res.render("dashboard-now.ejs", {req, animation});
+    } catch (err) {
+        next(err);
+    }
+});
+// 実績ダッシュボード
+app.get("/mp/dashboard/history", async (req, res, next) => {
+    try {
+        let animation = "";
+        if (typeof req.session.data === "undefined") {
+            animation = "";
+        } else {
+            animation = "slidein_fromleft";
+            delete req.session.data;
+        }
+        res.render("dashboard-history.ejs", {req, animation});
+    } catch (err) {
+        next(err);
+    }
+});
+// 計画ダッシュボード
+app.get("/mp/dashboard/future", async (req, res, next) => {
+    try {
+        let animation = "";
+        if (typeof req.session.data === "undefined") {
+            animation = "";
+        } else {
+            animation = "slidein_fromright";
+            delete req.session.data;
+        }
+        res.render("dashboard-future.ejs", {req, animation});
+    } catch (err) {
+        next(err);
+    }
+});
+// ダッシュボード画面遷移コントロール
+app.get("/mp/todashboard/:param", async (req, res) => {
+    const param = req.params.param;
+    req.session.data = { screen: param };
+    res.redirect("/mp/dashboard");
+});
+app.get("/mp/tohistory", async (req, res) => {
+    req.session.data = { screen: "fromdashboard" };
+    res.redirect("/mp/dashboard/history");
+});
+app.get("/mp/tofuture", async (req, res) => {
+    req.session.data = { screen: "fromdashboard" };
+    res.redirect("/mp/dashboard/future");
+});
 
 
 // 手配一覧
@@ -365,6 +425,27 @@ app.get("/mysqlsv/modifyZaiko/:args", async function (req, res, next) {
     }
 });
 
+// API ダッシュボード（当日取得）
+app.get("/mysqlsv/dashboard/today", async function (req, res, next) {
+    try {
+        const result = await mysqlHandler.getDashboardToday();
+        res.status(200).json(result);
+    } catch (err) {
+        next(err);
+    }
+});
+
+// API ダッシュボード（当日遅延一覧取得）
+app.get("/mysqlsv/dashboard/delay", async function (req, res, next) {
+    try {
+        const result = await mysqlHandler.getDelayList();
+        res.status(200).json(result);
+    } catch (err) {
+        next(err);
+    }
+});
+
+
 // API IREPOSVのPostgreSQLからview_report_defidの編集中ステータスの帳票IDを取得
 // （パラメータ3個：1帳票につき複数品番のパターン）
 // （パラメータ1個：1帳票のパターン）
@@ -486,19 +567,6 @@ app.get("/mp/end/:odrno/:jiqty", async function (req, res, next) {
     try {
         await mysqlHandler.workend(jiqty, userid, odrno, planday, mcgcd, mccd);
         res.redirect("/mp/plan/" + planday + "#" + mccd);
-    } catch (err) {
-        next(err);
-    }
-});
-
-// リストの消込処理 DB更新 ⇒ ステータス返却
-app.get("/es/marking/:autono/:sts", async function (req, res, next) {
-    const userid = req.session.userid;
-    const autono = req.params.autono;
-    const sts = req.params.sts;
-    try {
-        await mysqlHandler.updateKD8220status(userid, autono, sts);
-        res.status(200).end();
     } catch (err) {
         next(err);
     }

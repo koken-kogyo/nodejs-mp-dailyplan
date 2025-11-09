@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ダッシュボード</title>
+    <!-- View -->
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <!-- CSS -->
+    <link rel="stylesheet" href="/static/css/style-dashboard.css">
+</head>
+<body>
+    <!-- Common JavaScript -->
+    <%- include("_myfunctions.ejs") %>
+    <% let osType = myRequestHeader.osType(req); %>
+
+    <!-- Main-Container -->
+    <div id="main" class="containers">
+
+        <!-- Header -->
+        <header>
+            生産ダッシュボード
+            <div id="titledatetime">2025年9月15日(火) 13時41分</div>
+        </header>
+
+        <!-- Details -->
+        <div id="detail" class="<%= locals.animation %>">
+            <table>
+                <tr>
+                    <th>-</th>
+                    <th>遅延</th>
+                    <th>本日</th>
+                </tr>
+                <tr>
+                    <td>実績</td>
+                    <td id="delays-result">2点</td>
+                    <td id="todays-result">85点</td>
+                </tr>
+            </table>
+        </div>
+        <a href="javascript:toDashboard();"><div id="btnnext" class="arrowleft"></div></a>
+
+        <!-- Footer -->
+        <footer>
+    	    <a id="copyright">&copy; 2025 Koken Kogyo Co. All rights reserved.</a>
+            <a id="responsible"></a>
+        </footer>
+    
+    </div>
+    <!-- ブラウザ読み込み完了後のJavaScriptを記述 -->
+    <script>
+        // オブジェクト変数
+        const mainObj = document.getElementById("main");
+        const detailObj = document.getElementById("detail");
+        const titleDateTimeObj = document.getElementById('titledatetime');
+        const todaysGoalObj = document.getElementById("todays-goal");
+        const delaysGoalObj = document.getElementById("delays-goal");
+        const todaysResultObj = document.getElementById("todays-result");
+        const delaysResultObj = document.getElementById("delays-result");
+        const todaysRemainObj = document.getElementById("todays-remain");
+        const delaysRemainObj = document.getElementById("delays-remain");
+        const screenSizeElement = document.getElementById("responsible");
+
+        // イベント設定
+        window.addEventListener('resize', updateScreenSize); // 画面サイズ変更時に更新
+
+        // ブラウザ読み込み完了後の初期設定
+        SetInitialValues();
+
+        // ブラウザ読み込み完了後の初期設定
+        function SetInitialValues() {
+            titleDateTimeObj.textContent = getTitleDateTime();
+            setTimeout(() => {
+                detailObj.className = "";
+                updateScreenSize();
+            }, 100);
+        }
+        
+        //画面サイズ関連
+        function updateScreenSize() {
+            const width1 = window.innerWidth;
+            const width2 = Math.round(window.visualViewport.width); /* Andoroid携帯だけ小数点で入ってくる為 */
+            const width = (width1 != width2) ? `${width1}:${width2}` : `${width1}`; 
+            const height = window.innerHeight;
+            screenSizeElement.innerText = `W:${width}*H:${height}`;
+        }
+
+        // タイマー関連
+        function updateTitleDateTime() {titleDateTimeObj.textContent = getTitleDateTime();}
+        // タイトル用の日付日時を取得（共通関数）
+        function getTitleDateTime() {
+            const days = ["(日)", "(月)", "(火)", "(水)", "(木)", "(金)", "(土)"];
+            let date = new Date()
+            let year = date.getFullYear()   // 年
+            let month = date.getMonth() + 1 // 月
+            let day = date.getDate()        // 日
+            let hour = date.getHours()      // 時
+            let minute = date.getMinutes()  // 分
+            let second = date.getSeconds()  // 秒
+            let timeText = `${year}年${month}月${day}日${days[date.getDay()]} ${hour}時${minute.toString().padStart(2, "0")}分`
+            return timeText;
+        }
+        const timer = setInterval(updateTitleDateTime, 10000); // 10秒ごとにupdateTitleDateTime()を実行
+
+        // キーボードイベントを監視
+        document.addEventListener("keydown", function(event) {
+            switch (event.key) {
+                case "ArrowRight": // 右矢印キー
+                    toDashboard()
+                    break;
+                default:// 他のキーは無視
+                    break;
+            }
+        });
+
+        // ダッシュボードへ移動
+        function toDashboard() {
+            detailObj.className = "slideout_toleft"; // CSSアニメーションが再発火しない対策
+            window.sessionStorage.setItem(['className'],['slidein_fromright']);
+            setTimeout(() => {
+                window.location.href = "/mp/todashboard/fromhistory"; // 右のページに遷移
+            }, 100);
+        }
+
+        // ******************* タブレットのスワイプ対応 *************************
+        let startX = 0;
+        let startY = 0;
+        let endX = 0;
+        let endY = 0;
+
+        // タッチ開始時の座標を取得
+        mainObj.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+        });
+
+        // タッチ終了時の座標を取得
+        mainObj.addEventListener('touchend', (e) => {
+            endX = e.changedTouches[0].clientX;
+            endY = e.changedTouches[0].clientY;
+            detectSwipe();
+        });
+
+        // スワイプ方向を判定
+        function detectSwipe() {
+            const diffX = endX - startX;
+            const diffY = endY - startY;
+            if (Math.abs(diffX) > Math.abs(diffY)) {
+                // 横方向のスワイプ
+                if (diffX > 250) {
+                    screenSizeElement.textContent = '右スワイプを検出しました！';
+                    window.location.reload();
+                } else if (diffX < -250) {
+                    screenSizeElement.textContent = '左スワイプを検出しました！';
+                    toDashboard();
+                }
+            } else {
+                /*// 縦方向のスワイプ
+                if (diffY > 50) {
+                    screenSizeElement.textContent = '下スワイプを検出しました！';
+                    window.location.reload();
+                } else if (diffY < -150) {
+                    screenSizeElement.textContent = '上スワイプを検出しました！';
+                    if (confirm("ポータルサイトに移動しますか？")) {
+                        window.location.href = "https://" + window.location.hostname;
+                    }
+                }*/
+            }
+        }
+
+
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,264 @@
+@charset "UTF-8";
+:root {
+    --browser-margin: 16px;
+}
+body {
+    font-family: "Verdana", "Arial", sans-serif; /* Verdana(ほとんどのOS),Arial(Windows, iOS, Android),Sans-Serif(サンセリフ)最後に必ず汎用ファミリ名を入れる */
+    font-size: 16px;
+    background-color: rgba(0, 0, 0, 0.9);
+    overflow: hidden; /* スクロール自体を無効化 */
+}
+#responsible:before { content: "16px "; }
+@media (min-width: 1520px) and (max-width: 1540px) {#responsible:before { content: "13px "; } body { font-size: 13px; background-color: rgba(0, 0, 0, 0.9); }} /* 125%用 */
+@media (max-width: 1320px) {#responsible:before { content: "15px "; } body { font-size: 15px; background-color: rgba(0, 0, 0, 0.85); }}
+@media (max-width: 1230px) {#responsible:before { content: "14px "; } body { font-size: 14px; background-color: rgba(0, 0, 0, 0.8); }}
+@media (max-width: 1150px) {#responsible:before { content: "13px "; } body { font-size: 13px; background-color: rgba(0, 0, 0, 0.75); }}
+@media (max-width: 1070px) {#responsible:before { content: "12px "; } body { font-size: 12px; background-color: rgba(0, 0, 0, 0.7); }}
+@media (max-width:  990px) {#responsible:before { content: "11px "; } body { font-size: 11px; background-color: rgba(0, 0, 0, 0.65); }}
+@media (max-width:  900px) {#responsible:before { content: "10px "; } body { font-size: 10px; background-color: rgba(0, 0, 0, 0.6); }}
+@media (max-width:  825px) {#responsible:before { content: "9px ";  } body { font-size:  9px; background-color: rgba(0, 0, 0, 0.55); }}
+@media (max-width:  745px) {#responsible:before { content: "8px ";  } body { font-size:  8px; background-color: rgba(0, 0, 0, 0.5); }}
+@media (max-width:  670px) {#responsible:before { content: "7px ";  } body { font-size:  7px; background-color: rgba(0, 0, 0, 0.45); }}
+@media (max-width:  580px) {#responsible:before { content: "6px ";  } body { font-size:  6px; background-color: rgba(0, 0, 0, 0.4); }}
+@media (max-width:  500px) {#responsible:before { content: "5px ";  } body { font-size:  5px; background-color: rgba(0, 0, 0, 0.35); }}
+@media (max-width:  420px) {#responsible:before { content: "4px ";  } body { font-size:  4px; background-color: rgba(0, 0, 0, 0.3); }}
+@media (max-width:  340px) {#responsible:before { content: "3px ";  } body { font-size:  3px; background-color: rgba(0, 0, 0, 0.25); }}
+#main {
+    height: calc(100vh - var(--browser-margin));
+    width: calc(100vw - var(--browser-margin));
+    background-color: black;
+    border-radius: 8px;
+    color: white;
+}
+header {
+    /*background-color: red; /*Debug*/
+    height: 1.5em;
+    border-radius: 5px 5px 0 0;
+    font-size: 3.5em; /* 16*3.5 = 56px; */
+    padding-left: 0.5em;
+    display: flex;
+    margin-bottom: 1.0em;
+    justify-content: space-between;
+    align-items: center;
+}
+header #titledatetime {
+    margin-right: 0.5em;
+}
+footer {
+    /*background-color: rgba(255, 255, 255, 0.1); /*Debug*/
+    position: fixed;
+    height: calc(3.5em * 1.5);
+    width: calc(100vw - var(--browser-margin));
+    bottom: calc(1.5em + (var(--browser-margin) / 2));
+    border-radius: 0 0 5px 5px;
+}
+/* === [Copy Right] === */
+footer #copyright {
+    position: fixed;
+    bottom: 8px;
+    left: calc((100vw / 2) - 10em);
+    color: rgba(255, 255, 255, 0.3);
+}
+/* === [responsible] === */
+footer #responsible {
+    position: fixed;
+    bottom: 8px;
+    right: 10px;
+    color: rgba(255, 255, 255, 0.3);
+}
+
+/* === [Table] === */
+#detail table {
+    width: calc(100vw * 0.8);
+    margin-inline: auto;
+    text-align: center;
+    border-collapse: collapse
+}
+#detail table th {
+    border: 5px solid whitesmoke;
+    font-size: 3em;
+    height: 2em;
+}
+#detail table td {
+    border: 5px solid whitesmoke;
+    width: calc((100vh - var(--browser-margin)) / 3);
+    font-size: 5em;
+    height: 2em;
+}
+/* 自宅 Andoroid Table 設定 */
+@media (min-width: 1280px) and (max-width: 1280px) and (min-height: 620px) and (max-height: 630px) {
+    #responsible:before{content:"14px ";} body{font-size:14px;} header{margin-bottom:0.5em;} #detail table th{height: 1.5em;} #detail table td{height: 1.5em;}
+}
+/* 自宅 Andoroid 設定 */
+@media (min-width: 810px) and (max-width: 820px) and (min-height: 360px) and (max-height: 420px) {
+    #responsible:before{content:"9px ";} body{font-size:9px;} header{margin-bottom:0.5em;} #detail table th{height:1em;} #detail table td{font-size:4em;height:1.5em;} footer{height:calc(3.5em);}
+}
+/* 会社 iPhone 設定 */
+@media (min-width: 660px) and (max-width: 670px) and (min-height: 320px) and (max-height: 330px) {
+    #responsible:before{content:"6px ";} body{font-size:6px;} header{margin-bottom:0.5em;} #detail table th{height:2em;} #detail table td{height:1em;}
+}
+
+/* === [Animation] === */
+.animation {
+    border-radius: 3px;
+    animation: blinkAnimation 0.8s infinite alternate;
+}
+@keyframes blinkAnimation {
+    0%{ color : rgba(230, 250, 230, 0.8);   background:rgba(20, 120, 20, 0.8) }
+  100%{ color : rgba(0, 0, 0, 0.8); background:rgba(100, 250, 120, 0.8)   }
+}
+
+.backshadow {
+    text-align: center;
+    background-color: #0d6d91;
+    line-height: 10em;
+    border-radius: 5px;
+}
+
+/* 手動機テキスト装飾 */
+.text-amazing-m {
+    text-shadow:
+        0 1px 0 rgba(220, 200, 200, 0.9),
+        0 1.5px 0 rgba(220, 150, 150, 0.7),
+        0 2px 0 rgba(150, 70, 70, 0.5),
+        0 2.5px 0 rgba(220, 150, 150, 0.3),
+        2px 3px 4px rgba(0, 0, 0, 0.1),
+        2px 3px 4px rgba(0, 0, 0, 0.3);
+    color: rgba(220, 150, 100, 0.9);
+    font-size: 2.4rem;
+}
+/* 自動機テキスト装飾 */
+.text-amazing-a {
+    text-shadow:
+        0 1px 0 rgba(200, 200, 220, 0.9),
+        0 1.5px 0 rgba(150, 150, 220, 0.7),
+        0 2px 0 rgba(70, 70, 220, 0.5),
+        0 2.5px 0 rgba(150, 150, 220, 0.3),
+        2px 3px 4px rgba(0, 0, 0, 0.1),
+        2px 3px 4px rgba(0, 0, 0, 0.3);
+    color: rgba(100, 150, 220, 0.9);
+    font-size: 2.4rem;
+}
+/* 戻るボタン */
+#btnprev {
+    position: fixed;
+    top: calc(100vh /4);
+    left: var(--browser-margin);
+    height: calc(100vh / 2);
+    width: 30px;
+    border-radius: 10px 0 0 10px;
+    background:rgba(250, 250, 250, 0.05);
+}
+#btnprev:hover {
+    background: rgba(250, 250, 250, 0.3);
+    cursor: pointer;
+}
+/* 進ボタン */
+#btnnext {
+    position: fixed;
+    top: calc(100vh /4);
+    right: var(--browser-margin);
+    height: calc(100vh / 2);
+    width: 30px;
+    border-radius: 0px 10px 10px 0px;
+    background:rgba(250, 250, 250, 0.05);
+}
+#btnnext:hover {
+    background: rgba(250, 250, 250, 0.3);
+    cursor: pointer;
+}
+/* くの字の表示設定 */
+.arrowright::before {
+    content: "";
+    margin: auto;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc((var(--browser-margin) / 2) + 3px);
+    width: 13px;
+    height: 13px;
+    border-top: 4px solid rgba(250, 250, 250, 0.1);     /* くの字を山なりに見た時、左側の太さと色 */
+    border-right: 4px solid rgba(250, 250, 250, 0.1);   /* くの字を山なりに見た時、右側の太さと色 */
+    transform: rotate(225deg);                            /* くの字の向き */
+}
+/* ＞の字の表示設定 */
+.arrowleft::before {
+    content: "";
+    margin: auto;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: calc((var(--browser-margin) / 2) + 3px);
+    width: 13px;
+    height: 13px;
+    border-top: 4px solid rgba(250, 250, 250, 0.1);     /* くの字を山なりに見た時、左側の太さと色 */
+    border-right: 4px solid rgba(250, 250, 250, 0.1);   /* くの字を山なりに見た時、右側の太さと色 */
+    transform: rotate(45deg);                             /* くの字の向き */
+}
+
+/* 右へスライドアウト */
+.slideout_toright {animation: rightSlideOut 0.5s forwards;}
+@keyframes rightSlideOut {from {transform: translateX(0%);} to {transform: translateX(50%);}}
+
+/* 右からスライドイン */
+.slidein_fromright {animation: rightSlideIn 0.5s forwards;}
+@keyframes rightSlideIn {from {transform: translateX(50%);} to {transform: translateX(0%);}}
+
+/* 左へスライドアウト */
+.slideout_toleft {animation: leftSlideOut 0.5s forwards;}
+@keyframes leftSlideOut {from {transform: translateX(0%);} to {transform: translateX(-50%);}}
+
+/* 左からスライドイン */
+.slidein_fromleft {animation: leftSlideIn 0.5s forwards;}
+@keyframes leftSlideIn {from {transform: translateX(-50%);} to {transform: translateX(0%);}}
+
+/* =========================================================================== */
+/*  ポップアップウィンドウ
+/* =========================================================================== */
+.popwin-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0);
+}
+.popwin-modalbody {
+    display: grid;
+}
+#popup-delay {
+    height: 90vh;
+    margin-top: 10px;
+    background-color: rgba(250, 250, 250, 1.0);
+    overflow-y: auto; /* 縦スクロールバーを有効化 */
+    border-radius: 5px;
+    padding-inline: 20px;
+    padding-bottom: 30px;
+}
+#delayPopupTable {
+    margin-block: 10px;
+    color: black;
+    border-collapse: collapse;
+}
+#delayPopupTable th {
+    background-color: rgba(50, 250, 50, 0.6);
+    border: 2px solid black;
+    position: sticky; /* ヘッダーを固定 */
+    top: 10px; /* 固定位置 */
+    /*z-index: 1; /* ヘッダーを前面に表示 */
+}
+#delayPopupTable td {
+    border: 2px solid black;
+    padding-inline: 10px;
+}
+#delayPopupTable tr:nth-child(odd) {
+    background-color: rgba(150, 150, 150, 0.3
+    ); /* 奇数行の背景色 */
+}
+.lef {
+    text-align: left;
+}
+.rig {
+    text-align: right;
+}

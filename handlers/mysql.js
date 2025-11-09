@@ -1177,3 +1177,39 @@ exports.updateKD8460 = async (hmcd, mcgcd, mccd, jiqty, operator) => {
             [newqty, operator, hmcd, mcgcd, mccd]);
     }
 };
+
+// 当日ダッシュボード用データ取得 [0]当日、[1]遅延
+exports.getDashboardToday = async () => {
+    const sql = "select COUNT(*) as goal, COUNT(IF(ODRSTS='4', 1, NULL)) as result, COUNT(IF(ODRSTS<>'4', 1, NULL)) as remain " + 
+        "from kd8430 " + 
+        "where eddt=CURDATE() and odrsts<>'9' " + 
+        "union " + 
+        "select COUNT(*) as goal, COUNT(IF(new.ODRSTS='4', 1, NULL)) as result, COUNT(IF(new.ODRSTS<>'4', 1, NULL)) as remain " + 
+        "from kd8430 new, kd8490okure old " + 
+        "where new.odrno = old.odrno and new.odrsts<>'9'"
+    ;
+    const data = await getDatabase(sql);
+    return data;
+}
+
+// 当日ダッシュボード遅延一覧取得
+exports.getDelayList = async () => {
+    sql = 
+        "select row_number() OVER (ORDER BY 完了予定日, 品番) 行番号, 集計.*, sum(c.ODRQTY) 最低必要数 from ( " + 
+        "select DATE_FORMAT(min(a.EDDT), '%Y-%m-%d') 完了予定日, a.HMCD 品番, replace(replace(replace(m.KTKEY,':','　→　'),'3BP-','MC-'),'ON-','MC-') 工程経路 " + 
+        ", sum(a.ODRQTY) 必要数, count(*) 遅延件数  " + 
+        "from kd8490okure a ,kd8430 b, km8430 m  " + 
+        "where 1=1 " + 
+        "and a.ODRNO = b.ODRNO " + 
+        "and a.HMCD = m.HMCD " + 
+        "and a.ODRSTS <> '4' " + 
+        "and a.MPINSTDT = CURDATE() " + 
+        "group by a.HMCD, ktkey " + 
+        ") 集計, kd8490okure c " + 
+        "where 集計.完了予定日 = c.EDDT and 集計.品番 = c.HMCD and c.MPINSTDT=CURDATE() " + 
+        "group by 集計.完了予定日, 集計.品番 " + 
+        "order by 集計.完了予定日, 集計.品番 "
+    ;
+    const data = await getDatabase(sql);
+    return data;
+}

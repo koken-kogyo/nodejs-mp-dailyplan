@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ダッシュボード</title>
+    <!-- View -->
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <!-- CSS -->
+    <link rel="stylesheet" href="/static/css/style-dashboard.css">
+</head>
+<body>
+    <!-- Common JavaScript -->
+    <%- include("_myfunctions.ejs") %>
+    <% let osType = myRequestHeader.osType(req); %>
+
+    <!-- Main-Container -->
+    <div id="main" class="containers">
+
+        <!-- Header -->
+        <header>
+            生産ダッシュボード
+            <div id="titledatetime">2025年9月15日(火) 13時41分</div>
+        </header>
+
+        <!-- Details -->
+        <a href="javascript:toHistory();"><div id="btnprev" class="arrowright"></div></a>
+        <div id="detail" class="<%= locals.animation %>">
+            <table>
+                <tr>
+                    <th>-</th>
+                    <th onclick="javascript:popupDelayList();">遅延</th>
+                    <th>本日</th>
+                </tr>
+                <tr>
+                    <td><a href="javascript:updateDashboardToday()">目標</a></td>
+                    <td id="delays-goal" onclick="javascript:popupDelayList();">3点</td>
+                    <td id="todays-goal">166点</td>
+                </tr>
+                <tr>
+                    <td>実績</td>
+                    <td id="delays-result" onclick="javascript:popupDelayList();">2点</td>
+                    <td id="todays-result">85点</td>
+                </tr>
+                <tr>
+                    <td>残り</td>
+                    <td id="delays-remain" onclick="javascript:popupDelayList();">1点</td>
+                    <td id="todays-remain">81点</td>
+                </tr>
+            </table>
+        </div>
+        <a href="javascript:toFuture();"><div id="btnnext" class="arrowleft"></div></a>
+
+        <!-- Popup Window -->
+        <div id="popup-window" class="popwin-background popwin-modalbody" ondblclick="javascript:noneDelayList();">
+            <div id="popup-delay">
+                <table id="delayPopupTable" ondblclick="javascript:noneDelayList();">
+                    <tr>
+                        <th>行番号</th>
+                        <th>完了予定日</th>
+                        <th>品番</th>
+                        <th>工程経路</th>
+                        <th>遅延件数</th>
+                        <th>最低必要数</th>
+                        <th>必要数</th>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer>
+    	    <a id="copyright">&copy; 2025 Koken Kogyo Co. All rights reserved.</a>
+            <a id="responsible"></a>
+        </footer>
+    
+    </div>
+    <!-- ブラウザ読み込み完了後のJavaScriptを記述 -->
+    <script>
+        // オブジェクト変数
+        const mainObj = document.getElementById("main");
+        const detailObj = document.getElementById("detail");
+        const titleDateTimeObj = document.getElementById('titledatetime');
+        const todaysGoalObj = document.getElementById("todays-goal");
+        const delaysGoalObj = document.getElementById("delays-goal");
+        const todaysResultObj = document.getElementById("todays-result");
+        const delaysResultObj = document.getElementById("delays-result");
+        const todaysRemainObj = document.getElementById("todays-remain");
+        const delaysRemainObj = document.getElementById("delays-remain");
+        const screenSizeElement = document.getElementById("responsible");
+        const popDelayObj = document.getElementById("popup-window");
+
+
+        // イベント設定
+        window.addEventListener('resize', updateScreenSize); // 画面サイズ変更時に更新
+
+
+        // ブラウザ読み込み完了後の初期設定
+        SetInitialValues();
+
+        // ブラウザ読み込み完了後の初期設定
+        function SetInitialValues() {
+            titleDateTimeObj.textContent = getTitleDateTime();
+            setTimeout(() => {
+                detailObj.className = "";
+                updateScreenSize();
+            }, 100);
+            popDelayObj.style.display = "none";//"flex";
+        }
+        
+        // 遅れポップアップウィンドウ
+        function popupDelayList() {
+            fetch("/mysqlsv/dashboard/delay")
+            .then(res => res.json())
+            .then(data => {
+                if (data.length == 0) return;
+                // APIで取得したデータをテーブ行に追加
+                const table = document.getElementById("delayPopupTable");
+                data.forEach(function (d) {
+                    let newRow = table.insertRow();
+                    appendTD(newRow, d.行番号, "small", 1);
+                    appendTD(newRow, d.完了予定日, "small", 1);
+                    appendTD(newRow, d.品番, "small lef", 1);
+                    appendTD(newRow, d.工程経路, "", 1);
+                    appendTD(newRow, d.遅延件数, "small rig", 1);
+                    appendTD(newRow, d.最低必要数, "small rig", 1);
+                    appendTD(newRow, d.必要数, "small rig", 1);
+                });
+                popDelayObj.style.display = "flex";
+            })
+            .catch(err => {alert(err);});
+        }
+        function noneDelayList() {popDelayObj.style.display = "none";}
+        // 列の追加
+        function appendTD(newrow, str, name, colspan){
+            let newCell = newrow.insertCell();
+            let newText = document.createTextNode(str);
+            newCell.appendChild(newText);
+            if (colspan != "") newCell.setAttribute("colspan", colspan);
+            if (name != "") newCell.className = name;
+        }
+
+        //画面サイズ関連
+        function updateScreenSize() {
+            const width1 = window.innerWidth;
+            const width2 = Math.round(window.visualViewport.width); /* Andoroid携帯だけ小数点で入ってくる為 */
+            const width = (width1 != width2) ? `${width1}:${width2}` : `${width1}`; 
+            const height = window.innerHeight;
+            screenSizeElement.innerText = `W:${width}*H:${height}`;
+        }
+
+        // タイマー関連
+        function updateTitleDateTime() {titleDateTimeObj.textContent = getTitleDateTime();}
+        // タイトル用の日付日時を取得（共通関数）
+        function getTitleDateTime() {
+            const days = ["(日)", "(月)", "(火)", "(水)", "(木)", "(金)", "(土)"];
+            let date = new Date()
+            let year = date.getFullYear()   // 年
+            let month = date.getMonth() + 1 // 月
+            let day = date.getDate()        // 日
+            let hour = date.getHours()      // 時
+            let minute = date.getMinutes()  // 分
+            let second = date.getSeconds()  // 秒
+            let timeText = `${year}年${month}月${day}日${days[date.getDay()]} ${hour}時${minute.toString().padStart(2, "0")}分`
+            return timeText;
+        }
+        const timer = 
+        (updateTitleDateTime, 10000); // 10秒ごとにupdateTitleDateTime()を実行
+
+        // 10秒ごとに実績をチェックし変更があれば画面更新
+        function updateDashboardToday() {
+            fetch("/mysqlsv/dashboard/today")
+            .then(res => res.json())
+            .then(data => {
+                if (todaysGoalObj.innerText != data[0].goal + "点") {
+                    todaysGoalObj.innerText = data[0].goal + "点";
+                    todaysGoalObj.classList.add("animation");
+                    setTimeout(() => {todaysGoalObj.classList.remove("animation");}, 6000); // 5000ミリ秒（5秒）
+                };
+                if (delaysGoalObj.innerText != data[1].goal + "点") {
+                    delaysGoalObj.innerText = data[1].goal + "点";
+                    delaysGoalObj.classList.add("animation");
+                    setTimeout(() => {delaysGoalObj.classList.remove("animation");}, 6000); // 5000ミリ秒（5秒）
+                };
+                if (todaysResultObj.innerText != data[0].result + "点") {
+                    todaysResultObj.innerText = data[0].result + "点";
+                    todaysResultObj.classList.add("animation");
+                    setTimeout(() => {todaysResultObj.classList.remove("animation");}, 6000); // 5000ミリ秒（5秒）
+                };
+                if (delaysResultObj.innerText != data[1].result + "点") {
+                    delaysResultObj.innerText = data[1].result + "点";
+                    delaysResultObj.classList.add("animation");
+                    setTimeout(() => {delaysResultObj.classList.remove("animation");}, 6000); // 5000ミリ秒（5秒）
+                };
+                if (todaysRemainObj.innerText != data[0].remain + "点") {
+                    todaysRemainObj.innerText = data[0].remain + "点";
+                    todaysRemainObj.classList.add("animation");
+                    setTimeout(() => {todaysRemainObj.classList.remove("animation");}, 6000); // 5000ミリ秒（5秒）
+                };
+                if (delaysRemainObj.innerText != data[1].remain + "点") {
+                    delaysRemainObj.innerText = data[1].remain + "点";
+                    delaysRemainObj.classList.add("animation");
+                    setTimeout(() => {delaysRemainObj.classList.remove("animation");}, 6000); // 5000ミリ秒（5秒）
+                };
+            })
+            .catch(err => {alert(err);});
+        }
+
+        // 過去へ移動
+        function toHistory() {
+            detailObj.className = "slideout_toright";
+            setTimeout(() => {window.location.href = "/mp/tohistory";}, 100);
+        }
+
+        // 未来へ移動
+        function toFuture() {
+            detailObj.className = "slideout_toleft";
+            setTimeout(() => {window.location.href = "/mp/tofuture";}, 100);
+        }
+
+
+        // ******************* ウィンドウズのデバイス対応 *************************
+        // キーボードイベントを監視
+        document.addEventListener("keydown", function(event) {
+            switch (event.key) {
+                case "ArrowUp":     // 上矢印キー
+                    if (confirm("ポータルサイトに移動しますか？")) {
+                        window.location.href = "https://" + window.location.hostname;
+                    }
+                    break;
+                case "ArrowLeft":   // 左矢印キー
+                    toHistory();
+                    break;
+                case "ArrowRight":  // 右矢印キー
+                    toFuture();
+                    break;
+                default:            // 他のキーは無視
+                    break;
+            }
+        });
+
+
+        // ******************* タブレットのスワイプ対応 *************************
+        let startX = 0;
+        let startY = 0;
+        let endX = 0;
+        let endY = 0;
+
+        // タッチ開始時の座標を取得
+        mainObj.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+        });
+
+        // タッチ終了時の座標を取得
+        mainObj.addEventListener('touchend', (e) => {
+            endX = e.changedTouches[0].clientX;
+            endY = e.changedTouches[0].clientY;
+            detectSwipe();
+        });
+
+        // スワイプ方向を判定
+        function detectSwipe() {
+            const diffX = endX - startX;
+            const diffY = endY - startY;
+            if (Math.abs(diffX) > Math.abs(diffY)) {
+                // 横方向のスワイプ
+                if (diffX > 250) {
+                    screenSizeElement.textContent = '右スワイプを検出しました！';
+                    toHistory();
+                } else if (diffX < -250) {
+                    screenSizeElement.textContent = '左スワイプを検出しました！';
+                    toFuture();
+                }
+            } else {
+                /* 縦方向のスワイプ
+                if (diffY > 50) {
+                    screenSizeElement.textContent = '下スワイプを検出しました！';
+                    window.location.reload();
+                } else if (diffY < -150) {
+                    screenSizeElement.textContent = '上スワイプを検出しました！';
+                    if (confirm("ポータルサイトに移動しますか？")) {
+                        window.location.href = "https://" + window.location.hostname;
+                    }
+                }*/
+            }
+        }
+
+/*
+document.getElementById("myElement").addEventListener("dblclick", function () {
+  alert("ダブルクリックされました！");
+});
+let lastTap = 0;
+
+document.getElementById("myElement").addEventListener("touchend", function (e) {
+  const currentTime = new Date().getTime();
+  const tapLength = currentTime - lastTap;
+
+  if (tapLength < 300 && tapLength > 0) {
+    alert("ダブルタップされました！");
+  }
+
+  lastTap = currentTime;
+});
+*/
+
+
+
+    </script>
+
+</body>
+</html>
