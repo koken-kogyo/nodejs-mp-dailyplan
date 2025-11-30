@@ -7,6 +7,10 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <!-- CSS -->
     <link rel="stylesheet" href="/static/css/style-dashboard.css">
+    <!-- Script -->
+    <script src="/static/javascripts/chart.umd.min.js"></script>
+    <script src="/static/javascripts/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="/static/javascripts/chartjs-plugin-datalabels.min.js"></script>
 </head>
 <body>
     <!-- Common JavaScript -->
@@ -24,31 +28,58 @@
 
         <!-- Details -->
         <a href="javascript:toHistory();"><div id="btnprev" class="arrowright"></div></a>
-        <div id="detail" class="<%= locals.animation %>">
-            <table>
-                <tr>
-                    <th>-</th>
-                    <th onclick="javascript:popupDelayList();">遅延</th>
-                    <th>本日</th>
-                </tr>
-                <tr>
-                    <td><a href="javascript:updateDashboardToday()">目標</a></td>
-                    <td id="delays-goal" onclick="javascript:popupDelayList();">3点</td>
-                    <td id="todays-goal">166点</td>
-                </tr>
-                <tr>
-                    <td>実績</td>
-                    <td id="delays-result" onclick="javascript:popupDelayList();">2点</td>
-                    <td id="todays-result">85点</td>
-                </tr>
-                <tr>
-                    <td>残り</td>
-                    <td id="delays-remain" onclick="javascript:popupDelayList();">1点</td>
-                    <td id="todays-remain">81点</td>
-                </tr>
-            </table>
+        <div id="dashboard-main" class="<%= locals.animation %>">
+
+            <!-- Dashboard Item -->
+            <div id="dashboard1" class="dashboard-bg">
+                <table>
+                    <tr>
+                        <th></th>
+                        <th>本日</th>
+                        <th onclick="javascript:popupDelayList();">遅れ</th>
+                    </tr>
+                    <tr>
+                        <td class="tdheader">手配</td>
+                        <td id="todays-goal" class="tddata colorYellow">166点</td>
+                        <td id="delays-goal" class="tddata colorRed" onclick="javascript:popupDelayList();">3点</td>
+                    </tr>
+                    <tr>
+                        <td class="tdheader">完了</td>
+                        <td id="todays-result" class="tddata colorGreen">85点</td>
+                        <td id="delays-result" class="tddata colorGreen" onclick="javascript:popupDelayList();">2点</td>
+                    </tr>
+                    <tr>
+                        <td class="tdheader">残り</td>
+                        <td id="todays-remain" class="tddata">81点</td>
+                        <td id="delays-remain" class="tddata" onclick="javascript:popupDelayList();">1点</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Chart Item -->
+            <div id="dashboard2" class="dashboard-bg">
+                <canvas id="chart2"></canvas>
+            </div>
+
+            <!-- Chart Item -->
+            <div id="dashboard3" class="dashboard-bg">
+                <canvas id="chart3"></canvas>
+            </div>
+
         </div>
         <a href="javascript:toFuture();"><div id="btnnext" class="arrowleft"></div></a>
+
+        <!-- スライド移動用ボタン -->
+        <div class="move_controler">
+            <input class="slide_select" type="radio" id="slide1" name="slide_check" onclick="javascript:movetoSlide1();" checked />
+            <input class="slide_select" type="radio" id="slide2" name="slide_check" onclick="javascript:movetoSlide2();"/>
+            <input class="slide_select" type="radio" id="slide3" name="slide_check" onclick="javascript:movetoSlide3();"/>
+            <label class="button_move" for="slide1"></label>
+            <label class="button_move" for="slide2"></label>
+            <label class="button_move" for="slide3"></label>
+            <span class="video_pause" id="videopause" onclick="javascript:ScreenPause();"></span>
+            <span class="video_play" id="videoplay" onclick="javascript:ScreenSaver();"></span>
+        </div>
 
         <!-- Popup Window -->
         <div id="popup-window" class="popwin-background popwin-modalbody" ondblclick="javascript:noneDelayList();">
@@ -75,10 +106,14 @@
     
     </div>
     <!-- ブラウザ読み込み完了後のJavaScriptを記述 -->
+    <script src="/static/javascripts/dashboard-now.js"></script>
     <script>
         // オブジェクト変数
         const mainObj = document.getElementById("main");
-        const detailObj = document.getElementById("detail");
+        const dashboardMainObj = document.getElementById("dashboard-main");
+        const dashboardObj1 = document.getElementById("dashboard1");
+        const dashboardObj2 = document.getElementById("dashboard2");
+        const dashboardObj3 = document.getElementById("dashboard3");
         const titleDateTimeObj = document.getElementById('titledatetime');
         const todaysGoalObj = document.getElementById("todays-goal");
         const delaysGoalObj = document.getElementById("delays-goal");
@@ -88,25 +123,216 @@
         const delaysRemainObj = document.getElementById("delays-remain");
         const screenSizeElement = document.getElementById("responsible");
         const popDelayObj = document.getElementById("popup-window");
+        const slideObj1 = document.getElementById("slide1");
+        const slideObj2 = document.getElementById("slide2");
+        const slideObj3 = document.getElementById("slide3");
+        const videoPauseObj = document.getElementById("videopause");
+        const videoPlayObj = document.getElementById("videoplay");
+
+        let dashboardPage = 1;              // 画面切り替えコントロール
+
+        // ダッシュボード用データ取得
+        function getDashboardToday() {
+            fetch("/mysqlsv/dashboard/today")
+            .then(res => res.json())
+            .then(data => {
+                todaysGoalObj.innerHTML = data.today.GOALQTY.toLocaleString() + "<span class='hon'>本</span>";
+                delaysGoalObj.innerHTML = data.delay.GOALQTY.toLocaleString() + "<span class='hon'>本</span>";
+                todaysResultObj.innerHTML = data.today.RESULTQTY.toLocaleString() + "<span class='hon'>本</span>";
+                delaysResultObj.innerHTML = data.delay.RESULTQTY.toLocaleString() + "<span class='hon'>本</span>";
+                todaysRemainObj.innerHTML = data.today.REMAINQTY.toLocaleString() + "<span class='hon'>本</span>";
+                delaysRemainObj.innerHTML = data.delay.REMAINQTY.toLocaleString() + "<span class='hon'>本</span>";
+                drawChart2(data.chart2.labels, data.chart2.data1, data.chart2.data2);
+                drawChart3(data.chart3.labels, data.chart3.data1, data.chart3.data2);
+            })
+            .catch(err => {alert(err);});
+        }
+
+        // １．タイトル日時更新
+        function getTitleDateTime() {
+            const days = ["(日)", "(月)", "(火)", "(水)", "(木)", "(金)", "(土)"];
+            let date = new Date()
+            let year = date.getFullYear()   // 年
+            let month = date.getMonth() + 1 // 月
+            let day = date.getDate()        // 日
+            let hour = date.getHours()      // 時
+            let minute = date.getMinutes()  // 分
+            let second = date.getSeconds()  // 秒
+            let timeText = `${year}年${month}月${day}日${days[date.getDay()]} ${hour}時${minute.toString().padStart(2, "0")}分`
+            return timeText;
+        }
+        // ２．サーバーの更新有無をチェック
+        function updateDashboardToday() {
+            fetch("/mysqlsv/dashboard/today")
+            .then(res => res.json())
+            .then(data => {
+                let isChange = false;
+                if (todaysGoalObj.innerText != data.today.GOALQTY.toLocaleString() + "本") {
+                    todaysGoalObj.innerText = data.today.GOALQTY.toLocaleString() + "本";
+                    todaysGoalObj.classList.add("animation");
+                    isChange = true;
+                    setTimeout(() => {todaysGoalObj.classList.remove("animation");}, 6000); // 5000ミリ秒（5秒）
+                };
+                if (delaysGoalObj.innerText != data.delay.GOALQTY.toLocaleString() + "本") {
+                    delaysGoalObj.innerText = data.delay.GOALQTY.toLocaleString() + "本";
+                    delaysGoalObj.classList.add("animation");
+                    isChange = true;
+                    setTimeout(() => {delaysGoalObj.classList.remove("animation");}, 6000); // 5000ミリ秒（5秒）
+                };
+                if (todaysResultObj.innerText != data.today.RESULTQTY.toLocaleString() + "本") {
+                    todaysResultObj.innerText = data.today.RESULTQTY.toLocaleString() + "本";
+                    todaysResultObj.classList.add("animation");
+                    isChange = true;
+                    setTimeout(() => {todaysResultObj.classList.remove("animation");}, 6000); // 5000ミリ秒（5秒）
+                };
+                if (delaysResultObj.innerText != data.delay.RESULTQTY.toLocaleString() + "本") {
+                    delaysResultObj.innerText = data.delay.RESULTQTY.toLocaleString() + "本";
+                    delaysResultObj.classList.add("animation");
+                    isChange = true;
+                    setTimeout(() => {delaysResultObj.classList.remove("animation");}, 6000); // 5000ミリ秒（5秒）
+                };
+                if (todaysRemainObj.innerText != data.today.REMAINQTY   .toLocaleString() + "本") {
+                    todaysRemainObj.innerText = data.today.REMAINQTY.toLocaleString() + "本";
+                    todaysRemainObj.classList.add("animation");
+                    isChange = true;
+                    setTimeout(() => {todaysRemainObj.classList.remove("animation");}, 6000); // 5000ミリ秒（5秒）
+                };
+                if (delaysRemainObj.innerText != data.delay.REMAINQTY.toLocaleString() + "本") {
+                    delaysRemainObj.innerText = data.delay.REMAINQTY.toLocaleString() + "本";
+                    delaysRemainObj.classList.add("animation");
+                    isChange = true;
+                    setTimeout(() => {delaysRemainObj.classList.remove("animation");}, 6000); // 5000ミリ秒（5秒）
+                };
+                if (isChange) {
+                    ScreenPause();      // スクリーンセイバー一時停止
+                    updateChart2(data.chart2.labels, data.chart2.data1, data.chart2.data2);
+                    updateChart3(data.chart3.labels, data.chart3.data1, data.chart3.data2);
+                    dashboardObj1.style.opacity = 1;
+                    dashboardObj1.style.zIndex = 1;
+                    dashboardObj2.style.opacity = 0;
+                    dashboardObj2.style.zIndex = 0;
+                    dashboardObj3.style.opacity = 0;
+                    dashboardObj3.style.zIndex = 0;
+                    dashboardPage = 1;
+                    setScreenSaver();   // スクリーンセイバー再開
+                }
+            })
+            .catch(err => {console.log(err);});
+        }
+        // 15秒ごとのタイマー処理
+        const checkServerID = setInterval(() => {
+            titleDateTimeObj.textContent = getTitleDateTime();  // １．日付更新
+            updateDashboardToday();                             // ２．サーバー更新チェック
+        }, 15 * 1000);
 
 
-        // イベント設定
-        window.addEventListener('resize', updateScreenSize); // 画面サイズ変更時に更新
+
+        // 画面サイズ変更イベント
+        function updateScreenSize() {
+            const width1 = window.innerWidth;
+            const width2 = Math.round(window.visualViewport.width); /* Andoroid携帯だけ小数点で入ってくる為四捨五入して整数 */
+            const width = (width1 != width2) ? `${width1}:${width2}` : `${width1}`; 
+            const height = window.innerHeight;
+            screenSizeElement.innerText = `W:${width}*H:${height}`;
+        }
+        window.addEventListener('resize', updateScreenSize); 
 
 
-        // ブラウザ読み込み完了後の初期設定
-        SetInitialValues();
+
+        // スクリーンセイバー関連
+        let screenSaverID;                  // スクリーンセイバータイマーID
+        let screenSaverTime = 15 * 1000;    // 開始までの時間60秒
+        let opacityID;                      // ダッシュボード画面切り替えタイマーID
+        let opacityTime = 15 * 1000;        // スクリーンセイバー中の切り替え時間15秒
+        // スクリーンセイバー変数初期化
+        function clearScreenSaver() {
+            if (screenSaverID) clearInterval(screenSaverID);
+            if (opacityID) clearInterval(opacityID);
+            videoPauseObj.style.display = "inline";
+            videoPlayObj.style.display = "none";
+        }
+        // スクリーンセイバー用タイマーの発動
+        function setScreenSaver() {
+            clearScreenSaver();
+            screenSaverID = setInterval(() => {ScreenSaver();}, screenSaverTime);
+        }
+        // スクリーンセイバー発動
+        function ScreenSaver() {
+            clearScreenSaver();
+            opacityID = setInterval(() => {OpacityInterval();}, opacityTime);
+        }
+        // ダッシュボードの自動切換
+        function OpacityInterval() {
+            if (dashboardPage == 1) {
+                dashboardObj1.style.opacity = 0;
+                dashboardObj1.style.zIndex = 0;
+                dashboardObj2.style.opacity = 1;
+                dashboardObj2.style.zIndex = 1;
+                dashboardObj3.style.opacity = 0;
+                dashboardObj3.style.zIndex = 0;
+                slideObj2.checked = true;
+                dashboardPage++;
+            } else if (dashboardPage == 2) {
+                dashboardObj1.style.opacity = 0;
+                dashboardObj1.style.zIndex = 0;
+                dashboardObj2.style.opacity = 0;
+                dashboardObj2.style.zIndex = 0;
+                dashboardObj3.style.opacity = 1;
+                dashboardObj3.style.zIndex = 1;
+                slideObj3.checked = true;
+                dashboardPage++;
+            } else if (dashboardPage == 3) {
+                dashboardObj1.style.opacity = 1;
+                dashboardObj1.style.zIndex = 1;
+                dashboardObj2.style.opacity = 0;
+                dashboardObj2.style.zIndex = 0;
+                dashboardObj3.style.opacity = 0;
+                dashboardObj3.style.zIndex = 0;
+                slideObj1.checked = true;
+                dashboardPage = 1;
+            }
+        }
+        function movetoSlide1() {
+            dashboardPage = 3;
+            OpacityInterval();
+        }
+        function movetoSlide2() {
+            dashboardPage = 1;
+            OpacityInterval();
+        }
+        function movetoSlide3() {
+            dashboardPage = 2;
+            OpacityInterval();
+        }
+        function ScreenPause() {
+            if (screenSaverID) clearInterval(screenSaverID);
+            if (opacityID) clearInterval(opacityID);
+            videoPauseObj.style.display = "none";
+            videoPlayObj.style.display = "inline";
+        }
+
+
 
         // ブラウザ読み込み完了後の初期設定
         function SetInitialValues() {
+            // ポップアップウィンドウを隠す
+            popDelayObj.style.display = "none";
+            // タイトル日付初期セット
             titleDateTimeObj.textContent = getTitleDateTime();
+            // 初期データ取得
+            getDashboardToday();
+            // スクリーンセイバータイマー発動
+            setScreenSaver();
+            // 時間差でスクリーンサイズを取得（スライドインアニメーションが完了した後でないと正しく取得できない）
             setTimeout(() => {
-                detailObj.className = "";
+                dashboardMainObj.className = ""; // スライドインスタイルのクリア
                 updateScreenSize();
             }, 100);
-            popDelayObj.style.display = "none";//"flex";
         }
-        
+
+
+
+
         // 遅れポップアップウィンドウ
         function popupDelayList() {
             fetch("/mysqlsv/dashboard/delay")
@@ -139,81 +365,26 @@
             if (name != "") newCell.className = name;
         }
 
-        //画面サイズ関連
-        function updateScreenSize() {
-            const width1 = window.innerWidth;
-            const width2 = Math.round(window.visualViewport.width); /* Andoroid携帯だけ小数点で入ってくる為 */
-            const width = (width1 != width2) ? `${width1}:${width2}` : `${width1}`; 
-            const height = window.innerHeight;
-            screenSizeElement.innerText = `W:${width}*H:${height}`;
-        }
 
-        // タイマー関連
-        function updateTitleDateTime() {titleDateTimeObj.textContent = getTitleDateTime();}
-        // タイトル用の日付日時を取得（共通関数）
-        function getTitleDateTime() {
-            const days = ["(日)", "(月)", "(火)", "(水)", "(木)", "(金)", "(土)"];
-            let date = new Date()
-            let year = date.getFullYear()   // 年
-            let month = date.getMonth() + 1 // 月
-            let day = date.getDate()        // 日
-            let hour = date.getHours()      // 時
-            let minute = date.getMinutes()  // 分
-            let second = date.getSeconds()  // 秒
-            let timeText = `${year}年${month}月${day}日${days[date.getDay()]} ${hour}時${minute.toString().padStart(2, "0")}分`
-            return timeText;
-        }
-        const timer = 
-        (updateTitleDateTime, 10000); // 10秒ごとにupdateTitleDateTime()を実行
 
-        // 10秒ごとに実績をチェックし変更があれば画面更新
-        function updateDashboardToday() {
-            fetch("/mysqlsv/dashboard/today")
-            .then(res => res.json())
-            .then(data => {
-                if (todaysGoalObj.innerText != data[0].goal + "点") {
-                    todaysGoalObj.innerText = data[0].goal + "点";
-                    todaysGoalObj.classList.add("animation");
-                    setTimeout(() => {todaysGoalObj.classList.remove("animation");}, 6000); // 5000ミリ秒（5秒）
-                };
-                if (delaysGoalObj.innerText != data[1].goal + "点") {
-                    delaysGoalObj.innerText = data[1].goal + "点";
-                    delaysGoalObj.classList.add("animation");
-                    setTimeout(() => {delaysGoalObj.classList.remove("animation");}, 6000); // 5000ミリ秒（5秒）
-                };
-                if (todaysResultObj.innerText != data[0].result + "点") {
-                    todaysResultObj.innerText = data[0].result + "点";
-                    todaysResultObj.classList.add("animation");
-                    setTimeout(() => {todaysResultObj.classList.remove("animation");}, 6000); // 5000ミリ秒（5秒）
-                };
-                if (delaysResultObj.innerText != data[1].result + "点") {
-                    delaysResultObj.innerText = data[1].result + "点";
-                    delaysResultObj.classList.add("animation");
-                    setTimeout(() => {delaysResultObj.classList.remove("animation");}, 6000); // 5000ミリ秒（5秒）
-                };
-                if (todaysRemainObj.innerText != data[0].remain + "点") {
-                    todaysRemainObj.innerText = data[0].remain + "点";
-                    todaysRemainObj.classList.add("animation");
-                    setTimeout(() => {todaysRemainObj.classList.remove("animation");}, 6000); // 5000ミリ秒（5秒）
-                };
-                if (delaysRemainObj.innerText != data[1].remain + "点") {
-                    delaysRemainObj.innerText = data[1].remain + "点";
-                    delaysRemainObj.classList.add("animation");
-                    setTimeout(() => {delaysRemainObj.classList.remove("animation");}, 6000); // 5000ミリ秒（5秒）
-                };
-            })
-            .catch(err => {alert(err);});
-        }
+
+
+
+
+
+
+
+
 
         // 過去へ移動
         function toHistory() {
-            detailObj.className = "slideout_toright";
+            dashboardObj1.className = "slideout_toright";
             setTimeout(() => {window.location.href = "/mp/tohistory";}, 100);
         }
 
         // 未来へ移動
         function toFuture() {
-            detailObj.className = "slideout_toleft";
+            dashboardObj1.className = "slideout_toleft";
             setTimeout(() => {window.location.href = "/mp/tofuture";}, 100);
         }
 
@@ -284,6 +455,11 @@
                 }*/
             }
         }
+
+        // ブラウザ読み込み完了後の初期設定
+        SetInitialValues();
+
+
 
 /*
 document.getElementById("myElement").addEventListener("dblclick", function () {

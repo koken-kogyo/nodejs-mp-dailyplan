@@ -11,7 +11,8 @@ body {
 #responsible:before { content: "16px "; }
 @media (min-width: 1520px) and (max-width: 1540px) {#responsible:before { content: "13px "; } body { font-size: 13px; background-color: rgba(0, 0, 0, 0.9); }} /* 125%用 */
 @media (max-width: 1320px) {#responsible:before { content: "15px "; } body { font-size: 15px; background-color: rgba(0, 0, 0, 0.85); }}
-@media (max-width: 1230px) {#responsible:before { content: "14px "; } body { font-size: 14px; background-color: rgba(0, 0, 0, 0.8); }}
+@media (max-width: 1280px) {#responsible:before { content: "14px "; } body { font-size: 14px; background-color: rgba(0, 0, 0, 0.8); }}
+@media (max-width: 1280px) and (min-height: 900px) and (max-height: 1000px) {#responsible:before { content: "13px "; } body { font-size: 13px; background-color: rgba(0, 0, 0, 0.8); }} /* PC090N拡張モニター */
 @media (max-width: 1150px) {#responsible:before { content: "13px "; } body { font-size: 13px; background-color: rgba(0, 0, 0, 0.75); }}
 @media (max-width: 1070px) {#responsible:before { content: "12px "; } body { font-size: 12px; background-color: rgba(0, 0, 0, 0.7); }}
 @media (max-width:  990px) {#responsible:before { content: "11px "; } body { font-size: 11px; background-color: rgba(0, 0, 0, 0.65); }}
@@ -32,29 +33,18 @@ body {
 }
 header {
     /*background-color: red; /*Debug*/
-    height: 1.5em;
-    border-radius: 5px 5px 0 0;
     font-size: 3.5em; /* 16*3.5 = 56px; */
     padding-left: 0.5em;
     display: flex;
-    margin-bottom: 1.0em;
     justify-content: space-between;
-    align-items: center;
 }
 header #titledatetime {
     margin-right: 0.5em;
 }
-footer {
-    /*background-color: rgba(255, 255, 255, 0.1); /*Debug*/
-    position: fixed;
-    height: calc(3.5em * 1.5);
-    width: calc(100vw - var(--browser-margin));
-    bottom: calc(1.5em + (var(--browser-margin) / 2));
-    border-radius: 0 0 5px 5px;
-}
 /* === [Copy Right] === */
 footer #copyright {
     position: fixed;
+    font-size: 16px;
     bottom: 8px;
     left: calc((100vw / 2) - 10em);
     color: rgba(255, 255, 255, 0.3);
@@ -62,41 +52,108 @@ footer #copyright {
 /* === [responsible] === */
 footer #responsible {
     position: fixed;
+    font-size: 16px;
     bottom: 8px;
     right: 10px;
     color: rgba(255, 255, 255, 0.3);
 }
 
-/* === [Table] === */
-#detail table {
+
+/* =========================================================================== */
+/*  カラー設定
+/* =========================================================================== */
+.colorGreen     {color: rgba(0, 250, 0, 0.8);}
+.colorYellow    {color: rgba(255, 255, 0, 0.8);}
+.colorRed       {color: rgba(215, 0, 0, 0.8);}
+
+
+/* =========================================================================== */
+/*  ダッシュボード設定
+/* =========================================================================== */
+#dashboard1 {
+    position: fixed;
+    margin-top: 3em;
+    width: 100%;
+    z-index: 1;
+}
+#dashboard2 {
+    position: fixed;
+    margin-top: 1em;
+    height: calc(100vh - 13.5em);
+    width: 100%;
+    z-index: 0;
+}
+#dashboard3 {
+    position: fixed;
+    margin-top: 0rem;
+    height: calc(100vh - 11em);
+    width: 100%;
+    z-index: 0;
+}
+#dashboard1 table {
     width: calc(100vw * 0.8);
     margin-inline: auto;
     text-align: center;
-    border-collapse: collapse
+    border-collapse: collapse; /* Excelみたいな表にする設定 */
 }
-#detail table th {
+#dashboard1 table th {
     border: 5px solid whitesmoke;
     font-size: 3em;
     height: 2em;
 }
-#detail table td {
+#dashboard1 table .tddata {
+    border: 5px solid whitesmoke;
+    width: calc((100vh - var(--browser-margin)) / 3);
+    font-size: 6.5em; 
+}
+#dashboard1 table .tdheader {
     border: 5px solid whitesmoke;
     width: calc((100vh - var(--browser-margin)) / 3);
     font-size: 5em;
     height: 2em;
 }
+#dashboard1 .hon {
+    font-size: 0.4em;
+    color: aliceblue;
+}
+#dashboard2 #chart2 {
+    width: calc(100vw * 0.8);
+    margin-inline: auto;
+    text-align: center;
+}
+#dashboard3 #chart3 {
+    width: calc(100vw * 0.7);
+    margin-inline: auto;
+    text-align: center;
+}
 /* 自宅 Andoroid Table 設定 */
 @media (min-width: 1280px) and (max-width: 1280px) and (min-height: 620px) and (max-height: 630px) {
-    #responsible:before{content:"14px ";} body{font-size:14px;} header{margin-bottom:0.5em;} #detail table th{height: 1.5em;} #detail table td{height: 1.5em;}
+    #responsible:before{content:"14px ";} body{font-size:14px;} header{margin-bottom:0.5em;} #dashboard1 table th{height: 1.5em;} #dashboard1 table td{height: 1.5em;}
 }
 /* 自宅 Andoroid 設定 */
 @media (min-width: 810px) and (max-width: 820px) and (min-height: 360px) and (max-height: 420px) {
-    #responsible:before{content:"9px ";} body{font-size:9px;} header{margin-bottom:0.5em;} #detail table th{height:1em;} #detail table td{font-size:4em;height:1.5em;} footer{height:calc(3.5em);}
+    #responsible:before{content:"9px ";} body{font-size:9px;} header{margin-bottom:0.5em;} #dashboard1 table th{height:1em;} #dashboard1 table td{font-size:4em;height:1.5em;} footer{height:calc(3.5em);}
+}
+/* 会社 iPad(第10世代) 設定 1180*696  */
+@media (min-width: 1180px) and (max-width: 1180px) and (min-height: 696px) and (max-height: 696px) {
+    #responsible:before{content:"iPad10 ";} body{font-size:13px;} header{margin-bottom:0.5em;} #dashboard1 table th{height:1.5em;} #dashboard1 table td{height:1em;}
 }
 /* 会社 iPhone 設定 */
 @media (min-width: 660px) and (max-width: 670px) and (min-height: 320px) and (max-height: 330px) {
-    #responsible:before{content:"6px ";} body{font-size:6px;} header{margin-bottom:0.5em;} #detail table th{height:2em;} #detail table td{height:1em;}
+    #responsible:before{content:"6px ";} body{font-size:6px;} header{margin-bottom:0.5em;} #dashboard1 table th{height:2em;} #dashboard1 table td{height:1em;}
 }
+
+/* =========================================================================== */
+/*  ダッシュボードの画面間切り替えの設定
+/* =========================================================================== */
+.dashboard-bg {
+    transition: opacity 2s ease-in-out;
+}
+/* 初期表示 */
+#dashboard1 {opacity: 1;}
+#dashboard2 {opacity: 0;}
+#dashboard3 {opacity: 0;}
+
 
 /* === [Animation] === */
 .animation {
@@ -114,6 +171,10 @@ footer #responsible {
     line-height: 10em;
     border-radius: 5px;
 }
+
+/* =========================================================================== */
+/*  ボタン(z-index:9)
+/* =========================================================================== */
 
 /* 手動機テキスト装飾 */
 .text-amazing-m {
@@ -148,6 +209,7 @@ footer #responsible {
     width: 30px;
     border-radius: 10px 0 0 10px;
     background:rgba(250, 250, 250, 0.05);
+    z-index: 9;
 }
 #btnprev:hover {
     background: rgba(250, 250, 250, 0.3);
@@ -162,6 +224,7 @@ footer #responsible {
     width: 30px;
     border-radius: 0px 10px 10px 0px;
     background:rgba(250, 250, 250, 0.05);
+    z-index: 9;
 }
 #btnnext:hover {
     background: rgba(250, 250, 250, 0.3);
@@ -196,8 +259,118 @@ footer #responsible {
     transform: rotate(45deg);                             /* くの字の向き */
 }
 
+
+/* =========================================================================== */
+/*  カルーセル
+/* =========================================================================== */
+/* スライド切り換え用ラジオボタンは常に非表示 */
+.slide_select {
+    display: none;
+}
+/* スライド移動ボタンエリア */
+.move_controler {
+    position: absolute;
+    bottom: 2em;
+    width: 100%;
+    text-align: center;
+    z-index: 9;
+}
+/* スライド移動の各ボタン */
+.button_move {
+    display: inline-block;
+    height: 2em;
+    width: 2em;
+    margin: 0 2em;
+    border-radius: 100%;
+    background-color: rgba(60, 180, 180, 0.6);
+    /* 普段はやや薄くする */
+    opacity: 0.5;
+}
+/* ホバー時はやや明るくする */
+.button_move:hover {
+    cursor: pointer;
+    opacity: 1.0;
+}
+/* 1番目のスライド選択時 */
+/* スライド移動ボタンの1個目を明るくする */
+/* （今選択されていることが分かるように） */
+.slide_select:nth-of-type(1):checked ~ .button_move:nth-of-type(1) {
+    opacity: 1;
+}
+/* 2番目のスライド選択時（1番目のスライドと同じことをする） */
+.slide_select:nth-of-type(2):checked ~ .button_move:nth-of-type(2) {
+    opacity: 1;
+}
+/* 3番目のスライド選択時 */
+.slide_select:nth-of-type(3):checked ~ .button_move:nth-of-type(3) {
+    opacity: 1;
+}
+/* 一時停止ボタン*/
+.video_pause {
+    position: absolute;
+    bottom: 0px;
+    margin-left: 5rem;
+    width: 2rem;
+    height: 2rem;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+    color: rgba(150, 150, 150, 0.8);
+    opacity: 0.3;
+}
+.video_pause::before, .video_pause::after {
+    position: absolute;
+    top: 50%;
+    transform: translateX(-50%) translateY(-50%);
+    width: 0.3rem;
+    height: 1rem;
+    color: rgba(180, 180, 0, 1.0);
+    background-color: currentColor;
+    content: "";
+}
+.video_pause::before {
+    left: 35%;
+}
+.video_pause::after {
+    left: 65%;
+}
+.video_pause:hover {
+    cursor: pointer;
+    opacity: 0.8;
+}
+.video_play {
+    position: absolute;
+    bottom: 0px;
+    margin-left: 5rem;
+    width: 2rem;
+    height: 2rem;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+    color: rgba(150, 150, 150, 0.8);
+    opacity: 0.3;
+    display: none;
+}
+.video_play::before, .video_play::after  {
+    position: absolute;
+    top: 50%;
+    left: 35%;
+    transform: translateY(-50%);
+    border: 10px solid transparent;
+    border-left: 14px solid currentColor;
+    color: rgba(60, 180, 180, 0.8);
+    box-sizing: border-box;
+    content: "";
+}
+.video_play:hover {
+    cursor: pointer;
+    opacity: 0.8;
+}
+
+/* =========================================================================== */
+/*  アニメーション
+/* =========================================================================== */
+
 /* 右へスライドアウト */
-.slideout_toright {animation: rightSlideOut 0.5s forwards;}
+.slideout_toright {animation: rightSlideOut 0.5s forwards}
 @keyframes rightSlideOut {from {transform: translateX(0%);} to {transform: translateX(50%);}}
 
 /* 右からスライドイン */
@@ -211,6 +384,8 @@ footer #responsible {
 /* 左からスライドイン */
 .slidein_fromleft {animation: leftSlideIn 0.5s forwards;}
 @keyframes leftSlideIn {from {transform: translateX(-50%);} to {transform: translateX(0%);}}
+
+
 
 /* =========================================================================== */
 /*  ポップアップウィンドウ
@@ -261,4 +436,9 @@ footer #responsible {
 }
 .rig {
     text-align: right;
+}
+
+a {
+   text-decoration: none;
+   color: white;
 }

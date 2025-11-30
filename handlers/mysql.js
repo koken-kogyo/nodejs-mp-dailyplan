@@ -23,7 +23,7 @@ const getDatabase = async (sql, param) => {
     const conn = await pool.getConnection();
     const results = await conn.query(sql, param);
     conn.release();
-    return JSON.parse(JSON.stringify(results[0]));;
+    return JSON.parse(JSON.stringify(results[0]));
 };
 
 // ユーザー情報の取得
@@ -1178,21 +1178,114 @@ exports.updateKD8460 = async (hmcd, mcgcd, mccd, jiqty, operator) => {
     }
 };
 
-// 当日ダッシュボード用データ取得 [0]当日、[1]遅延
+// 当日ダッシュボード データ取得 [0]当日、[1]遅延
 exports.getDashboardToday = async () => {
-    const sql = "select COUNT(*) as goal, COUNT(IF(ODRSTS='4', 1, NULL)) as result, COUNT(IF(ODRSTS<>'4', 1, NULL)) as remain " + 
+    // ダッシュボード
+    const sql1 = "select count(*) as GOAL, count(if(ODRSTS='4', 1, NULL)) as RESULT, count(if(ODRSTS<>'4', 1, NULL)) as REMAIN " + 
+        ",ifnull(sum(ODRQTY-JIQTY),0) as GOALQTY, ifnull(sum(if(ODRSTS='4',ODRQTY-JIQTY,0)),0) as RESULTQTY, ifnull(sum(if(ODRSTS<>'4',ODRQTY-JIQTY,0)),0) as REMAINQTY " + 
         "from kd8430 " + 
         "where eddt=CURDATE() and odrsts<>'9' " + 
-        "union " + 
-        "select COUNT(*) as goal, COUNT(IF(new.ODRSTS='4', 1, NULL)) as result, COUNT(IF(new.ODRSTS<>'4', 1, NULL)) as remain " + 
+        "union all " + 
+        "select count(*) as GOAL, count(if(new.ODRSTS='4', 1, NULL)) as RESULT, count(if(new.ODRSTS<>'4', 1, NULL)) as REMAIN " + 
+        ",ifnull(sum(new.ODRQTY-new.JIQTY),0) as GOALQTY, count(if(new.ODRSTS='4', 1, NULL)) as RESULTQTY, count(if(new.ODRSTS<>'4', 1, NULL)) as REMAINQTY " + 
         "from kd8430 new, kd8490okure old " + 
-        "where new.odrno = old.odrno and new.odrsts<>'9'"
+        "where new.ODRNO = old.ODRNO and new.ODRSTS<>'9' and old.MPINSTDT=curdate()" + 
+        "union all " + 
+        "select 0 as GOAL, 0 as RESULT, 0 as REMAIN, 0 as GOALQTY, 0 as RESULTQTY, 0 as REMAINQTY "   // 遅れレコードが存在しない場合はここを参照させる
     ;
-    const data = await getDatabase(sql);
-    return data;
+    const summary = await getDatabase(sql1);
+    // chart2 実績数
+    const sql2 = "select cast(MPUPDTDT as date) as label, sum(ODRQTY) as data1 " + 
+        "from kd8430 " + 
+        "where ODRSTS = '4' and " + 
+        "cast(MPUPDTDT as date) between date_add(CURDATE(), interval -20 day) and CURDATE() " + 
+        "group by cast(MPUPDTDT as date) order by cast(MPUPDTDT as date)"
+    ;
+    const chart2Jisseki = await getDatabase(sql2);
+    // chart2 遅れ点数
+    const sql3 = "select cast(MPINSTDT as date) as label, count(*) as data2 " + 
+        "from kd8490okure " + 
+        "where MPINSTDT between date_add(CURDATE(), interval -20 day) and CURDATE()" + 
+        "group by MPINSTDT order by MPINSTDT"
+    ;
+    const chart2Okure = await getDatabase(sql3);
+
+    /* Degub用
+    summary[0].GOALQTY = 2500;
+    summary[0].RESULTQTY = 500;
+    summary[0].REMAINQTY = 1500;
+    summary[1].GOALQTY = 1000;
+    summary[1].RESULTQTY = 800;
+    summary[1].REMAINQTY = 200;
+    */
+    const objToday = {
+        today: summary[0],
+        delay: summary[1],
+        chart2: {
+            labels: [],
+            data1: [],
+            data2: [],
+        },
+        chart3: {
+            labels: [],
+            data1: [],
+            data2: [],
+        },
+    };
+    for await (row of chart2Jisseki) {
+        objToday.chart2.labels.push(row.label);
+        objToday.chart2.data1.push(Number(row.data1));
+        const result = chart2Okure.find(d => d.label === row.label);
+        if (!result) {
+            objToday.chart2.data2.push(0);
+        } else {
+            objToday.chart2.data2.push(Number(result.data2));
+        }
+    }
+    // chart3 進捗状況
+    const chart3Sql = 
+        "select m.KTNKBN, a.MCGCD" +
+        ", sum(if(a.ODRSTS in ('4'), 1, 0)) 完了点数" +
+        ", count(*) 合計点数 " +
+        "from " +
+        "(" +
+            "select MCGCD, ODRSTS from kd8450 where ODRSTS !=  '9' " +
+            "and EDDT between " +
+                "DATE_SUB(DATE_ADD(CURDATE(), INTERVAL 7 DAY), INTERVAL WEEKDAY(CURDATE()) DAY) and " + 
+                "date_add(date_sub(date_add(CURDATE(), interval 7 day), interval weekday(CURDATE()) day), interval 5 day) " +  // 来週の月曜日から土曜日
+            "and MCGCD in ('SW') " +
+            "union all " +
+            "select if(MCGCD='3BP','MC',if(MCGCD='ON','MC',MCGCD)) MCGCD, ODRSTS " +
+            "from kd8450 where ODRSTS !=  '9' " +
+            "and EDDT between " + 
+                "DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY) and " + 
+                "DATE_ADD(DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY), INTERVAL 5 DAY) " +  // 今週の月曜日から土曜日
+            "and MCGCD not in ('EX','G','D','MD','TP','SW')" +
+        ") a, km8420 m " +
+        "where a.MCGCD=m.MCGCD " +
+        "group by m.KTNKBN, m.MCGSEQ, a.MCGCD " +
+        "order by m.KTNKBN, m.MCGSEQ, a.MCGCD"
+    ;
+    const chart3Result = await getDatabase(chart3Sql);
+    // 必要に応じて別の配列に加工
+    objToday.chart3.labels = chart3Result.map(row => row.MCGCD);
+    for await (row of chart3Result) {
+        objToday.chart3.data1.push(Math.floor((Number(row.完了点数) / Number(row.合計点数)) * 100)); // パーセンテージ
+        objToday.chart3.data2.push(row.KTNKBN);
+    }
+        /*
+                "labels": ['11/6', '11/7', '11/10', '11/11', '11/12', '11/13', '11/14'],
+                "data1": [5017, 7652, 6995, 8592, 5419, 5069, 5060],
+                "data2": [30, 75, 44, 0, 0, 20, 0],
+                jsonToday.chart2.labels.push('11/19');
+                jsonToday.chart2.data1.push(7777);
+                jsonToday.chart2.data2.push(55);
+        */
+    return objToday;
 }
 
-// 当日ダッシュボード遅延一覧取得
+// 当日ダッシュボード
+//   遅れポップアップウィンドウ
 exports.getDelayList = async () => {
     sql = 
         "select row_number() OVER (ORDER BY 完了予定日, 品番) 行番号, 集計.*, sum(c.ODRQTY) 最低必要数 from ( " + 
