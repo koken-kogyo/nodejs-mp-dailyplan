@@ -7,8 +7,10 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <!-- CSS -->
     <link rel="stylesheet" href="/static/css/style-dashboard.css">
-    <!-- CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Script -->
+    <script src="/static/javascripts/chart.umd.min.js"></script>
+    <script src="/static/javascripts/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="/static/javascripts/chartjs-plugin-datalabels.min.js"></script>
 </head>
 <body>
     <!-- Common JavaScript -->
@@ -20,32 +22,63 @@
 
         <!-- Header -->
         <header>
-            生産ダッシュボード
-            <div id="titledatetime">2025年9月15日(火) 13時41分</div>
+            注文ダッシュボード
+            <div id="titledatetime">2026年1月1日(気) 17時57分</div>
         </header>
 
         <!-- Details -->
         <a href="javascript:toDashboard();"><div id="btnprev" class="arrowright"></div></a>
-        <div id="detail" class="<%= locals.animation %>">
+        <div id="dashboard-main" class="<%= locals.animation %>">
 
 
-<canvas id="myBarChart" width="800" height="300"></canvas>
+            <!-- Chart Item -->
+            <div id="f-dashboard1" class="dashboard-bg">
+                <canvas id="chart1"></canvas>
+            </div>
 
+            <!-- Chart Item -->
+            <div id="f-dashboard2" class="dashboard-bg">
+                <canvas id="chart2"></canvas>
+            </div>
+
+            <!-- Chart Item -->
+            <div id="f-dashboard3" class="dashboard-bg">
+                <canvas id="chart3"></canvas>
+            </div>
 
         </div>
 
+        <!-- Popup Window -->
+        <div id="popup-window" class="popwin-background popwin-modalbody" onClick="javascript:noneDelayList();">
+            <div id="popup-delay">
+                <table id="delayPopupTable" onClick="javascript:noneDelayList();">
+                    <tr>
+                        <th>品番</th>
+                        <th>品名</th>
+                        <th>材料</th>
+                        <th>工程経路</th>
+                        <th>注文数</th>
+                        <th>CT</th>
+                        <th>OT</th>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
         <!-- Footer -->
-        <footer>
-    	    <a id="copyright">&copy; 2025 Koken Kogyo Co. All rights reserved.</a>
-            <a id="responsible"></a>
-        </footer>
+        <%- include("_footer.ejs", req) %>
     
     </div>
     <!-- ブラウザ読み込み完了後のJavaScriptを記述 -->
+    <script src="/static/javascripts/_myfunctions.js"></script>
+    <script src="/static/javascripts/dashboard-future.js"></script>
     <script>
         // オブジェクト変数
         const mainObj = document.getElementById("main");
-        const detailObj = document.getElementById("detail");
+        const dashboardMainObj = document.getElementById("dashboard-main");
+        const dashboardObj1 = document.getElementById("f-dashboard1");
+        const dashboardObj2 = document.getElementById("f-dashboard2");
+        const dashboardObj3 = document.getElementById("f-dashboard3");
         const titleDateTimeObj = document.getElementById('titledatetime');
         const todaysGoalObj = document.getElementById("todays-goal");
         const delaysGoalObj = document.getElementById("delays-goal");
@@ -54,78 +87,10 @@
         const todaysRemainObj = document.getElementById("todays-remain");
         const delaysRemainObj = document.getElementById("delays-remain");
         const screenSizeElement = document.getElementById("responsible");
+        const popDelayObj = document.getElementById("popup-window");
+        popDelayObj.style.zIndex = -9;
 
-        // イベント設定
-        window.addEventListener('resize', updateScreenSize); // 画面サイズ変更時に更新
-
-        // ブラウザ読み込み完了後の初期設定
-        SetInitialValues();
-
-        // ブラウザ読み込み完了後の初期設定
-        function SetInitialValues() {
-            titleDateTimeObj.textContent = getTitleDateTime();
-            setTimeout(() => {
-                detailObj.className = "";
-                updateScreenSize();
-            }, 100);
-
-
-
-
-var ctxBar = document.getElementById('myBarChart').getContext('2d'); // Canvasのコンテキストを取得
-var myBarChart = new Chart(ctxBar, {
-    type: 'bar', // グラフの種類を指定
-    data: {
-        labels: ['January', 'February', 'March', 'April', 'May'], // X軸に表示するラベル
-        datasets: [{
-            label: 'Monthly Sales', // 凡例として表示されるテキスト
-            data: [30, 50, 40, 60, 70], // Y軸に表示されるデータ
-            backgroundColor: [ // 各データの背景色
-                'rgba(255, 99, 132, 0.2)', 
-                'rgba(54, 162, 235, 0.2)',
-                'rgba(255, 206, 86, 0.2)',
-                'rgba(75, 192, 192, 0.2)',
-                'rgba(153, 102, 255, 0.2)'
-            ],
-            borderColor: [ // 各データの枠線色
-                'rgba(255, 99, 132, 1)', 
-                'rgba(54, 162, 235, 1)',
-                'rgba(255, 206, 86, 1)',
-                'rgba(75, 192, 192, 1)',
-                'rgba(153, 102, 255, 1)'
-            ],
-            borderWidth: 1 // 枠線の太さ
-        }]
-    },
-    options: {
-        scales: {
-            y: {
-                min: 20,
-                max: 70,
-                position: 'right',
-            }
-        }
-    }
-});
-
-
-
-
-
-        }
-        
-        //画面サイズ関連
-        function updateScreenSize() {
-            const width1 = window.innerWidth;
-            const width2 = Math.round(window.visualViewport.width); /* Andoroid携帯だけ小数点で入ってくる為 */
-            const width = (width1 != width2) ? `${width1}:${width2}` : `${width1}`; 
-            const height = window.innerHeight;
-            screenSizeElement.innerText = `W:${width}*H:${height}`;
-        }
-
-        // タイマー関連
-        function updateTitleDateTime() {titleDateTimeObj.textContent = getTitleDateTime();}
-        // タイトル用の日付日時を取得（共通関数）
+        // １．タイトル日時更新
         function getTitleDateTime() {
             const days = ["(日)", "(月)", "(火)", "(水)", "(木)", "(金)", "(土)"];
             let date = new Date()
@@ -138,8 +103,90 @@ var myBarChart = new Chart(ctxBar, {
             let timeText = `${year}年${month}月${day}日${days[date.getDay()]} ${hour}時${minute.toString().padStart(2, "0")}分`
             return timeText;
         }
-        const timer = setInterval(updateTitleDateTime, 10000); // 10秒ごとにupdateTitleDateTime()を実行
+        // 15秒ごとのタイマー処理
+        const checkServerID = setInterval(() => {
+            titleDateTimeObj.textContent = getTitleDateTime();  // １．日付更新
+        }, 15 * 1000);
 
+        
+        // ２．ダッシュボード用データ取得
+        function getDashboardFuture() {
+            fetch("/mysqlsv/dashboard/future")
+            .then(res => res.json())
+            .then(data => {
+                dashboardObj1.style.opacity = 1;
+                dashboardObj1.style.zIndex = 1;
+                dashboardObj2.style.opacity = 0;
+                dashboardObj2.style.zIndex = -9;
+                dashboardObj3.style.opacity = 0;
+                dashboardObj3.style.zIndex = -9;
+                drawChart1(data.labels, data.ktnkbn, data.thisweekworks, data.thisweekdandori, data.nextweekworks, data.nextweekdandori);
+                drawChart2("", "", "", "", "", ""); // デフォルトchartオブジェクトを作成しておく
+                drawChart3("", "", "", "", "", ""); // デフォルトchartオブジェクトを作成しておく
+            })
+            .catch(err => {alert(err);});
+        }
+
+
+        // ３．画面サイズ変更イベント
+        function updateScreenSize() {
+            const width1 = window.innerWidth;
+            const width2 = Math.round(window.visualViewport.width); /* Andoroid携帯だけ小数点で入ってくる為四捨五入して整数 */
+            const width = (width1 != width2) ? `${width1}:${width2}` : `${width1}`; 
+            const height = window.innerHeight;
+            screenSizeElement.innerText = `W:${width}*H:${height}`;
+        }
+        window.addEventListener('resize', updateScreenSize);
+
+
+        // ４．ダッシュボードへ移動
+        function toDashboard() {
+           dashboardMainObj.className = "slideout_toright"; // CSSアニメーションが再発火しない対策
+            setTimeout(() => {
+                window.location.href = "/mp/todashboard/fromfuture"; // 右のページに遷移
+            }, 100);
+        }
+
+
+        // ５．ダッシュボードトップへ移動
+        function toDashboardTop() {
+            dashboardObj1.style.opacity = 1;
+            dashboardObj1.style.zIndex = 1;
+            dashboardObj2.style.opacity = 0;
+            dashboardObj2.style.zIndex = -9;
+            dashboardObj3.style.opacity = 0;
+            dashboardObj3.style.zIndex = -9;
+        }
+
+
+        // ６．ダッシュボード工程一覧へ移動
+        function toDashboardGCD() {
+            dashboardObj1.style.opacity = 0;
+            dashboardObj1.style.zIndex = -9;
+            dashboardObj2.style.opacity = 1;
+            dashboardObj2.style.zIndex = 1;
+            dashboardObj3.style.opacity = 0;
+            dashboardObj3.style.zIndex = -9;
+        }
+
+
+        // ７．ブラウザ読み込み完了後の初期設定
+        function SetInitialValues() {
+            // ポップアップウィンドウを隠す
+            popDelayObj.style.display = "none";
+            // タイトル日付初期セット
+            titleDateTimeObj.textContent = getTitleDateTime();
+            // 初期データ取得
+            getDashboardFuture();
+            // 時間差でスクリーンサイズを取得（スライドインアニメーションが完了した後でないと正しく取得できない）
+            setTimeout(() => {
+                dashboardMainObj.className = ""; // スライドインスタイルのクリア
+                updateScreenSize();
+            }, 100);
+        }
+
+
+        // ******************* ウィンドウズのデバイス対応 *************************
         // キーボードイベントを監視
         document.addEventListener("keydown", function(event) {
             switch (event.key) {
@@ -150,14 +197,6 @@ var myBarChart = new Chart(ctxBar, {
                     break;
             }
         });
-
-        // ダッシュボードへ移動
-        function toDashboard() {
-           detailObj.className = "slideout_toright"; // CSSアニメーションが再発火しない対策
-            setTimeout(() => {
-                window.location.href = "/mp/todashboard/fromfuture"; // 右のページに遷移
-            }, 100);
-        }
 
         // ******************* タブレットのスワイプ対応 *************************
         let startX = 0;
@@ -205,9 +244,10 @@ var myBarChart = new Chart(ctxBar, {
             }
         }
 
+        // ブラウザ読み込み完了後の初期設定
+        SetInitialValues();
 
-
-</script>
+    </script>
 
 </body>
 </html>

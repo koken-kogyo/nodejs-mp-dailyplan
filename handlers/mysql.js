@@ -33,13 +33,14 @@ const getM0010 = async (userid) => {
 };
 exports.getM0010 = getM0010;
 
-// 今週月曜日から来週金曜日までの日付を取得
+// 手配用今週月曜日から来週金曜日までの日付を取得
 const getYMDOrders = async () => {
     // 基準日の取得（月曜日の場合は先週に巻き戻す）
-    // Javascript detDay()  は ["0:日", "1:月", "2:火", "3:水", "4:木", "5:金", "6:土"];
+    // Javascript getDay()  は ["0:日", "1:月", "2:火", "3:水", "4:木", "5:金", "6:土"];
+    // MySQL DAYOFWEEK()    は ["1:日", "2:月", "3:火", "4:水", "5:木", "6:金", "7:土"];
     // MySQL WEEKDAY()      は ["0:月", "1:火", "2:水", "3:木", "4:金", "5:土", "6:日"];
     let baseday = new Date();                                       // 本番用
-    // baseday = new Date(2025,4,5);                                // Debug用（※月は 0 から始まります）
+    // baseday = new Date(2025,4,5);                                // Debug用（※月は 0 から始まるので2025/05/05 0:00:00をセット）
     if (baseday.getDay() <= 1) {                                    // ※月曜日の場合はリストを更新しない
         let offset = (baseday.getDay() == 0) ? 6 : 7;
         baseday.setDate(baseday.getDate() - offset);                // 先週の月曜日を取得
@@ -76,10 +77,11 @@ exports.getYMDOrders = getYMDOrders;
 // 内示用月曜日から金曜日までの日付を取得
 const getYMDPlans = async () => {
     // 基準日の取得（月曜日の場合は先週に巻き戻す）
-    // Javascript detDay()  は ["0:日", "1:月", "2:火", "3:水", "4:木", "5:金", "6:土"];
+    // Javascript getDay()  は ["0:日", "1:月", "2:火", "3:水", "4:木", "5:金", "6:土"];
     // MySQL WEEKDAY()      は ["0:月", "1:火", "2:水", "3:木", "4:金", "5:土", "6:日"];
+    // MySQL DAYOFWEEK()    は ["1:日", "2:月", ... , "7:土"];
     let baseday = new Date();                                       // 本番用
-    // baseday = new Date(2025,4,5);                                // Debug用（※月は 0 から始まります）
+    // baseday = new Date(2025,4,5);                                // Debug用（※月は 0 から始まるので2025/05/05 0:00:00をセット）
     if (baseday.getDay() <= 1) {                                    // ※月曜日の場合はリストを更新しない
         let offset = (baseday.getDay() == 0) ? 6 : 7;
         baseday.setDate(baseday.getDate() - offset);                // 先週の月曜日を取得
@@ -149,6 +151,41 @@ const getNextDay = async (planday) => {
     return obj[0].NEXTDAY;
 };
 exports.getNextDay = getNextDay;
+
+// 稼働日ベースでの今週と来週の月曜日,土曜日を取得
+const get2WeeksMondaySaturday = async () => {
+    let baseday = new Date();                                       // 現在の日時を取得 例: Tue Jan 26 2021 21:25:35 GMT+0900 (日本標準時)
+    //baseday = new Date(2025, 4, 5, 12, 3, 15, 0);                 // Debug用（※月は 0 から始まるので2025/5/5 12:03:15.000をセット）
+    if (baseday.getDay() <= 1) {                                    // 現在の日時が日・月曜日の場合
+        baseday.setDate(baseday.getDate() - 3);                     // 基準日を3日前に設定
+    }
+    const now = baseday.toLocaleString();                           // 'Sat Jan 03 2026 12:12:23 GMT+0900 (日本標準時)' → '2026/1/3 12:12:23'
+    const sql = 
+        "select " +
+            ` max(case when YMD < '${now}' then YMD end) as 今週月曜日 ` +
+            `,max(case when YMD < '${now}' then date_add(YMD, interval + 5 day) end) as 今週土曜日 ` +
+            `,min(case when YMD > '${now}' then YMD end) as 来週月曜日 ` +
+            `,min(case when YMD > '${now}' then date_add(YMD, interval + 5 day) end) as 来週土曜日 ` +
+        "from (" +
+            "select YMD - interval weekday(YMD) day as YMD, count(*) as 稼働日数 " +    // 月曜日を返却
+            "from s0820 " +
+            "where CALTYP='00001' " +
+                "and WKKBN = '1' " +
+                `and YMD between date_add('${now}', interval - 21 day) and date_add('${now}', interval + 21 day) ` +
+            "group by YMD - interval weekday(YMD) day" + /* 月曜日で Group By すると非稼働週が抜ける ※2025/5/5月曜日が非稼働日の場合に注意 */
+        ") z"
+    ;
+    const results = await getDatabase(sql);
+    // 日付オブジェクトを配列に格納
+    const dates = [
+        results[0].今週月曜日,
+        results[0].今週土曜日,
+        results[0].来週月曜日,
+        results[0].来週土曜日,
+    ];
+    return dates;
+}
+exports.get2WeeksMondaySaturday = get2WeeksMondaySaturday;
 
 // 設備グループ群の取得
 const getMCGCDs = async () => {
@@ -1181,20 +1218,33 @@ exports.updateKD8460 = async (hmcd, mcgcd, mccd, jiqty, operator) => {
 // 当日ダッシュボード データ取得 [0]当日、[1]遅延
 exports.getDashboardToday = async () => {
     // ダッシュボード
-    const sql1 = "select count(*) as GOAL, count(if(ODRSTS='4', 1, NULL)) as RESULT, count(if(ODRSTS<>'4', 1, NULL)) as REMAIN " + 
-        ",ifnull(sum(ODRQTY-JIQTY),0) as GOALQTY, ifnull(sum(if(ODRSTS='4',ODRQTY-JIQTY,0)),0) as RESULTQTY, ifnull(sum(if(ODRSTS<>'4',ODRQTY-JIQTY,0)),0) as REMAINQTY " + 
-        "from kd8430 " + 
-        "where eddt=CURDATE() and odrsts<>'9' " + 
+    const sql1 = 
+        "select " + 
+        "count(*) as GOAL " + 
+        ",count(if(new.ODRSTS='4', 1, NULL)) as RESULT " + 
+        ",count(if(new.ODRSTS<>'4', 1, NULL)) as REMAIN " + 
+        ",cast(ifnull(sum(old.ODRQTY-old.JIQTY),0) as signed) as GOALQTY " + 
+        ",cast(ifnull(sum(if(new.ODRSTS='4',old.ODRQTY-old.JIQTY,0)),0) as signed) as RESULTQTY " + 
+        ",cast(ifnull(sum(if(new.ODRSTS<>'4',old.ODRQTY-old.JIQTY,0)),0) as signed) as REMAINQTY " + 
+        "from kd8430 new, kd8490 old " + 
+        "where new.ODRNO = old.ODRNO and new.ODRSTS<>'9' and old.TARGETDT=curdate() " + 
+        "and old.EDDT=curdate() " + 
         "union all " + 
-        "select count(*) as GOAL, count(if(new.ODRSTS='4', 1, NULL)) as RESULT, count(if(new.ODRSTS<>'4', 1, NULL)) as REMAIN " + 
-        ",ifnull(sum(new.ODRQTY-new.JIQTY),0) as GOALQTY, count(if(new.ODRSTS='4', 1, NULL)) as RESULTQTY, count(if(new.ODRSTS<>'4', 1, NULL)) as REMAINQTY " + 
-        "from kd8430 new, kd8490okure old " + 
-        "where new.ODRNO = old.ODRNO and new.ODRSTS<>'9' and old.MPINSTDT=curdate()" + 
+        "select " + 
+        "count(*) as GOAL " +
+        ",count(if(new.ODRSTS='4', 1, NULL)) as RESULT " +
+        ",count(if(new.ODRSTS<>'4', 1, NULL)) as REMAIN " + 
+        ",cast(ifnull(sum(old.ODRQTY-old.JIQTY),0) as signed) as GOALQTY " + 
+        ",cast(ifnull(sum(if(new.ODRSTS='4',old.ODRQTY-old.JIQTY,0)),0) as signed) as RESULTQTY " + 
+        ",cast(ifnull(sum(if(new.ODRSTS<>'4',old.ODRQTY-old.JIQTY,0)),0) as signed) as REMAINQTY " + 
+        "from kd8430 new, kd8490 old " + 
+        "where new.ODRNO = old.ODRNO and new.ODRSTS<>'9' and old.TARGETDT=curdate()" + 
+        "and old.EDDT<curdate() " + 
         "union all " + 
         "select 0 as GOAL, 0 as RESULT, 0 as REMAIN, 0 as GOALQTY, 0 as RESULTQTY, 0 as REMAINQTY "   // 遅れレコードが存在しない場合はここを参照させる
     ;
     const summary = await getDatabase(sql1);
-    // chart2 実績数
+    // chart2 実績数(実績テーブルがMPシステムには存在しないので更新日付で無理やり取得)・・・要改善検討事項
     const sql2 = "select cast(MPUPDTDT as date) as label, sum(ODRQTY) as data1 " + 
         "from kd8430 " + 
         "where ODRSTS = '4' and " + 
@@ -1203,17 +1253,18 @@ exports.getDashboardToday = async () => {
     ;
     const chart2Jisseki = await getDatabase(sql2);
     // chart2 遅れ点数
-    const sql3 = "select cast(MPINSTDT as date) as label, count(*) as data2 " + 
-        "from kd8490okure " + 
-        "where MPINSTDT between date_add(CURDATE(), interval -20 day) and CURDATE()" + 
-        "group by MPINSTDT order by MPINSTDT"
+    const sql3 = "select cast(TARGETDT as date) as label, count(*) as data2 " + 
+        "from kd8490 " + 
+        "where TARGETDT between date_add(CURDATE(), interval -20 day) and CURDATE()" + 
+        "and EDDT<TARGETDT " + 
+        "group by TARGETDT order by TARGETDT"
     ;
     const chart2Okure = await getDatabase(sql3);
 
     /* Degub用
     summary[0].GOALQTY = 2500;
     summary[0].RESULTQTY = 500;
-    summary[0].REMAINQTY = 1500;
+    summary[0].REMAINQTY = 2000;
     summary[1].GOALQTY = 1000;
     summary[1].RESULTQTY = 800;
     summary[1].REMAINQTY = 200;
@@ -1249,11 +1300,13 @@ exports.getDashboardToday = async () => {
         ", count(*) 合計点数 " +
         "from " +
         "(" +
+
             "select MCGCD, ODRSTS from kd8450 where ODRSTS !=  '9' " +
             "and EDDT between " +
                 "DATE_SUB(DATE_ADD(CURDATE(), INTERVAL 7 DAY), INTERVAL WEEKDAY(CURDATE()) DAY) and " + 
                 "date_add(date_sub(date_add(CURDATE(), interval 7 day), interval weekday(CURDATE()) day), interval 5 day) " +  // 来週の月曜日から土曜日
             "and MCGCD in ('SW') " +
+
             "union all " +
             "select if(MCGCD='3BP','MC',if(MCGCD='ON','MC',MCGCD)) MCGCD, ODRSTS " +
             "from kd8450 where ODRSTS !=  '9' " +
@@ -1287,22 +1340,198 @@ exports.getDashboardToday = async () => {
 // 当日ダッシュボード
 //   遅れポップアップウィンドウ
 exports.getDelayList = async () => {
-    sql = 
+    const sql = 
         "select row_number() OVER (ORDER BY 完了予定日, 品番) 行番号, 集計.*, sum(c.ODRQTY) 最低必要数 from ( " + 
         "select DATE_FORMAT(min(a.EDDT), '%Y-%m-%d') 完了予定日, a.HMCD 品番, replace(replace(replace(m.KTKEY,':','　→　'),'3BP-','MC-'),'ON-','MC-') 工程経路 " + 
         ", sum(a.ODRQTY) 必要数, count(*) 遅延件数  " + 
-        "from kd8490okure a ,kd8430 b, km8430 m  " + 
+        "from kd8490 a ,kd8430 b, km8430 m  " + 
         "where 1=1 " + 
         "and a.ODRNO = b.ODRNO " + 
         "and a.HMCD = m.HMCD " + 
         "and a.ODRSTS <> '4' " + 
-        "and a.MPINSTDT = CURDATE() " + 
+        "and a.TARGETDT = CURDATE() " + 
         "group by a.HMCD, ktkey " + 
-        ") 集計, kd8490okure c " + 
-        "where 集計.完了予定日 = c.EDDT and 集計.品番 = c.HMCD and c.MPINSTDT=CURDATE() " + 
+        ") 集計, kd8490 c " + 
+        "where 集計.完了予定日 = c.EDDT and 集計.品番 = c.HMCD and c.TARGETDT=CURDATE() " + 
         "group by 集計.完了予定日, 集計.品番 " + 
         "order by 集計.完了予定日, 集計.品番 "
     ;
     const data = await getDatabase(sql);
+    return data;
+}
+
+// 注文ダッシュボード
+exports.getDashboardFuture = async (dates) => {
+    //   工程全体
+    const sql = 
+        "select KTNKBN, case KTNKBN when '1' then '手動機' when '2' then '自動機' else '不明' end as 工程内区分 " +
+            ", MCGCD, MCGCD as 工程コード " +
+            ", sum(case z.week when '今週' then 作業工数 else 0 end) as 今週注文工数 " +
+            ", sum(case z.week when '今週' then 段取工数 else 0 end) as 今週段取工数 " +
+            ", sum(case z.week when '来週' then 作業工数 else 0 end) as 来週注文工数 " +
+            ", sum(case z.week when '来週' then 段取工数 else 0 end) as 来週段取工数 " +
+        "from " +
+        "( " +
+            "select '今週'as week, m20.KTNKBN, m20.MCGSEQ " +
+                ", case a.MCGCD when 'ON' then 'MC3' when '3BP' then 'MC2' when 'MC' then 'MC1' else a.MCGCD end as MCGCD " +
+                ", round(sum(ODRHOUR) / count(*), 2) as 作業工数 " +
+                ", round(sum(SETUPHOUR) / count(*), 2) as 段取工数 " +
+            "from kd8510 a inner join km8420 m20 on m20.MCGCD=a.MCGCD and m20.MCCD=a.MCCD " +
+            "where eddt between ? and ? " +
+            "group by KTNKBN, MCGSEQ, case a.MCGCD when 'ON' then 'MC3' when '3BP' then 'MC2' when 'MC' then 'MC1' else a.MCGCD end " +
+            "union  " +
+            "select '来週' as week, m20.KTNKBN, m20.MCGSEQ " +
+                ", case a.MCGCD when 'ON' then 'MC3' when '3BP' then 'MC2' when 'MC' then 'MC1' else a.MCGCD end as MCGCD " +
+                ", round(sum(ODRHOUR) / count(*), 2) as 作業工数 " +
+                ", round(sum(SETUPHOUR) / count(*), 2) as 段取工数 " +
+            "from kd8510 a inner join km8420 m20 on m20.MCGCD=a.MCGCD and m20.MCCD=a.MCCD " +
+            "where eddt between ? and ? " +
+            "group by KTNKBN, MCGSEQ, case a.MCGCD when 'ON' then 'MC3' when '3BP' then 'MC2' when 'MC' then 'MC1' else a.MCGCD end " +
+        ") z " +
+        "group by z.KTNKBN, z.MCGSEQ, z.MCGCD " +
+        "order by z.KTNKBN, z.MCGSEQ, z.MCGCD "
+    ;
+    const data = await getDatabase(sql, [...dates]);
+    
+    const objFuture = {
+        "labels": data.map(row => row.MCGCD),
+        "ktnkbn": data.map(row => row.KTNKBN),
+        "thisweekworks": data.map(row => Number(row.今週注文工数)),
+        "thisweekdandori": data.map(row => Number(row.今週段取工数)),
+        "nextweekworks": data.map(row => Number(row.来週注文工数)),
+        "nextweekdandori": data.map(row => Number(row.来週段取工数)),
+        /*
+        "labels": ['SW', 'NC', 'MC1', 'MC2', 'MC3', 'SK', 'TN', 'SS', 'XT', 'CN', 'MS'],
+        "ktnkbn": ["1", "1", "1", "1", "1", "1", "1", "2", "2", "2", "2"],
+        "thisweekworks": [6.08, 2.94, 2.02, 5.06, 3.02, 5.03, 1.58, 9.68, 6.19, 9.47, 7.09],
+        "thisweekdandori": [1.95, 0.64, 0.68, 1.03, 0.73, 0.25, 0.93, 1.25, 2.59, 0.83, 0.63],
+        "nextweekworks": [5.27, 2.95, 2.02, 6.19, 2.81, 5.05, 2.23, 9.90, 7.87, 8.26, 7.25],
+        "nextweekdandori": [1.85, 0.55, 0.75, 0.95, 0.65, 0.25, 1.13, 1.17, 3.08, 0.90, 0.73],
+        */
+    };
+    return objFuture;
+
+}
+
+// 注文ダッシュボード（工程ごと）
+exports.getDashboardFutureGCD = async (mcgcode, dates) => {
+    //   各工程ごと
+    const mcgcd = (mcgcode=='MC3') ? 'ON' : (mcgcode=='MC2') ? '3BP' : (mcgcode=='MC1') ? 'MC' : mcgcode;
+    const sql = 
+        "select KTNKBN, case KTNKBN when '1' then '手動機' when '2' then '自動機' else '不明' end as 工程内区分 " +
+            ", MCCD, MCCD as 工程コード " +
+            ", sum(case z.week when '今週' then 作業工数 else 0 end) as 今週注文工数 " +
+            ", sum(case z.week when '今週' then 段取工数 else 0 end) as 今週段取工数 " +
+            ", sum(case z.week when '来週' then 作業工数 else 0 end) as 来週注文工数 " +
+            ", sum(case z.week when '来週' then 段取工数 else 0 end) as 来週段取工数 " +
+        "from " +
+        "( " +
+            "select '今週'as week, m20.KTNKBN, m20.MCSEQ " +
+                ", concat(a.MCGCD,'-',a.MCCD) as MCCD " +
+                ", round(sum(ODRHOUR) / count(*), 2) as 作業工数 " +
+                ", round(sum(SETUPHOUR) / count(*), 2) as 段取工数 " +
+            "from kd8510 a inner join km8420 m20 on m20.MCGCD=a.MCGCD and m20.MCCD=a.MCCD " +
+            "where eddt between ? and ? and a.MCGCD = ? " +
+            "group by KTNKBN, MCSEQ, a.MCCD " +
+            "union  " +
+            "select '来週' as week, m20.KTNKBN, m20.MCSEQ " +
+                ", concat(a.MCGCD,'-',a.MCCD) as MCCD " +
+                ", round(sum(ODRHOUR) / count(*), 2) as 作業工数 " +
+                ", round(sum(SETUPHOUR) / count(*), 2) as 段取工数 " +
+            "from kd8510 a inner join km8420 m20 on m20.MCGCD=a.MCGCD and m20.MCCD=a.MCCD " +
+            "where eddt between ? and ? and a.MCGCD = ? " +
+            "group by KTNKBN, MCSEQ, a.MCCD " +
+        ") z " +
+        "group by z.KTNKBN, z.MCSEQ, z.MCCD " +
+        "order by z.KTNKBN, z.MCSEQ, z.MCCD "
+    ;
+    const data = await getDatabase(sql, [dates[0], dates[1], mcgcd, dates[2], dates[3], mcgcd, ]);
+    
+    const objFuture = {
+        "labels": data.map(row => row.MCCD),
+        "ktnkbn": data.map(row => row.KTNKBN),
+        "thisweekworks": data.map(row => Number(row.今週注文工数)),
+        "thisweekdandori": data.map(row => Number(row.今週段取工数)),
+        "nextweekworks": data.map(row => Number(row.来週注文工数)),
+        "nextweekdandori": data.map(row => Number(row.来週段取工数)),
+        /*
+        "labels": ['SW', 'NC', 'MC1', 'MC2', 'MC3', 'SK', 'TN', 'SS', 'XT', 'CN', 'MS'],
+        "ktnkbn": ["1", "1", "1", "1", "1", "1", "1", "2", "2", "2", "2"],
+        "thisweekworks": [6.08, 2.94, 2.02, 5.06, 3.02, 5.03, 1.58, 9.68, 6.19, 9.47, 7.09],
+        "thisweekdandori": [1.95, 0.64, 0.68, 1.03, 0.73, 0.25, 0.93, 1.25, 2.59, 0.83, 0.63],
+        "nextweekworks": [5.27, 2.95, 2.02, 6.19, 2.81, 5.05, 2.23, 9.90, 7.87, 8.26, 7.25],
+        "nextweekdandori": [1.85, 0.55, 0.75, 0.95, 0.65, 0.25, 1.13, 1.17, 3.08, 0.90, 0.73],
+        */
+    };
+    return objFuture;
+
+}
+
+// 注文ダッシュボード（設備ごと）
+exports.getDashboardFutureQTY = async (mcgcode, mccd, dates) => {
+    //   各工程ごと
+    const mcgcd = (mcgcode=='MC3') ? 'ON' : (mcgcode=='MC2') ? '3BP' : (mcgcode=='MC1') ? 'MC' : mcgcode;
+    const sql = 
+        "select case when a.MCGCD = a.MCCD then a.MCGCD else concat(a.MCGCD,'-',a.MCCD) end as MCCODE " + 
+            ", concat( " +
+                "date_format(a.EDDT, '%c/%e') "+
+                ",' (' " +
+                ", case weekday(a.EDDT) " +
+                    "when 0 then '月' " +
+                    "when 1 then '火' " +
+                    "when 2 then '水' " +
+                    "when 3 then '木' " +
+                    "when 4 then '金' " +
+                    "when 5 then '土' " +
+                    "when 6 then '日' " +
+                    "end " +
+                ", ')') as EDDT " +
+            ", case when a.EDDT <= ? then '1' else '2' end as WEEKKBN " +
+            ", a.ODRQTY, a.ODRHOUR, a.SETUPHOUR " +
+        "from kd8510 a " +
+        "where a.MCGCD = ? and a.MCCD = ? " +
+            "and a.EDDT between ? and ?"
+        "order by a.EDDT"
+    ;
+    const data = await getDatabase(sql, [dates[1], mcgcd, mccd, dates[0], dates[3]]);
+    return {
+        "title": data[0].MCCODE,
+        "labels": data.map(row => row.EDDT),
+        "weekkbn": data.map(row => row.WEEKKBN),
+        "qty": data.map(row => Number(row.ODRQTY)),
+        "works": data.map(row => Number(row.ODRHOUR)),
+        "dandori": data.map(row => Number(row.SETUPHOUR)),
+    };
+}
+
+// 注文ダッシュボード（設備の対象日の詳細ポップアップ画面）
+exports.getDashboardFuturePopup = async (mcgcd, mccd, eddt) => {
+    const sql =
+        "select a.HMCD as 品番, m30.HMNM as 品名, m30.MATESIZE as 材料, replace(m30.KTKEY, ':', '　→　') as 工程経路 " +
+            ", a.ODRQTY as 注文数 " +
+            ", case " +
+                "when a.MCGCD=m30.KT1MCGCD and a.MCCD=m30.KT1MCCD then ifnull(m30.KT1CT,0) " +
+                "when a.MCGCD=m30.KT2MCGCD and a.MCCD=m30.KT2MCCD then ifnull(m30.KT2CT,0) " +
+                "when a.MCGCD=m30.KT3MCGCD and a.MCCD=m30.KT3MCCD then ifnull(m30.KT3CT,0) " +
+                "when a.MCGCD=m30.KT4MCGCD and a.MCCD=m30.KT4MCCD then ifnull(m30.KT4CT,0) " +
+                "when a.MCGCD=m30.KT5MCGCD and a.MCCD=m30.KT5MCCD then ifnull(m30.KT5CT,0) " +
+                "when a.MCGCD=m30.KT6MCGCD and a.MCCD=m30.KT6MCCD then ifnull(m30.KT6CT,0) " +
+                "else 0 " +
+            "end as CT " +
+            ", case " +
+                "when a.MCGCD=m30.KT1MCGCD and a.MCCD=m30.KT1MCCD then a.ODRQTY * ifnull(m30.KT1CT,0) " +
+                "when a.MCGCD=m30.KT2MCGCD and a.MCCD=m30.KT2MCCD then a.ODRQTY * ifnull(m30.KT2CT,0) " +
+                "when a.MCGCD=m30.KT3MCGCD and a.MCCD=m30.KT3MCCD then a.ODRQTY * ifnull(m30.KT3CT,0) " +
+                "when a.MCGCD=m30.KT4MCGCD and a.MCCD=m30.KT4MCCD then a.ODRQTY * ifnull(m30.KT4CT,0) " +
+                "when a.MCGCD=m30.KT5MCGCD and a.MCCD=m30.KT5MCCD then a.ODRQTY * ifnull(m30.KT5CT,0) " +
+                "when a.MCGCD=m30.KT6MCGCD and a.MCCD=m30.KT6MCCD then a.ODRQTY * ifnull(m30.KT6CT,0) " +
+                "else 0 " +
+            "end as OT " +
+        "from kd8450 a inner join km8430 m30 on m30.HMCD=a.HMCD " +
+        "where a.MCGCD = ? and a.MCCD = ? " +
+            "and a.EDDT = ? and a.ODRSTS != '9' " +
+        "order by a.HMCD "
+    ;
+    const data = await getDatabase(sql, [mcgcd, mccd, eddt]);
     return data;
 }

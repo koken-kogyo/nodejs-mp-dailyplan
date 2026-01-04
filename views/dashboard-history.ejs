@@ -20,7 +20,7 @@
 
         <!-- Header -->
         <header>
-            生産ダッシュボード
+            実績ダッシュボード
             <div id="titledatetime">2025年9月15日(火) 13時41分</div>
         </header>
 
@@ -31,10 +31,7 @@
         <a href="javascript:toDashboard();"><div id="btnnext" class="arrowleft"></div></a>
         
         <!-- Footer -->
-        <footer>
-    	    <a id="copyright">&copy; 2025 Koken Kogyo Co. All rights reserved.</a>
-            <a id="responsible"></a>
-        </footer>
+        <%- include("_footer.ejs", req) %>
     
     </div>
     <!-- ブラウザ読み込み完了後のJavaScriptを記述 -->
@@ -42,31 +39,6 @@
         // オブジェクト変数
         const mainObj = document.getElementById("main");
         const detailObj = document.getElementById("detail");
-
-
-        var ctx = document.getElementById('ex_chart');
-
-        var data = {
-            labels: ["令和元年", "令和2年", "令和3年", "令和4年", "令和5年"],
-            datasets: [{
-                label: '得点',
-                data: [880, 740, 900, 520, 930],
-                backgroundColor: 'rgba(255, 100, 100, 1)'
-            }]
-        };
-        var options = {
-            indexAxis: 'y',
-            scales: {
-                x:{
-                    min: 300
-                }
-            }
-        };
-        var ex_chart = new Chart(ctx, {
-            type: 'bar',
-            data: data,
-            options: options
-        });
 
         // 未来へ移動
         function toDashboard() {

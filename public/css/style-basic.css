@@ -97,13 +97,13 @@ footer a {
     text-align: left;
 }
 /* === [Copy Right] === */
-footer .copyright {
+footer #copyright {
     position: fixed;
     padding: 3px 0 0 0;
     left: calc((100vw / 2) - 120px);
 }
 /* === [responsible] === */
-footer .responsible {
+footer #responsible {
     position: fixed; /* 要素の位置：絶対*/
     bottom: 2px;
     right: 160px;

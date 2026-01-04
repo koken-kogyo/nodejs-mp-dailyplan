@@ -99,10 +99,8 @@
         </div>
 
         <!-- Footer -->
-        <footer>
-    	    <a id="copyright">&copy; 2025 Koken Kogyo Co. All rights reserved.</a>
-            <a id="responsible"></a>
-        </footer>
+        <!-- Footer -->
+        <%- include("_footer.ejs", req) %>
     
     </div>
     <!-- ブラウザ読み込み完了後のJavaScriptを記述 -->
@@ -131,7 +129,23 @@
 
         let dashboardPage = 1;              // 画面切り替えコントロール
 
-        // ダッシュボード用データ取得
+
+        // １．タイトル日時更新
+        function getTitleDateTime() {
+            const days = ["(日)", "(月)", "(火)", "(水)", "(木)", "(金)", "(土)"];
+            let date = new Date()
+            let year = date.getFullYear()   // 年
+            let month = date.getMonth() + 1 // 月
+            let day = date.getDate()        // 日
+            let hour = date.getHours()      // 時
+            let minute = date.getMinutes()  // 分
+            let second = date.getSeconds()  // 秒
+            let timeText = `${year}年${month}月${day}日${days[date.getDay()]} ${hour}時${minute.toString().padStart(2, "0")}分`
+            return timeText;
+        }
+
+
+        // ２．ダッシュボード用データ取得
         function getDashboardToday() {
             fetch("/mysqlsv/dashboard/today")
             .then(res => res.json())
@@ -148,57 +162,45 @@
             .catch(err => {alert(err);});
         }
 
-        // １．タイトル日時更新
-        function getTitleDateTime() {
-            const days = ["(日)", "(月)", "(火)", "(水)", "(木)", "(金)", "(土)"];
-            let date = new Date()
-            let year = date.getFullYear()   // 年
-            let month = date.getMonth() + 1 // 月
-            let day = date.getDate()        // 日
-            let hour = date.getHours()      // 時
-            let minute = date.getMinutes()  // 分
-            let second = date.getSeconds()  // 秒
-            let timeText = `${year}年${month}月${day}日${days[date.getDay()]} ${hour}時${minute.toString().padStart(2, "0")}分`
-            return timeText;
-        }
-        // ２．サーバーの更新有無をチェック
+
+        // ３．サーバーの更新有無をチェック
         function updateDashboardToday() {
             fetch("/mysqlsv/dashboard/today")
             .then(res => res.json())
             .then(data => {
                 let isChange = false;
                 if (todaysGoalObj.innerText != data.today.GOALQTY.toLocaleString() + "本") {
-                    todaysGoalObj.innerText = data.today.GOALQTY.toLocaleString() + "本";
+                    todaysGoalObj.innerHTML = data.today.GOALQTY.toLocaleString() + "<span class='hon'>本</span>";
                     todaysGoalObj.classList.add("animation");
                     isChange = true;
                     setTimeout(() => {todaysGoalObj.classList.remove("animation");}, 6000); // 5000ミリ秒（5秒）
                 };
                 if (delaysGoalObj.innerText != data.delay.GOALQTY.toLocaleString() + "本") {
-                    delaysGoalObj.innerText = data.delay.GOALQTY.toLocaleString() + "本";
+                    delaysGoalObj.innerHTML = data.delay.GOALQTY.toLocaleString() + "<span class='hon'>本</span>";
                     delaysGoalObj.classList.add("animation");
                     isChange = true;
                     setTimeout(() => {delaysGoalObj.classList.remove("animation");}, 6000); // 5000ミリ秒（5秒）
                 };
                 if (todaysResultObj.innerText != data.today.RESULTQTY.toLocaleString() + "本") {
-                    todaysResultObj.innerText = data.today.RESULTQTY.toLocaleString() + "本";
+                    todaysResultObj.innerHTML = data.today.RESULTQTY.toLocaleString() + "<span class='hon'>本</span>";
                     todaysResultObj.classList.add("animation");
                     isChange = true;
                     setTimeout(() => {todaysResultObj.classList.remove("animation");}, 6000); // 5000ミリ秒（5秒）
                 };
                 if (delaysResultObj.innerText != data.delay.RESULTQTY.toLocaleString() + "本") {
-                    delaysResultObj.innerText = data.delay.RESULTQTY.toLocaleString() + "本";
+                    delaysResultObj.innerHTML = data.delay.RESULTQTY.toLocaleString() + "<span class='hon'>本</span>";
                     delaysResultObj.classList.add("animation");
                     isChange = true;
                     setTimeout(() => {delaysResultObj.classList.remove("animation");}, 6000); // 5000ミリ秒（5秒）
                 };
                 if (todaysRemainObj.innerText != data.today.REMAINQTY   .toLocaleString() + "本") {
-                    todaysRemainObj.innerText = data.today.REMAINQTY.toLocaleString() + "本";
+                    todaysRemainObj.innerHTML = data.today.REMAINQTY.toLocaleString() + "<span class='hon'>本</span>";
                     todaysRemainObj.classList.add("animation");
                     isChange = true;
                     setTimeout(() => {todaysRemainObj.classList.remove("animation");}, 6000); // 5000ミリ秒（5秒）
                 };
                 if (delaysRemainObj.innerText != data.delay.REMAINQTY.toLocaleString() + "本") {
-                    delaysRemainObj.innerText = data.delay.REMAINQTY.toLocaleString() + "本";
+                    delaysRemainObj.innerHTML = data.delay.REMAINQTY.toLocaleString() + "<span class='hon'>本</span>";
                     delaysRemainObj.classList.add("animation");
                     isChange = true;
                     setTimeout(() => {delaysRemainObj.classList.remove("animation");}, 6000); // 5000ミリ秒（5秒）
@@ -226,20 +228,7 @@
         }, 15 * 1000);
 
 
-
-        // 画面サイズ変更イベント
-        function updateScreenSize() {
-            const width1 = window.innerWidth;
-            const width2 = Math.round(window.visualViewport.width); /* Andoroid携帯だけ小数点で入ってくる為四捨五入して整数 */
-            const width = (width1 != width2) ? `${width1}:${width2}` : `${width1}`; 
-            const height = window.innerHeight;
-            screenSizeElement.innerText = `W:${width}*H:${height}`;
-        }
-        window.addEventListener('resize', updateScreenSize); 
-
-
-
-        // スクリーンセイバー関連
+        // ４．スクリーンセイバー関連
         let screenSaverID;                  // スクリーンセイバータイマーID
         let screenSaverTime = 15 * 1000;    // 開始までの時間60秒
         let opacityID;                      // ダッシュボード画面切り替えタイマーID
@@ -312,8 +301,32 @@
         }
 
 
+        // ５．画面サイズ変更イベント
+        function updateScreenSize() {
+            const width1 = window.innerWidth;
+            const width2 = Math.round(window.visualViewport.width); /* Andoroid携帯だけ小数点で入ってくる為四捨五入して整数 */
+            const width = (width1 != width2) ? `${width1}:${width2}` : `${width1}`; 
+            const height = window.innerHeight;
+            screenSizeElement.innerText = `W:${width}*H:${height}`;
+        }
+        window.addEventListener('resize', updateScreenSize); 
 
-        // ブラウザ読み込み完了後の初期設定
+
+        // ６．過去へ移動
+        function toHistory() {
+            dashboardObj1.className = "slideout_toright";
+            setTimeout(() => {window.location.href = "/mp/tohistory";}, 100);
+        }
+
+
+        // ７．未来へ移動
+        function toFuture() {
+            dashboardObj1.className = "slideout_toleft";
+            setTimeout(() => {window.location.href = "/mp/tofuture";}, 100);
+        }
+
+
+        // ８．ブラウザ読み込み完了後の初期設定
         function SetInitialValues() {
             // ポップアップウィンドウを隠す
             popDelayObj.style.display = "none";
@@ -332,7 +345,7 @@
 
 
 
-
+        // ******************* ポップアップ関連 *************************
         // 遅れポップアップウィンドウ
         function popupDelayList() {
             fetch("/mysqlsv/dashboard/delay")
@@ -363,29 +376,6 @@
             newCell.appendChild(newText);
             if (colspan != "") newCell.setAttribute("colspan", colspan);
             if (name != "") newCell.className = name;
-        }
-
-
-
-
-
-
-
-
-
-
-
-
-        // 過去へ移動
-        function toHistory() {
-            dashboardObj1.className = "slideout_toright";
-            setTimeout(() => {window.location.href = "/mp/tohistory";}, 100);
-        }
-
-        // 未来へ移動
-        function toFuture() {
-            dashboardObj1.className = "slideout_toleft";
-            setTimeout(() => {window.location.href = "/mp/tofuture";}, 100);
         }
 
 
@@ -459,27 +449,22 @@
         // ブラウザ読み込み完了後の初期設定
         SetInitialValues();
 
+        // ******************* 非採用だがとっておくコード *************************
+        /*
+        document.getElementById("myElement").addEventListener("dblclick", function () {
+            alert("ダブルクリックされました！");
+        });
+        let lastTap = 0;
 
-
-/*
-document.getElementById("myElement").addEventListener("dblclick", function () {
-  alert("ダブルクリックされました！");
-});
-let lastTap = 0;
-
-document.getElementById("myElement").addEventListener("touchend", function (e) {
-  const currentTime = new Date().getTime();
-  const tapLength = currentTime - lastTap;
-
-  if (tapLength < 300 && tapLength > 0) {
-    alert("ダブルタップされました！");
-  }
-
-  lastTap = currentTime;
-});
-*/
-
-
+        document.getElementById("myElement").addEventListener("touchend", function (e) {
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTap;
+            if (tapLength < 300 && tapLength > 0) {
+                alert("ダブルタップされました！");
+            }
+            lastTap = currentTime;
+        });
+        */
 
     </script>
 

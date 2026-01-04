@@ -178,8 +178,8 @@ function drawChart3(labelData, data1, data2) {
                     size: remToPx(1.5),
                     weight: 'bold',
                 },
-                anchor: 'end',                      // データラベルの位置（'end' は上端）
-                align: 'end',                       // データラベルの位置（'end' は上側）
+                anchor: 'end',                      // 横棒データラベルの左右位置（'end' は上端）
+                align: 'end',                       // 横棒データラベルの上下位置（'end' は上側）
                 clip: false,                        // グラフ領域外にもラベルが描画
                 padding: { left: remToPx(1.5), },
                 formatter: function (value, context) {

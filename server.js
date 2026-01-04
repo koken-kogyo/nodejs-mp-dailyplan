@@ -445,6 +445,51 @@ app.get("/mysqlsv/dashboard/delay", async function (req, res, next) {
     }
 });
 
+// API ダッシュボード（注文データ集計情報の取得）
+app.get("/mysqlsv/dashboard/future", async function (req, res, next) {
+    try {
+        const dates = await mysqlHandler.get2WeeksMondaySaturday();
+        const result = await mysqlHandler.getDashboardFuture(dates);
+        res.status(200).json(result);
+    } catch (err) {
+        next(err);
+    }
+});
+// API ダッシュボード（注文データ工程グループ情報の取得）
+app.get("/mysqlsv/dashboard/future/:MCGCD", async function (req, res, next) {
+    try {
+        const mcgcd = req.params.MCGCD;
+        const dates = await mysqlHandler.get2WeeksMondaySaturday();
+        const result = await mysqlHandler.getDashboardFutureGCD(mcgcd, dates);
+        res.status(200).json(result);
+    } catch (err) {
+        next(err);
+    }
+});
+// API ダッシュボード（注文データ設備情報の取得）
+app.get("/mysqlsv/dashboard/future/:MCGCD/:MCCD", async function (req, res, next) {
+    try {
+        const mcgcd = req.params.MCGCD;
+        const mccd = req.params.MCCD;
+        const dates = await mysqlHandler.get2WeeksMondaySaturday();
+        const result = await mysqlHandler.getDashboardFutureQTY(mcgcd, mccd, dates);
+        res.status(200).json(result);
+    } catch (err) {
+        next(err);
+    }
+});
+// API ダッシュボード（注文データ設備情報詳細情報の取得）
+app.get("/mysqlsv/dashboard/future/popup/:MCGCD/:MCCD/:EDDT", async function (req, res, next) {
+    try {
+        const mcgcd = req.params.MCGCD;
+        const mccd = req.params.MCCD;
+        const eddt = req.params.EDDT;
+        const result = await mysqlHandler.getDashboardFuturePopup(mcgcd, mccd, eddt);
+        res.status(200).json(result);
+    } catch (err) {
+        next(err);
+    }
+});
 
 // API IREPOSVのPostgreSQLからview_report_defidの編集中ステータスの帳票IDを取得
 // （パラメータ3個：1帳票につき複数品番のパターン）
