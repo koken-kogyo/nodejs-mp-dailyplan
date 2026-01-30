@@ -1,0 +1,87 @@
+<!-- 実績入力 Popup Window -->
+<div id="jiqtyPopupWindow" class="popwin-background">
+    <div id="jiqtyPopup">
+        <div class="popwin-modalbody">
+            <div class="popwin-Title">
+                <div class="center">　　　実績入力</div>
+                <div id="jiqtyClose">閉じる</div>
+            </div>
+            <table id="jiqtyPopupTable">
+                <tr>
+                    <th>品番</th>
+                    <td id="jpopHMCD" class="popHMCD lef" colspan="3">-</td>
+                </tr>
+                <tr>
+                    <th width="80px">注文番号</th>
+                    <td width="110px" id="jpopODRNO">--</td>
+                    <th width="80px">手配状態</th>
+                    <td width="110px" id="jpopODRSTS">--</td>
+                </tr>
+                <tr>
+                    <th>注文日付</th>
+                    <td id="jpopEDDT">--</td>
+                    <th>注文数</th>
+                    <td id="jpopODRQTY">--</td>
+                </tr>
+                <tr>
+                    <th>変更前</th>
+                    <td id="jpopJIQTY">--</td>
+                    <th>実績数</th>
+                    <td><input type="number" inputmode="decimal" pattern="[0-9]*" maxlength="4" id="inputJIQTY"></td>
+                    <th style="display: none">以降実績数</th>
+                    <td id="jpopFUTUREODR" style="display: none">--</td>
+                    <td id="jpopFUTUREQTY" style="display: none">--</td>
+                </tr>
+            </table>
+            <input type="hidden" id="jpophMCCD" name="jpophmccd" value="" />
+            <input type="hidden" id="jpophTBLNO" name="jpophtblno" value="" />
+            <input type="hidden" id="jpophROW" name="jpophrow" value="" />
+            <input type="hidden" id="jpophCOL" name="jpophcol" value="" />
+            <input type="hidden" id="jpophKTSEQ" name="jpophktseq" value="" />
+            <input type="hidden" id="jpophMODE" name="jpophmode" value="" />
+            <table id="jiqtyPopupCalc">
+                <tr>
+                    <td class="calc-btn" onclick="javascript:jiw('center','center')">初</td>
+                    <td class="borderless"></td>
+                    <td class="calc-numpad" onclick="javascript:jii('7')">7</td>
+                    <td class="calc-numpad" onclick="javascript:jii('8')">8</td>
+                    <td class="calc-numpad" onclick="javascript:jii('9')">9</td>
+                    <td class="borderless"></td>
+                    <td class="calc-btn" onclick="javascript:jiequalqty()">＝</td>
+                </tr>
+                <tr>
+                    <td class="calc-btn" onclick="javascript:jiw('left','self-start')">上</td>
+                    <td class="borderless"></td>
+                    <td class="calc-numpad" onclick="javascript:jii('4')">4</td>
+                    <td class="calc-numpad" onclick="javascript:jii('5')">5</td>
+                    <td class="calc-numpad" onclick="javascript:jii('6')">6</td>
+                    <td class="borderless"></td>
+                    <td class="calc-btn" onclick="javascript:jiw('right','self-start')">上</td>
+                </tr>
+                <tr>
+                    <td class="calc-btn" onclick="javascript:jiw('left','center')">中</td>
+                    <td class="borderless"></td>
+                    <td class="calc-numpad" onclick="javascript:jii('1')">1</td>
+                    <td class="calc-numpad" onclick="javascript:jii('2')">2</td>
+                    <td class="calc-numpad" onclick="javascript:jii('3')">3</td>
+                    <td class="borderless"></td>
+                    <td class="calc-btn" onclick="javascript:jiw('right','center')">中</td>
+                </tr>
+                <tr>
+                    <td class="calc-btn" onclick="javascript:jiw('left','self-end')">下</td>
+                    <td class="borderless"></td>
+                    <td class="calc-function" onclick="javascript:jiinputBS()">BS</td>
+                    <td class="calc-numpad" onclick="javascript:jii('0')">0</td>
+                    <td class="calc-function" onclick="javascript:jiinputClear()">C</td>
+                    <td class="borderless"></td>
+                    <td class="calc-btn" onclick="javascript:jiw('right','self-end')">下</td>
+                </tr>
+            </table>
+            <table id="jiqtyPopupButtons">
+                <td id="jiqtyStart" onclick="orderStart()">作業開始</td>
+                <td id="jiqtyEntry" onclick="orderEntry()">実績登録</td>
+                <td id="jiqtyModify" onclick="orderModify()">実績訂正</td>
+            </table>
+        </div>
+    </div>
+</div>

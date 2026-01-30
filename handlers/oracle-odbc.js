@@ -19,14 +19,7 @@ const getTLOCStock = async () => {
         console.log("エラーが発生しました:", err.message);
         throw err; // 再スロー
     } finally {
-        // リソースを解放
-        if (connection) {
-            try {
-                await connection.close();
-            } catch (closeError) {
-                console.log("接続を閉じる際にエラーが発生しました: ", closeError.message);
-            }
-        }
+        connection?.close(); // リソースを解放
     }
 };
 exports.getTLOCStock = getTLOCStock;

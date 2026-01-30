@@ -1,0 +1,68 @@
+<!-- 仕掛り在庫訂正 Popup Window -->
+<div id="zaiqtyPopupWindow" class="popwin-background">
+    <div id="zaiqtyPopup">
+        <div class="popwin-modalbody">
+            <div class="popwin-Title">
+                <div class="center">　　　仕掛り在庫訂正</div>
+                <div id="zaiqtyClose">閉じる</div>
+            </div>
+            <table id="zaiqtyPopupTable">
+                <tr>
+                    <th>品番</th>
+                    <td id="popHMCD" class="popHMCD lef" colspan="3">-</td>
+                </tr>
+                <tr>
+                    <th width="80px">変更前</th>
+                    <td width="80px" id="popZAIQTY">--</td>
+                    <th width="80px">訂正数</th>
+                    <td width="130px"><input type="number" inputmode="decimal" pattern="[0-9]*" maxlength="6" id="inputZAIQTY"></td>
+                </tr>
+            </table>
+            <input type="hidden" id="popMCCD" name="popmccd" value="" />
+            <input type="hidden" id="popTBLNO" name="poptblno" value="" />
+            <input type="hidden" id="popROW" name="poprow" value="" />
+            <input type="hidden" id="popCOL" name="popcol" value="" />
+            <table id="zaiqtyPopupCalc">
+                <tr>
+                    <td class="calc-btn" onclick="javascript:w('center','center')">初</td>
+                    <td class="borderless"></td>
+                    <td class="calc-numpad" onclick="javascript:i('7')">7</td>
+                    <td class="calc-numpad" onclick="javascript:i('8')">8</td>
+                    <td class="calc-numpad" onclick="javascript:i('9')">9</td>
+                    <td class="borderless"></td>
+                    <td class="borderless"></td>
+                </tr>
+                <tr>
+                    <td class="calc-btn" onclick="javascript:w('left','self-start')">上</td>
+                    <td class="borderless"></td>
+                    <td class="calc-numpad" onclick="javascript:i('4')">4</td>
+                    <td class="calc-numpad" onclick="javascript:i('5')">5</td>
+                    <td class="calc-numpad" onclick="javascript:i('6')">6</td>
+                    <td class="borderless"></td>
+                    <td class="calc-btn" onclick="javascript:w('right','self-start')">上</td>
+                </tr>
+                <tr>
+                    <td class="calc-btn" onclick="javascript:w('left','center')">中</td>
+                    <td class="borderless"></td>
+                    <td class="calc-numpad" onclick="javascript:i('1')">1</td>
+                    <td class="calc-numpad" onclick="javascript:i('2')">2</td>
+                    <td class="calc-numpad" onclick="javascript:i('3')">3</td>
+                    <td class="borderless"></td>
+                    <td class="calc-btn" onclick="javascript:w('right','center')">中</td>
+                </tr>
+                <tr>
+                    <td class="calc-btn" onclick="javascript:w('left','self-end')">下</td>
+                    <td class="borderless"></td>
+                    <td class="calc-function" onclick="javascript:inputBS()">BS</td>
+                    <td class="calc-numpad" onclick="javascript:i('0')">0</td>
+                    <td class="calc-function" onclick="javascript:inputClear()">C</td>
+                    <td class="borderless"></td>
+                    <td class="calc-btn" onclick="javascript:w('right','self-end')">下</td>
+                </tr>
+            </table>
+            <table id="zaiqtyPopupButtons">
+                <td id="zaiqtyModify" onclick="zaikoModify()">在庫訂正</td>
+            </table>
+        </div>
+    </div>
+</div>

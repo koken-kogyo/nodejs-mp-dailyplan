@@ -64,6 +64,112 @@ app.get("/mp", async (req, res) => {
     }
 });
 
+
+
+// 手配一覧
+app.get("/mp/order/:mcgcd", async (req, res, next) => {
+    const mcgcd = req.params.mcgcd.toUpperCase();
+    req.session.nextaddr = `/mp/order/${mcgcd}`;
+    if (!loginCheck(req, res)) return;
+    req.session.mcgcd = mcgcd;
+
+    // バインド変数 に 3BP(先頭数値) を入れると Promise.all が効かなくなるので個別実行に戻す
+    const mccds = await mysqlHandler.getMCCDs(mcgcd);
+    const ymds = await mysqlHandler.getYMDOrders();
+
+    // 手配情報取得
+    const kd8450 = await mysqlHandler.getKD8450Orders(mcgcd, mccds, ymds);
+
+        // タナコンサーバー接続確認
+        const socket = new net.Socket();
+        socket.setTimeout(3000); // タイムアウト時間を設定（ミリ秒）
+        socket.connect(oracleODBCHandler.PORT, oracleODBCHandler.HOST, async () => {
+            socket.end(); // 接続を閉じる
+
+            // タナコン在庫情報取得
+            try
+            {
+                const tioitem = await oracleODBCHandler.getTLOCStock();
+                const kd8450new = await oracleODBCHandler.setTLOCStock(kd8450, tioitem); // 手配情報にタナコン在庫情報をセット
+                // 手配一覧の表示
+                res.render("order-information.ejs", {req, ymds, mcgcd, mccds, kd8450: kd8450new});
+            } catch (e) {
+                const err = {"message" : "タナコンデータベースへの接続失敗: " + e.message};
+                res.render("order-information.ejs", {req, ymds, mcgcd, mccds, kd8450, err});
+            }
+
+        });
+        socket.on('error', (e) => {
+            const err = {"message" : "タナコンサーバーへの接続失敗: " + e.message};
+            // 手配一覧の表示
+            res.render("order-information.ejs", {req, ymds, mcgcd, mccds, kd8450, err});
+        });
+        socket.on('timeout', () => {
+            const err = {"message" : "タナコンサーバー接続タイムアウト"};
+            socket.destroy(); // タイムアウト時にソケットを破棄
+            // 手配一覧の表示
+            res.render("order-information.ejs", {req, ymds, mcgcd, mccds, kd8450, err});
+        });
+
+});
+
+
+
+// 高精度な処理時間計測
+/*
+const start = performance.now();
+const end = performance.now();
+console.log(`全体処理時間: ${(end - start).toFixed(3)} ms`);
+*/
+
+// 内示一覧
+app.get("/mp/plan/:mcgcd", async (req, res, next) => {
+    const mcgcd = req.params.mcgcd.toUpperCase();
+    req.session.nextaddr = `/mp/plan/${mcgcd}`;
+    if (!loginCheck(req, res)) return;
+    req.session.mcgcd = mcgcd;
+    Promise.all([mysqlHandler.getMCCDs(mcgcd), mysqlHandler.getYMDPlans()])
+    .then( async ([mccds, ymds]) => {
+
+        // 内示情報取得
+        const kd8440 = await mysqlHandler.getKD8440Plans(mcgcd, mccds, ymds);
+
+        // タナコンサーバー接続確認
+        const socket = new net.Socket();
+        socket.setTimeout(3000); // タイムアウト時間を設定（ミリ秒）
+        socket.connect(oracleODBCHandler.PORT, oracleODBCHandler.HOST, async () => {
+            socket.end(); // 接続を閉じる
+
+            // タナコン在庫情報取得
+            try
+            {
+                const tioitem = await oracleODBCHandler.getTLOCStock();
+                const kd8440new = oracleODBCHandler.setTLOCStock(kd8440, tioitem); // 手配情報にタナコン在庫情報をセット
+                // 内示一覧の表示
+                res.render("plan-order.ejs", {req, ymds, mcgcd, mccds, kd8440: kd8440new});
+            } catch (e) {
+                const err = {"message" : "タナコンデータベースへの接続失敗: " + e.message};
+                res.render("plan-order.ejs", {req, ymds, mcgcd, mccds, kd8440, err});
+            }
+    
+        });
+        socket.on('error', (e) => {
+            const err = {"message" : "タナコンサーバーへの接続失敗: " + e.message};
+            res.render("plan-order.ejs", {req, ymds, mcgcd, mccds, kd8440, err});
+        });
+        socket.on('timeout', () => {
+            const err = {"message" : "タナコンサーバー接続タイムアウト"};
+            socket.destroy(); // タイムアウト時にソケットを破棄
+            // 内示一覧の表示
+            res.render("plan-order.ejs", {req, ymds, mcgcd, mccds, kd8440, err});
+        });
+    }).catch((err) => {
+        next(err);
+    });
+});
+
+
+
 // ダッシュボード
 app.get("/mp/dashboard", async (req, res, next) => {
     try {
@@ -123,102 +229,6 @@ app.get("/mp/tohistory", async (req, res) => {
 app.get("/mp/tofuture", async (req, res) => {
     req.session.data = { screen: "fromdashboard" };
     res.redirect("/mp/dashboard/future");
-});
-
-
-// 手配一覧
-app.get("/mp/order/:mcgcd", async (req, res, next) => {
-    const mcgcd = req.params.mcgcd.toUpperCase();
-    req.session.nextaddr = `/mp/order/${mcgcd}`;
-    if (!loginCheck(req, res)) return;
-    req.session.mcgcd = mcgcd;
-
-    // バインド変数 に 3BP(先頭数値) を入れると Promise.all が効かなくなるので個別実行に戻す
-    const mccds = await mysqlHandler.getMCCDs(mcgcd);
-    const ymds = await mysqlHandler.getYMDOrders();
-
-    // 手配情報取得
-    const kd8450 = await mysqlHandler.getKD8450Orders(mcgcd, mccds, ymds);
-
-        // タナコンサーバー接続確認
-        const socket = new net.Socket();
-        socket.setTimeout(3000); // タイムアウト時間を設定（ミリ秒）
-        socket.connect(oracleODBCHandler.PORT, oracleODBCHandler.HOST, async () => {
-            socket.end(); // 接続を閉じる
-
-            // タナコン在庫情報取得
-            try
-            {
-                const tioitem = await oracleODBCHandler.getTLOCStock();
-                const kd8450new = await oracleODBCHandler.setTLOCStock(kd8450, tioitem); // 手配情報にタナコン在庫情報をセット
-                // 手配一覧の表示
-                res.render("order-information.ejs", {req, ymds, mcgcd, mccds, kd8450: kd8450new});
-            } catch (e) {
-                const err = {"message" : "タナコンデータベースへの接続失敗: " + e.message};
-                res.render("order-information.ejs", {req, ymds, mcgcd, mccds, kd8450, err});
-            }
-
-        });
-        socket.on('error', (e) => {
-            const err = {"message" : "タナコンサーバーへの接続失敗: " + e.message};
-            // 手配一覧の表示
-            res.render("order-information.ejs", {req, ymds, mcgcd, mccds, kd8450, err});
-        });
-        socket.on('timeout', () => {
-            const err = {"message" : "タナコンサーバー接続タイムアウト"};
-            socket.destroy(); // タイムアウト時にソケットを破棄
-            // 手配一覧の表示
-            res.render("order-information.ejs", {req, ymds, mcgcd, mccds, kd8450, err});
-        });
-
-});
-
-
-
-// 内示一覧
-app.get("/mp/plan/:mcgcd", async (req, res, next) => {
-    const mcgcd = req.params.mcgcd.toUpperCase();
-    req.session.nextaddr = `/mp/plan/${mcgcd}`;
-    if (!loginCheck(req, res)) return;
-    req.session.mcgcd = mcgcd;
-    Promise.all([mysqlHandler.getMCCDs(mcgcd), mysqlHandler.getYMDPlans()])
-    .then( async ([mccds, ymds]) => {
-
-        // 内示情報取得
-        const kd8440 = await mysqlHandler.getKD8440Plans(mcgcd, mccds, ymds);
-
-        // タナコンサーバー接続確認
-        const socket = new net.Socket();
-        socket.setTimeout(3000); // タイムアウト時間を設定（ミリ秒）
-        socket.connect(oracleODBCHandler.PORT, oracleODBCHandler.HOST, async () => {
-            socket.end(); // 接続を閉じる
-
-            // タナコン在庫情報取得
-            try
-            {
-                const tioitem = await oracleODBCHandler.getTLOCStock();
-                const kd8440new = oracleODBCHandler.setTLOCStock(kd8440, tioitem); // 手配情報にタナコン在庫情報をセット
-                // 内示一覧の表示
-                res.render("plan-order.ejs", {req, ymds, mcgcd, mccds, kd8440: kd8440new});
-            } catch (e) {
-                const err = {"message" : "タナコンデータベースへの接続失敗: " + e.message};
-                res.render("plan-order.ejs", {req, ymds, mcgcd, mccds, kd8440, err});
-            }
-    
-        });
-        socket.on('error', (e) => {
-            const err = {"message" : "タナコンサーバーへの接続失敗: " + e.message};
-            res.render("plan-order.ejs", {req, ymds, mcgcd, mccds, kd8440, err});
-        });
-        socket.on('timeout', () => {
-            const err = {"message" : "タナコンサーバー接続タイムアウト"};
-            socket.destroy(); // タイムアウト時にソケットを破棄
-            // 内示一覧の表示
-            res.render("plan-order.ejs", {req, ymds, mcgcd, mccds, kd8440, err});
-        });
-    }).catch((err) => {
-        next(err);
-    });
 });
 
 
@@ -315,27 +325,45 @@ app.get("/ireporegist/sw/:id/:args", async function (req, res, next) {
     }
 });
 
+// チェックシートから実績登録
+// https://pc090n:53030/ireporegist2/MC/21343/V1311-62551-2:17:20:
+app.get("/ireporegist2/:mcglabel/:dandori/:args", async function (req, res, next) {
+    try {
+        const userid = req.session.userid ?? 'DEBUG';
+        const mcglabel = req.params.mcglabel;
+        const dandori = req.params.dandori;
+        const args = req.params.args;
+        const hmcd = args.split(":")[0];
+        const procqty = Number(args.split(":")[1]); // 加工数
+        let jiqty = 0;
+        if (!args.split(":")[2]) {
+            jiqty = procqty;                        // 実績数がnullまたは空文字の場合は実績数＝加工数
+        } else {
+            jiqty = Number(args.split(":")[2]);     // 実績数
+        }
+
+        //　i-Reporter登録内容をデバッグログに記録
+        const logger = log4js.getLogger();
+        logger.debug(`/ireporegist2/${mcglabel}/${dandori}/${hmcd}:${procqty}:${jiqty}:`);
+        
+        // チェックシートからの実績登録処理
+        const results = await mysqlHandler.irepoRegist_2(userid, mcglabel, dandori, hmcd, procqty, jiqty);
+
+        // 登録完了画面にしダイレクトして終了
+        res.redirect(`/mp/confirm`);
+
+    }
+    catch (err) {
+        next(err);
+    }
+});
+
 // 登録後の確認画面
 app.get("/mp/confirm", async (req, res, next) => {
     res.render("confirm.ejs");
 });
 
-// API コード票マスタから帳票定義ID、品番のクラスター番号を取得
-// i-Repoマニュアル：データー連携テーブル機能を参照の事
-// 保留がない場合は0、保留がある場合は最新の帳票定義IDを取得
-// テストスタブ
-// curl http://pc090n:53030/mysqlsv/getDefid/RD431-51322-1:TN:1:
-app.get("/mysqlsv/getDefid/:args", async (req, res, next) => {
-    const args = req.params.args;
-    const hmcd = args.split(":")[0];
-    const mcgcd = args.split(":")[1];
-    const mccd = args.split(":")[2];
-    const km8430 = await mysqlHandler.getReportDefID(hmcd, mcgcd, mccd);
-    res.status(200).json(km8430[0]);
-});
-
 // 品番,設備,手配日付から、注文番号[ODRNO],手配状態[ODRSTS],実績数[JIQTY],未来の実績数[FUTUREQTY],過去の実績残数[ZANQTY]を取得するAPI
-// curl http://pc090n:53030/mysqlsv/getDefid/RD431-51322-1:TN:1:
 app.get("/mysqlsv/getOdrno/:args", async (req, res, next) => {
     const args = req.params.args;
     const hmcd = args.split(":")[0];
@@ -345,6 +373,17 @@ app.get("/mysqlsv/getOdrno/:args", async (req, res, next) => {
     const stdt = args.split(":")[4];
     const kd8450 = await mysqlHandler.getOdrno(hmcd, mcgcd, mccd, eddt, stdt);
     res.status(200).json(kd8450);
+});
+// 品番,設備,手配日付から、注文番号[PLNNO],手配状態[ODRSTS],実績数[JIQTY],未来の実績数[FUTUREQTY],過去の実績残数[ZANQTY]を取得するAPI
+app.get("/mysqlsv/getPlnno/:args", async (req, res, next) => {
+    const args = req.params.args;
+    const hmcd = args.split(":")[0];
+    const mcgcd = args.split(":")[1];
+    const mccd = args.split(":")[2];
+    const eddt = args.split(":")[3];
+    const stdt = args.split(":")[4];
+    const kd8440 = await mysqlHandler.getPlnno(hmcd, mcgcd, mccd, eddt, stdt);
+    res.status(200).json(kd8440);
 });
 
 // API 作業開始
@@ -361,21 +400,24 @@ app.get("/mysqlsv/startOrder/:args", async function (req, res, next) {
     }
 });
 
-// API 実績登録
-app.get("/mysqlsv/finishOrder/:args", async function (req, res, next) {
-    const userid = req.session.userid;
+// API 実績登録（手配指定の手配完成予定日以降を更新）
+app.get("/mysqlsv/jissekiRegist/:args", async function (req, res, next) {
+    const userid = req.session.userid ?? 'DEBUG';
     const args = req.params.args;
     const odrno = args.split(":")[0];
-    const mcgcd = args.split(":")[1];
-    const mccd = args.split(":")[2];
-    const jiqty = Number(args.split(":")[3]);
+    const hmcd = args.split(":")[1];
+    const mcgcd = args.split(":")[2];
+    const mccd = args.split(":")[3];
+    const jiqty = Number(args.split(":")[4]);
+    const mode = args.split(":")[5];
 
     //　登録内容をデバッグログに記録
     const logger = log4js.getLogger();
-    logger.debug(`/mysqlsv/finishOrder/${args}`);
+    logger.debug(`/mysqlsv/jissekiRegist/${args}`);
 
     try {
-        const updateresult = await mysqlHandler.finishOrder(odrno, mcgcd, mccd, jiqty, userid);
+        // ポップアップウィンドウからの実績登録（手配内示共通）
+        const updateresult = await mysqlHandler.apiRegist_2(odrno, hmcd, mcgcd, mccd, jiqty, mode, userid);
         res.status(200).json(updateresult);
     } catch (err) {
         next(err);
@@ -387,17 +429,19 @@ app.get("/mysqlsv/modifyOrder/:args", async function (req, res, next) {
     const userid = req.session.userid;
     const args = req.params.args;
     const odrno = args.split(":")[0];
-    const mcgcd = args.split(":")[1];
-    const mccd = args.split(":")[2];
-    const preqty = Number(args.split(":")[3]);
-    const modqty = Number(args.split(":")[4]);
+    const hmcd = args.split(":")[1];
+    const mcgcd = args.split(":")[2];
+    const mccd = args.split(":")[3];
+    const preqty = Number(args.split(":")[4]);
+    const modqty = Number(args.split(":")[5]);
+    const mode = args.split(":")[6];
 
     //　訂正内容をデバッグログに記録
     const logger = log4js.getLogger();
     logger.debug(`/mysqlsv/modifyOrder/${args}`);
 
     try {
-        const updateresult = await mysqlHandler.modifyOrder(odrno, mcgcd, mccd, preqty, modqty, userid);
+        const updateresult = await mysqlHandler.apiModify_2(odrno, hmcd, mcgcd, mccd, preqty, modqty, mode, userid);
         res.status(200).json(updateresult);
     } catch (err) {
         next(err);
@@ -490,34 +534,75 @@ app.get("/mysqlsv/dashboard/future/popup/:MCGCD/:MCCD/:EDDT", async function (re
         next(err);
     }
 });
+// API コード票マスタから帳票定義ID、品番のクラスター番号を取得
+// i-Repoマニュアル：データー連携テーブル機能を参照の事
+// 保留がない場合は0、保留がある場合は最新の帳票定義IDを取得
+// テストスタブ
+// curl http://pc090n:53030/mysqlsv/getDefid/RD431-51322-1:TN:1:
+app.get("/mysqlsv/getDefid/:args", async (req, res, next) => {
+    const args = req.params.args;
+    const hmcd = args.split(":")[0];
+    const mcgcd = args.split(":")[1];
+    const mccd = args.split(":")[2];
+    const km8430 = await mysqlHandler.getReportDefID(hmcd, mcgcd, mccd);
+    res.status(200).json(km8430[0]);
+});
+
 
 // API IREPOSVのPostgreSQLからview_report_defidの編集中ステータスの帳票IDを取得
-// （パラメータ3個：1帳票につき複数品番のパターン）
-// （パラメータ1個：1帳票のパターン）
+// （パラメータ3個：1帳票につき複数品番のパターン・・・SWの品番入力欄等）
+// （パラメータ1個：1帳票につき1品番のパターン（共通部品も1帳票））
 // i-Repoマニュアル：データー連携テーブル機能を参照の事
 // 保留がない場合は0、保留がある場合は最新の帳票定義IDを取得
 // テストスタブ
 // curl http://pc090n:53030/ireposv/getHoldid/1509:RD479-63171-1:16:
 app.get("/ireposv/getHoldid/:args", async (req, res, next) => {
     const args = req.params.args;
-    // return res.status(200).json(0);//NabeV2
-    if (args.split(":").length == 1) {
-        const defid = args.split(":")[0];
-        const viewreport = await pgHandler.getHoldReportIDSingle(defid);
-        res.status(200).json(viewreport.rows[0].repid);
-    } else {
-        const defid = args.split(":")[0];
-        const hmcd = args.split(":")[1];
-        const clusterno = args.split(":")[2];
-        const viewreport = await pgHandler.getHoldReportID(defid, hmcd, clusterno);
-        res.status(200).json(viewreport.rows[0].repid);
-    }
+    // IREPOSVサーバー接続確認
+    const socket = new net.Socket();
+    socket.setTimeout(3000); // タイムアウト時間を設定（ミリ秒）
+    socket.connect(pgHandler.PORT, pgHandler.HOST, async () => {
+        socket.end(); // 接続を閉じる
+
+        if (args.split(":").length == 1) {
+            const defid = args.split(":")[0];
+            const viewreport = await pgHandler.getHoldReportIDSingle(defid);
+            res.status(200).json(viewreport.rows[0].repid);
+        } else {
+            const defid = args.split(":")[0];
+            const hmcd = args.split(":")[1];
+            const clusterno = args.split(":")[2];
+            const viewreport = await pgHandler.getHoldReportID(defid, hmcd, clusterno);
+            res.status(200).json(viewreport.rows[0].repid);
+        }
+    });
+    socket.on('error', (e) => {
+        res.status(500).send({errormessage: "IREPOSVへの接続に失敗しました"});
+    });
+    socket.on('timeout', () => {
+        socket.destroy(); // タイムアウト時にソケットを破棄
+        res.status(500).send({errormessage: "IREPOSV接続タイムアウト"});
+    });
 });
 // 帳票一覧取得API
 app.get("/ireposv/getViewReport/:defid", async (req, res, next) => {
     const defid = req.params.defid;
-    const viewreport = await pgHandler.getViewReport(defid);
-    res.status(200).json(viewreport);
+    // IREPOSVサーバー接続確認
+    const socket = new net.Socket();
+    socket.setTimeout(3000); // タイムアウト時間を設定（ミリ秒）
+    socket.connect(pgHandler.PORT, pgHandler.HOST, async () => {
+        socket.end(); // 接続を閉じる
+
+        const viewreport = await pgHandler.getViewReport(defid);
+        res.status(200).json(viewreport);
+    });
+    socket.on('error', (e) => {
+        res.status(500).send({errormessage: "IREPOSVへの接続に失敗しました．"});
+    });
+    socket.on('timeout', () => {
+        socket.destroy(); // タイムアウト時にソケットを破棄
+        res.status(500).send({errormessage: "IREPOSV接続タイムアウト"});
+    });
 });
 
 app.get("/error/:msg", async (req, res, next) => {

@@ -1,0 +1,31 @@
+<!-- i-Reporter選択 Popup Window width: 700px -->
+<div id="irepoPopupWindow" class="popwin-background">
+    <div id="irepoPopup">
+        <div class="popwin-modalbody">
+            <div class="popwin-Title">
+                <div class="center">　　　i-Reporter 帳票選択</div>
+                <div id="irepoClose" class="popwin-close">閉じる</div>
+            </div>
+            <table id="irepoPopupTitle">
+                <tr>
+                    <th height="60px" width="60px">品番</th>
+                    <td id="ipopHMCD" class="popHMCD lef" width="300px">-</td>
+                    <td tabindex="0" id="newReport" colspan="3">新規チェックシート記入</td>
+                </tr>
+            </table>
+            <table id="irepoPopupTable">
+                <tr>
+                    <th id="oldReport" colspan="5" class="lef">Javascript可変メッセージ</th>
+                </tr>
+                <tr>
+                    <th width="30px">ID</th>
+                    <th width="200px">帳票名称</th>
+                    <th width="50px">状態</th>
+                    <th width="70px">登録日</th>
+                    <th width="70px">更新日</th>
+                </tr>
+            </table>
+            <input type="hidden" id="ipopDEFID" name="ipopdefid" value="" />
+        </div>
+    </div>
+</div>

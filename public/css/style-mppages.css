@@ -293,6 +293,16 @@ a {
 #irepoPopupTable {
     margin: 10px;
 }
+/* ポップアップ画面は非表示にしてからスタート */
+#zaiqtyPopupWindow {
+    display: none;
+}
+#jiqtyPopupWindow {
+    display: none;
+}
+#irepoPopupWindow {
+    display: none;
+}
 
 /* === Details ================================================================ */
 #details {
