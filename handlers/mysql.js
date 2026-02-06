@@ -940,103 +940,70 @@ exports.updateKD8460 = async (hmcd, mcgcd, mccd, jiqty, operator) => {
     }
 };
 
-// 当日ダッシュボード データ取得 [0]当日、[1]遅延
+// 当日ダッシュボード データ取得
 exports.getDashboardToday = async () => {
     // ダッシュボード
     const sql1 = 
-        "select " + 
-        "count(*) as GOAL " + 
-        ",count(if(new.ODRSTS='4', 1, NULL)) as RESULT " + 
-        ",count(if(new.ODRSTS<>'4', 1, NULL)) as REMAIN " + 
-        ",cast(ifnull(sum(old.ODRQTY-old.JIQTY),0) as signed) as GOALQTY " + 
-        ",cast(ifnull(sum(if(new.ODRSTS='4',old.ODRQTY-old.JIQTY,0)),0) as signed) as RESULTQTY " + 
-        ",cast(ifnull(sum(if(new.ODRSTS<>'4',old.ODRQTY-old.JIQTY,0)),0) as signed) as REMAINQTY " + 
-        "from kd8430 new, kd8490 old " + 
-        "where new.ODRNO = old.ODRNO and new.ODRSTS<>'9' and old.TARGETDT=curdate() " + 
-        "and old.EDDT=curdate() " + 
-        "union all " + 
-        "select " + 
-        "count(*) as GOAL " +
-        ",count(if(new.ODRSTS='4', 1, NULL)) as RESULT " +
-        ",count(if(new.ODRSTS<>'4', 1, NULL)) as REMAIN " + 
-        ",cast(ifnull(sum(old.ODRQTY-old.JIQTY),0) as signed) as GOALQTY " + 
-        ",cast(ifnull(sum(if(new.ODRSTS='4',old.ODRQTY-old.JIQTY,0)),0) as signed) as RESULTQTY " + 
-        ",cast(ifnull(sum(if(new.ODRSTS<>'4',old.ODRQTY-old.JIQTY,0)),0) as signed) as REMAINQTY " + 
-        "from kd8430 new, kd8490 old " + 
-        "where new.ODRNO = old.ODRNO and new.ODRSTS<>'9' and old.TARGETDT=curdate()" + 
-        "and old.EDDT<curdate() " + 
-        "union all " + 
-        "select 0 as GOAL, 0 as RESULT, 0 as REMAIN, 0 as GOALQTY, 0 as RESULTQTY, 0 as REMAINQTY "   // 遅れレコードが存在しない場合はここを参照させる
+        "select a.* " +
+            ", ifnull(遅れ目標, 0) as 遅れ目標 " +
+            ", ifnull(遅れ実績, 0) as 遅れ実績 " +
+            ", ifnull(遅れ残り, 0) as 遅れ残り " +
+        "from ( " +
+            "select sum(ODRQTY) as 当日目標, sum(JIQTY) as 当日実績, sum(ODRQTY)-sum(JIQTY) as 当日残り " +
+            "from kd8450 where EDDT=curdate() and " +
+            "ODRSTS<>'9' and MCGCD<>'EX' " +
+        ") a, ( " +
+            "select sum(a.ODRQTY-a.JIQTY) as 遅れ目標, sum((a.ODRQTY-a.JIQTY)-(b.ODRQTY-b.JIQTY)) as 遅れ実績, sum(b.ODRQTY-b.JIQTY) as 遅れ残り " +
+            "from kd8490 a, kd8450 b where a.ODRNO=b.ODRNO and " +
+            "a.TARGETDT=curdate() and a.EDDT<curdate() and " +
+            "b.ODRSTS<>'9' and b.MCGCD<>'EX' " +
+        ") b "
     ;
     const summary = await getDatabase(sql1);
-    // chart2 実績数(実績テーブルがMPシステムには存在しないので更新日付で無理やり取得)・・・要改善検討事項
-    const sql2 = "select cast(MPUPDTDT as date) as label, sum(ODRQTY) as data1 " + 
-        "from kd8430 " + 
-        "where ODRSTS = '4' and " + 
-        "cast(MPUPDTDT as date) between date_add(CURDATE(), interval -20 day) and CURDATE() " + 
-        "group by cast(MPUPDTDT as date) order by cast(MPUPDTDT as date)"
-    ;
-    const chart2Jisseki = await getDatabase(sql2);
-    // chart2 遅れ点数
-    const sql3 = "select cast(TARGETDT as date) as label, count(*) as data2 " + 
-        "from kd8490 " + 
-        "where TARGETDT between date_add(CURDATE(), interval -20 day) and CURDATE()" + 
-        "and EDDT<TARGETDT " + 
-        "group by TARGETDT order by TARGETDT"
-    ;
-    const chart2Okure = await getDatabase(sql3);
 
-    /* Degub用
-    summary[0].GOALQTY = 2500;
-    summary[0].RESULTQTY = 500;
-    summary[0].REMAINQTY = 2000;
-    summary[1].GOALQTY = 1000;
-    summary[1].RESULTQTY = 800;
-    summary[1].REMAINQTY = 200;
-    */
-    const objToday = {
-        today: summary[0],
-        delay: summary[1],
-        chart2: {
-            labels: [],
-            data1: [],
-            data2: [],
-        },
-        chart3: {
-            labels: [],
-            data1: [],
-            data2: [],
-        },
-    };
-    for await (row of chart2Jisseki) {
-        objToday.chart2.labels.push(row.label);
-        objToday.chart2.data1.push(Number(row.data1));
-        const result = chart2Okure.find(d => d.label === row.label);
-        if (!result) {
-            objToday.chart2.data2.push(0);
-        } else {
-            objToday.chart2.data2.push(Number(result.data2));
-        }
-    }
+    // chart2 実績数と遅れ点数 /* MySQL には FULL OUTER JOIN がないのでunionで2回実行し左右を重複なしで結合 */
+    const sql2 = 
+        "with 実績 as " +
+        "(" +
+            "select cast(JIDT as date) as 日付, sum(JIQTY) as qty " +
+            "from kd8480 " +
+            "where " +
+            "cast(JIDT as date) between date_add(CURDATE(), interval -20 day) and CURDATE() " +
+            "group by cast(JIDT as date) order by cast(JIDT as date)" +
+        ")," +
+        "遅れ as " +
+        "(" +
+            "select cast(TARGETDT as date) as 日付, count(*) as qty  " +
+            "from kd8490 " +
+            "where TARGETDT between date_add(CURDATE(), interval -20 day) and CURDATE() " +
+            "and EDDT<TARGETDT  " +
+            "group by TARGETDT order by TARGETDT" +
+        ") " +
+        "select 実績.日付, ifnull(実績.qty,0) 実績数, ifnull(遅れ.qty,0) as 遅れ from 実績 left join 遅れ on 遅れ.日付=実績.日付 " +
+        "union " +
+        "select 遅れ.日付, ifnull(実績.qty,0) 実績数, ifnull(遅れ.qty,0) as 遅れ from 遅れ left join 実績 on 遅れ.日付=実績.日付 " +
+        "order by 日付"
+    ;
+    const chart2Result = await getDatabase(sql2);
+
     // chart3 進捗状況
-    const chart3Sql = 
+    const sql3 = 
         "select m.KTNKBN, a.MCGCD" +
         ", sum(if(a.ODRSTS in ('4'), 1, 0)) 完了点数" +
         ", count(*) 合計点数 " +
+		", floor((sum(if(a.ODRSTS in ('4'), 1, 0))) / (count(*)) * 100) as 進捗率 " +
         "from " +
         "(" +
-
             "select MCGCD, ODRSTS from kd8450 where ODRSTS !=  '9' " +
             "and EDDT between " +
-                "DATE_SUB(DATE_ADD(CURDATE(), INTERVAL 7 DAY), INTERVAL WEEKDAY(CURDATE()) DAY) and " + 
+                "DATE_SUB(DATE_ADD(CURDATE(), INTERVAL 7 DAY), INTERVAL WEEKDAY(CURDATE()) DAY) and " +
                 "date_add(date_sub(date_add(CURDATE(), interval 7 day), interval weekday(CURDATE()) day), interval 5 day) " +  // 来週の月曜日から土曜日
             "and MCGCD in ('SW') " +
-
             "union all " +
             "select if(MCGCD='3BP','MC',if(MCGCD='ON','MC',MCGCD)) MCGCD, ODRSTS " +
             "from kd8450 where ODRSTS !=  '9' " +
-            "and EDDT between " + 
-                "DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY) and " + 
+            "and EDDT between " +
+                "DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY) and " +
                 "DATE_ADD(DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY), INTERVAL 5 DAY) " +  // 今週の月曜日から土曜日
             "and MCGCD not in ('EX','G','D','MD','TP','SW')" +
         ") a, km8420 m " +
@@ -1044,21 +1011,28 @@ exports.getDashboardToday = async () => {
         "group by m.KTNKBN, m.MCGSEQ, a.MCGCD " +
         "order by m.KTNKBN, m.MCGSEQ, a.MCGCD"
     ;
-    const chart3Result = await getDatabase(chart3Sql);
-    // 必要に応じて別の配列に加工
-    objToday.chart3.labels = chart3Result.map(row => row.MCGCD);
-    for await (row of chart3Result) {
-        objToday.chart3.data1.push(Math.floor((Number(row.完了点数) / Number(row.合計点数)) * 100)); // パーセンテージ
-        objToday.chart3.data2.push(row.KTNKBN);
-    }
-        /*
-                "labels": ['11/6', '11/7', '11/10', '11/11', '11/12', '11/13', '11/14'],
-                "data1": [5017, 7652, 6995, 8592, 5419, 5069, 5060],
-                "data2": [30, 75, 44, 0, 0, 20, 0],
-                jsonToday.chart2.labels.push('11/19');
-                jsonToday.chart2.data1.push(7777);
-                jsonToday.chart2.data2.push(55);
-        */
+    const chart3Result = await getDatabase(sql3);
+
+    // 返却用配列の作成
+    summary[0].遅れ目標 = Number(summary[0].遅れ目標);
+    summary[0].遅れ実績 = Number(summary[0].遅れ実績);
+    summary[0].遅れ残り = Number(summary[0].遅れ残り);
+    summary[0].当日目標 = Number(summary[0].当日目標);
+    summary[0].当日実績 = Number(summary[0].当日実績);
+    summary[0].当日残り = Number(summary[0].当日残り);
+    const objToday = {
+        summary: summary[0],
+        chart2: {
+            labels: chart2Result.map(row => row.日付),
+            data1:  chart2Result.map(row => Number(row.実績数)),
+            data2:  chart2Result.map(row => Number(row.遅れ)),
+        },
+        chart3: {
+            labels: chart3Result.map(row => row.MCGCD),
+            data1:  chart3Result.map(row => Number(row.進捗率)),
+            data2:  chart3Result.map(row => row.KTNKBN),
+        },
+    };
     return objToday;
 }
 
@@ -1274,6 +1248,7 @@ exports.irepoRegist_2 = async (userid, mcglabel, dandori, hmcd, procqty, jiqty) 
         // https://pc090n:53030/ireporegist2/SW/10841/4441983:120:120:      SW -> NC-5 -> MC-3F
         // https://pc090n:53030/ireporegist2/NC/10807/4441983:120:120:      SW -> NC-5 -> MC-3F
         // https://pc090n:53030/ireporegist2/MC/10925/4441983:60:60:        SW -> NC-5 -> MC-3F
+        // https://pc090n:53030/ireporegist2/SW/10841/RP801-63142-2:500:500:
 
         // １．更新対象の設備コードを取得（コード票品番）
         const thisequip = await getThisEquipment_2(conn, hmcd, mcglabel);
@@ -1282,20 +1257,20 @@ exports.irepoRegist_2 = async (userid, mcglabel, dandori, hmcd, procqty, jiqty) 
 
         // ２．実績テーブルに登録
         const resultRecord = await insertRecordProcess_2(conn, userid, hmcd, mcgcd, mccd, dandori, procqty, jiqty);
-        console.log("実績テーブル登録件数：" + resultRecord[0].affectedRows + "件");
+        //console.log("実績テーブル登録件数：" + resultRecord[0].affectedRows + "件");
 
         // ３．仕掛り在庫に加算
         const resultZaiko = await updateKD8460_2(conn, hmcd, mcgcd, mccd, jiqty, dandori, "IN");
 
         // ４．手配もしくは内示実績の更新
         const resultOrder = await finishOrderHMCD_2(conn, hmcd, mcgcd, mccd, jiqty, dandori);
-        if (resultOrder) console.log("手配実績更新件数：" + resultOrder.length + "件");
+        //if (resultOrder) console.log("手配実績更新件数：" + resultOrder.length + "件");
 
         // ５．前工程在庫の引き落とし
         if (thisequip.KTSEQ > 1) {
             // ５．１．前工程の設備コードを取得
             const prevequip = await getPrevEquipment_2(conn, hmcd, mcgcd, mccd);
-            console.log("前工程" + prevequip.MCGCD + "-" + prevequip.MCCD);
+            //console.log("前工程" + prevequip.MCGCD + "-" + prevequip.MCCD);
 
             // ５．２．前工程の仕掛り在庫－
             await updateKD8460_2(conn, hmcd, prevequip.MCGCD, prevequip.MCCD, jiqty, dandori, "OUT");
@@ -1569,9 +1544,9 @@ const finishOrderHMCD_2 = async (conn, hmcd, mcgcd, mccd, jiqty, dandori) => {
             );
             if (update[0].changedRows != 0) {
                 if (!result) {
-                    result = [{"EDDT": row.EDDT, "NEWSTS": "4", "NEWJIQTY": odrQty}];
+                    result = [{"TARGET": "ORDER", "EDDT": row.EDDT, "NEWSTS": "4", "NEWJIQTY": odrQty}];
                 } else {
-                    result.push({"EDDT": row.EDDT, "NEWSTS": "4", "NEWJIQTY": odrQty});
+                    result.push({"TARGET": "ORDER", "EDDT": row.EDDT, "NEWSTS": "4", "NEWJIQTY": odrQty});
                 }
                 countdownQty -= needQty;
             }
@@ -1585,9 +1560,9 @@ const finishOrderHMCD_2 = async (conn, hmcd, mcgcd, mccd, jiqty, dandori) => {
             );
             if (update[0].changedRows != 0) {
                 if (!result) {
-                    result = [{"EDDT": row.EDDT, "NEWSTS": "3", "NEWJIQTY": newjiqty}];
+                    result = [{"TARGET": "ORDER", "EDDT": row.EDDT, "NEWSTS": "3", "NEWJIQTY": newjiqty}];
                 } else {
-                    result.push({"EDDT": row.EDDT, "NEWSTS": "3", "NEWJIQTY": newjiqty});
+                    result.push({"TARGET": "ORDER", "EDDT": row.EDDT, "NEWSTS": "3", "NEWJIQTY": newjiqty});
                 }
                 countdownQty = 0;
             }
@@ -1600,11 +1575,11 @@ const finishOrderHMCD_2 = async (conn, hmcd, mcgcd, mccd, jiqty, dandori) => {
     const kmd8430 = await conn.query("select * from km8430 where HMCD=? and KT1MCGCD=? and KT1MCCD=?"
         , [hmcd, mcgcd, mccd]);
     if (countdownQty > 0 && kmd8430[0].length > 0) {
-        const ymds = await getYMDPlans(); // 内示開始日付を取得
+        const planYMDs = await getYMDPlans(); // 内示開始日付を取得
         const kd8440 = await conn.query("select PLNNO, EDDT, EDTM, ODRQTY, JIQTY from kd8440 " + 
             "where HMCD=? and EDDT>=? and ODRSTS<>'4' and ODRSTS<>'9' " + 
             "order by EDDT, EDTM"
-            , [hmcd, ymds[0]]);
+            , [hmcd, planYMDs[0]]);
         for await (row of kd8440[0]) {
             let odrQty = Number(row.ODRQTY);
             let jiQty = Number(row.JIQTY);
@@ -1618,9 +1593,9 @@ const finishOrderHMCD_2 = async (conn, hmcd, mcgcd, mccd, jiqty, dandori) => {
                 );
                 if (update[0].changedRows != 0) {
                     if (!result) {
-                        result = [{"PLNDT": row.EDDT, "NEWSTS": "4", "NEWJIQTY": odrQty}];
+                        result = [{"TARGET": "PLAN", "EDDT": row.EDDT, "NEWSTS": "4", "NEWJIQTY": odrQty}];
                     } else {
-                        result.push({"PLNDT": row.EDDT, "NEWSTS": "4", "NEWJIQTY": odrQty});
+                        result.push({"TARGET": "PLAN", "EDDT": row.EDDT, "NEWSTS": "4", "NEWJIQTY": odrQty});
                     }
                     countdownQty -= needQty;
                 }
@@ -1634,9 +1609,9 @@ const finishOrderHMCD_2 = async (conn, hmcd, mcgcd, mccd, jiqty, dandori) => {
                 );
                 if (update[0].changedRows != 0) {
                     if (!result) {
-                        result = [{"PLNDT": row.EDDT, "NEWSTS": "3", "NEWJIQTY": newjiqty}];
+                        result = [{"TARGET": "PLAN", "EDDT": row.EDDT, "NEWSTS": "3", "NEWJIQTY": newjiqty}];
                     } else {
-                        result.push({"PLNDT": row.EDDT, "NEWSTS": "3", "NEWJIQTY": newjiqty});
+                        result.push({"TARGET": "PLAN", "EDDT": row.EDDT, "NEWSTS": "3", "NEWJIQTY": newjiqty});
                     }
                     countdownQty = 0;
                 }
@@ -1650,8 +1625,9 @@ const finishOrderHMCD_2 = async (conn, hmcd, mcgcd, mccd, jiqty, dandori) => {
 
 // 手配実績更新（手配内示指定）（コネクション継続版）
 const finishOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, userid) => {
+    const orderYMDs = await getYMDOrders(); // 手配開始日付を取得
     let countdownQty = jiqty;
-    let result= null;
+    let result = null;
     if (mode == "ORDER") {
         const kd8450 = await conn.query("select ODRNO, LOTSEQ, EDDT, ODRQTY, JIQTY from kd8450 " + 
             "where HMCD=? and MCGCD=? and MCCD=? and ODRSTS<>'4' and ODRSTS<>'9' and EDDT>= " + 
@@ -1660,6 +1636,9 @@ const finishOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
             , [hmcd, mcgcd, mccd, odrno]);
         // 切削オーダーファイルをループして実績数の消込
         for await (row of kd8450[0]) {
+            let tmp = new Date(row.EDDT);
+            let formatEDDT = `${tmp.getFullYear()}-${tmp.getMonth()+1}-${tmp.getDate()}`;
+            let idx = orderYMDs.findIndex(e => e==formatEDDT);
             let odrQty = Number(row.ODRQTY);
             let jiQty = Number(row.JIQTY);
             let needQty = odrQty - jiQty;
@@ -1670,11 +1649,20 @@ const finishOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
                     "where ODRNO=? and LOTSEQ=? and MCGCD=? and MCCD=?"
                     , [userid, row.ODRNO, row.LOTSEQ, mcgcd, mccd]
                 );
+                // 同一日付同一品番で他にオーダーが存在しないかチェック
+                const kd8450other = await conn.query(
+                    "select count(*) as cnt, sum(ODRQTY) as TTLODRQTY, sum(JIQTY) as TTLJIQTY from kd8450 " + 
+                    "where HMCD=? and MCGCD=? and MCCD=? and ODRSTS<>'9' and EDDT=?"
+                    , [hmcd, mcgcd, mccd, row.EDDT]);
+                let newStatus = "4";
+                if (kd8450other[0][0].cnt > 1 && kd8450other[0][0].TTLODRQTY != kd8450other[0][0].TTLJIQTY)
+                    newStatus = "3";
+                // 割り込みここまで
                 if (update[0].changedRows != 0) {
                     if (!result) {
-                        result = [{"EDDT": row.EDDT, "NEWSTS": "4", "NEWJIQTY": odrQty}];
+                        result = [{"TARGET": "ORDER", "EDDT": formatEDDT, "NEWSTS": newStatus, "ODRQTY": odrQty, "NEWJIQTY": odrQty, "COLIDX": idx}];
                     } else {
-                        result.push({"EDDT": row.EDDT, "NEWSTS": "4", "NEWJIQTY": odrQty});
+                        result.push({"TARGET": "ORDER", "EDDT": formatEDDT, "NEWSTS": newStatus, "ODRQTY": odrQty, "NEWJIQTY": odrQty, "COLIDX": idx});
                     }
                     countdownQty -= needQty;
                 }
@@ -1688,9 +1676,9 @@ const finishOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
                 );
                 if (update[0].changedRows != 0) {
                     if (!result) {
-                        result = [{"EDDT": row.EDDT, "NEWSTS": "3", "NEWJIQTY": newjiqty}];
+                        result = [{"TARGET": "ORDER", "EDDT": formatEDDT, "NEWSTS": "3", "ODRQTY": odrQty, "NEWJIQTY": newjiqty, "COLIDX": idx}];
                     } else {
-                        result.push({"EDDT": row.EDDT, "NEWSTS": "3", "NEWJIQTY": newjiqty});
+                        result.push({"TARGET": "ORDER", "EDDT": formatEDDT, "NEWSTS": "3", "ODRQTY": odrQty, "NEWJIQTY": newjiqty, "COLIDX": idx});
                     }
                     countdownQty = 0;
                 }
@@ -1704,18 +1692,21 @@ const finishOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
     const kmd8430 = await conn.query("select * from km8430 where HMCD=? and KT1MCGCD=? and KT1MCCD=?"
         , [hmcd, mcgcd, mccd]);
     if (countdownQty > 0 && kmd8430[0].length > 0) {
-        const ymds = await getYMDPlans(); // 内示開始日付を取得
+        const planYMDs = await getYMDPlans(); // 内示開始日付を取得
         const plansql = (mode=="PLAN") ? 
             "and EDDT>=(select EDDT from kd8440 where PLNNO='" + odrno + "') " : "";
         const kd8440 = await conn.query("select PLNNO, EDDT, EDTM, ODRQTY, JIQTY from kd8440 " + 
             "where HMCD=? and EDDT>=? and ODRSTS<>'4' and ODRSTS<>'9' " + 
             plansql +
             "order by EDDT, EDTM"
-            , [hmcd, ymds[0]]);
+            , [hmcd, planYMDs[0]]);
         for await (row of kd8440[0]) {
             let odrQty = Number(row.ODRQTY);
             let jiQty = Number(row.JIQTY);
             let needQty = odrQty - jiQty;
+            let tmp = new Date(row.EDDT);
+            let formatEDDT = `${tmp.getFullYear()}-${tmp.getMonth()+1}-${tmp.getDate()}`;
+            let idx = planYMDs.findIndex(e => e==formatEDDT);
             if (countdownQty >= needQty) {
                 // odrqtyで更新 countdownQty--
                 const update = await conn.execute(
@@ -1723,11 +1714,20 @@ const finishOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
                     "where PLNNO=?"
                     , [userid, row.PLNNO]
                 );
+                // 同一日付同一品番で他に内示が存在しないかチェック
+                const kd8440other = await conn.query(
+                    "select count(*) as cnt, sum(ODRQTY) as TTLODRQTY, sum(JIQTY) as TTLJIQTY from kd8440 " + 
+                    "where HMCD=? and ODRSTS<>'9' and EDDT=?"
+                    , [hmcd, row.EDDT]);
+                let newStatus = "4";
+                if (kd8440other[0][0].cnt > 1 && kd8440other[0][0].TTLODRQTY != kd8440other[0][0].TTLJIQTY)
+                    newStatus = "3";
+                // 割り込みここまで
                 if (update[0].changedRows != 0) {
                     if (!result) {
-                        result = [{"PLNDT": row.EDDT, "NEWSTS": "4", "NEWJIQTY": odrQty}];
+                        result = [{"TARGET": "PLAN", "EDDT": formatEDDT, "NEWSTS": newStatus, "NEWJIQTY": odrQty, "COLIDX": idx}];
                     } else {
-                        result.push({"PLNDT": row.EDDT, "NEWSTS": "4", "NEWJIQTY": odrQty});
+                        result.push({"TARGET": "PLAN", "EDDT": formatEDDT, "NEWSTS": newStatus, "NEWJIQTY": odrQty, "COLIDX": idx});
                     }
                     countdownQty -= needQty;
                 }
@@ -1741,9 +1741,9 @@ const finishOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
                 );
                 if (update[0].changedRows != 0) {
                     if (!result) {
-                        result = [{"PLNDT": row.EDDT, "NEWSTS": "3", "NEWJIQTY": newjiqty}];
+                        result = [{"TARGET": "PLAN", "EDDT": formatEDDT, "NEWSTS": "3", "NEWJIQTY": newjiqty, "COLIDX": idx}];
                     } else {
-                        result.push({"PLNDT": row.EDDT, "NEWSTS": "3", "NEWJIQTY": newjiqty});
+                        result.push({"TARGET": "PLAN", "EDDT": formatEDDT, "NEWSTS": "3", "NEWJIQTY": newjiqty, "COLIDX": idx});
                     }
                     countdownQty = 0;
                 }
@@ -1763,16 +1763,19 @@ const modifyOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
         const kmd8430 = await conn.query("select * from km8430 where HMCD=? and KT1MCGCD=? and KT1MCCD=?"
             , [hmcd, mcgcd, mccd]);
         if (countdownQty > 0 && kmd8430[0].length > 0) {
-            const ymds = await getYMDPlans(); // 内示開始日付を取得
+            const planYMDs = await getYMDPlans(); // 内示開始日付を取得
             const plansql = (mode=="PLAN") ? 
                 "and EDDT<=(select EDDT from kd8440 where PLNNO='" + odrno + "') " : "";
             const kd8440 = await conn.query("select PLNNO, EDDT, EDTM, ODRQTY, JIQTY from kd8440 " + 
                 "where HMCD=? and EDDT between ? and ? and ODRSTS not in ('1','2','9') " + 
                 plansql +
                 "order by EDDT desc, EDTM desc"
-                , [hmcd, ymds[0], ymds[9]]);
+                , [hmcd, planYMDs[0], planYMDs[9]]);
             for await (row of kd8440[0]) {
                 let jiQty = Number(row.JIQTY);
+                let tmp = new Date(row.EDDT);
+                let formatEDDT = `${tmp.getFullYear()}-${tmp.getMonth()+1}-${tmp.getDate()}`;
+                let idx = planYMDs.findIndex(e => e==formatEDDT);
                 if (countdownQty >= jiQty) {
                     // 0で更新 countdownQty=0
                     const update = await conn.execute(
@@ -1780,11 +1783,23 @@ const modifyOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
                         "where PLNNO=?"
                         , [userid, row.PLNNO]
                     );
+                    // 同一日付同一品番で他にオーダーが存在しないかチェック
+                    const kd8440other = await conn.query(
+                        "select count(*) as cnt, sum(ODRQTY) as TTLODRQTY, sum(JIQTY) as TTLJIQTY from kd8440 " + 
+                        "where HMCD=? and ODRSTS<>'9' and EDDT=?"
+                        , [hmcd, row.EDDT]);
+                    let newStatus = "2";
+                    let newJiQty = 0;
+                    if (kd8440other[0][0].cnt > 1 && kd8440other[0][0].TTLJIQTY > 0){
+                        newStatus = "3";
+                        newJiQty = Number(kd8440other[0][0].TTLJIQTY);
+                    }
+                    // 割り込みここまで
                     if (update[0].changedRows != 0) {
                         if (!result) {
-                            result = [{"PLNDT": row.EDDT, "NEWSTS": "2", "NEWJIQTY": 0}];
+                            result = [{"TARGET": "PLAN", "EDDT": formatEDDT, "NEWSTS": newStatus, "NEWJIQTY": newJiQty, "COLIDX": idx}];
                         } else {
-                            result.push({"PLNDT": row.EDDT, "NEWSTS": "2", "NEWJIQTY": 0});
+                            result.push({"TARGET": "PLAN", "EDDT": formatEDDT, "NEWSTS": newStatus, "NEWJIQTY": newJiQty, "COLIDX": idx});
                         }
                         countdownQty -= jiQty;
                     }
@@ -1798,9 +1813,9 @@ const modifyOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
                     );
                     if (update[0].changedRows != 0) {
                         if (!result) {
-                            result = [{"PLNDT": row.EDDT, "NEWSTS": "3", "NEWJIQTY": newjiqty}];
+                            result = [{"TARGET": "PLAN", "EDDT": formatEDDT, "NEWSTS": "3", "NEWJIQTY": newjiqty, "COLIDX": idx}];
                         } else {
-                            result.push({"PLNDT": row.EDDT, "NEWSTS": "3", "NEWJIQTY": newjiqty});
+                            result.push({"TARGET": "PLAN", "EDDT": formatEDDT, "NEWSTS": "3", "NEWJIQTY": newjiqty, "COLIDX": idx});
                         }
                         countdownQty = 0;
                     }
@@ -1811,7 +1826,7 @@ const modifyOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
     }
     // 手配実績減算
     if (countdownQty > 0) {
-        const ymds = await getYMDOrders();   // 内示だけでは足らず、手配も減算する場合は手配終了日付を利用
+        const orderYMDs = await getYMDOrders();   // 内示だけでは足らず、手配も減算する場合は手配終了日付を利用
         const ordersql = (mode=="ORDER") ? 
             "and EDDT<=(select EDDT from kd8430 where ODRNO='" + odrno + "') " : "";
         const kd8450 = await conn.query("select ODRNO, LOTSEQ, EDDT, ODRQTY, JIQTY from kd8450 " + 
@@ -1819,10 +1834,13 @@ const modifyOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
             "and MCGCD=? and MCCD=? and ODRSTS not in ('1','2','9') " + 
             ordersql +
             "order by EDDT desc, ODRNO desc, LOTSEQ desc"
-            , [hmcd, ymds[0], ymds[9], mcgcd, mccd]);
+            , [hmcd, orderYMDs[0], orderYMDs[9], mcgcd, mccd]);
         // 切削オーダーファイルをループして実績数を訂正
         for await (row of kd8450[0]) {
             let jiQty = Number(row.JIQTY);
+            let tmp = new Date(row.EDDT);
+            let formatEDDT = `${tmp.getFullYear()}-${tmp.getMonth()+1}-${tmp.getDate()}`;
+            let idx = orderYMDs.findIndex(e => e==formatEDDT);
             if (countdownQty >= jiQty) {
 
                 const update = await conn.execute(
@@ -1830,11 +1848,23 @@ const modifyOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
                     "where ODRNO=? and LOTSEQ=? and MCGCD=? and MCCD=?"
                     , [userid, row.ODRNO, row.LOTSEQ, mcgcd, mccd]
                 );
+                // 同一日付同一品番で他にオーダーが存在しないかチェック
+                const kd8450other = await conn.query(
+                    "select count(*) as cnt, sum(ODRQTY) as TTLODRQTY, sum(JIQTY) as TTLJIQTY from kd8450 " + 
+                    "where HMCD=? and MCGCD=? and MCCD=? and ODRSTS<>'9' and EDDT=?"
+                    , [hmcd, mcgcd, mccd, row.EDDT]);
+                let newStatus = "2";
+                let newJiQty = 0;
+                if (kd8450other[0][0].cnt > 1 && kd8450other[0][0].TTLJIQTY > 0){
+                    newStatus = "3";
+                    newJiQty = Number(kd8450other[0][0].TTLJIQTY);
+                }
+                // 割り込みここまで
                 if (update[0].changedRows != 0) {
                     if (!result) {
-                        result = [{"EDDT": row.EDDT, "NEWSTS": "2", "NEWJIQTY": 0}];
+                        result = [{"TARGET": "ORDER", "EDDT": formatEDDT, "NEWSTS": newStatus, "NEWJIQTY": newJiQty, "COLIDX": idx}];
                     } else {
-                        result.push({"EDDT": row.EDDT, "NEWSTS": "2", "NEWJIQTY": 0});
+                        result.push({"TARGET": "ORDER", "EDDT": formatEDDT, "NEWSTS": newStatus, "NEWJIQTY": newJiQty, "COLIDX": idx});
                     }
                     countdownQty -= jiQty;
                 }
@@ -1849,9 +1879,9 @@ const modifyOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
                 );
                 if (update[0].changedRows != 0) {
                     if (!result) {
-                        result = [{"EDDT": row.EDDT, "NEWSTS": newsts, "NEWJIQTY": newjiqty}];
+                        result = [{"TARGET": "ORDER", "EDDT": formatEDDT, "NEWSTS": newsts, "NEWJIQTY": newjiqty, "COLIDX": idx}];
                     } else {
-                        result.push({"EDDT": row.EDDT, "NEWSTS": newsts, "NEWJIQTY": newjiqty});
+                        result.push({"TARGET": "ORDER", "EDDT": formatEDDT, "NEWSTS": newsts, "NEWJIQTY": newjiqty, "COLIDX": idx});
                     }
                     countdownQty = 0;
                 }

@@ -8,22 +8,6 @@ body {
     background-color: rgba(0, 0, 0, 0.9);
     overflow: hidden; /* スクロール自体を無効化 */
 }
-#responsible:before { content: "16px "; }
-@media (min-width: 1520px) and (max-width: 1540px) {#responsible:before { content: "13px "; } body { font-size: 13px; background-color: rgba(0, 0, 0, 0.9); }} /* 125%用 */
-@media (max-width: 1320px) {#responsible:before { content: "15px "; } body { font-size: 15px; background-color: rgba(0, 0, 0, 0.85); }}
-@media (max-width: 1280px) {#responsible:before { content: "14px "; } body { font-size: 14px; background-color: rgba(0, 0, 0, 0.8); }}
-@media (max-width: 1280px) and (min-height: 900px) and (max-height: 1000px) {#responsible:before { content: "13px "; } body { font-size: 13px; background-color: rgba(0, 0, 0, 0.8); }} /* PC090N拡張モニター */
-@media (max-width: 1150px) {#responsible:before { content: "13px "; } body { font-size: 13px; background-color: rgba(0, 0, 0, 0.75); }}
-@media (max-width: 1070px) {#responsible:before { content: "12px "; } body { font-size: 12px; background-color: rgba(0, 0, 0, 0.7); }}
-@media (max-width:  990px) {#responsible:before { content: "11px "; } body { font-size: 11px; background-color: rgba(0, 0, 0, 0.65); }}
-@media (max-width:  900px) {#responsible:before { content: "10px "; } body { font-size: 10px; background-color: rgba(0, 0, 0, 0.6); }}
-@media (max-width:  825px) {#responsible:before { content: "9px ";  } body { font-size:  9px; background-color: rgba(0, 0, 0, 0.55); }}
-@media (max-width:  745px) {#responsible:before { content: "8px ";  } body { font-size:  8px; background-color: rgba(0, 0, 0, 0.5); }}
-@media (max-width:  670px) {#responsible:before { content: "7px ";  } body { font-size:  7px; background-color: rgba(0, 0, 0, 0.45); }}
-@media (max-width:  580px) {#responsible:before { content: "6px ";  } body { font-size:  6px; background-color: rgba(0, 0, 0, 0.4); }}
-@media (max-width:  500px) {#responsible:before { content: "5px ";  } body { font-size:  5px; background-color: rgba(0, 0, 0, 0.35); }}
-@media (max-width:  420px) {#responsible:before { content: "4px ";  } body { font-size:  4px; background-color: rgba(0, 0, 0, 0.3); }}
-@media (max-width:  340px) {#responsible:before { content: "3px ";  } body { font-size:  3px; background-color: rgba(0, 0, 0, 0.25); }}
 #main {
     height: calc(100vh - var(--browser-margin));
     width: calc(100vw - var(--browser-margin));
@@ -166,6 +150,41 @@ footer #responsible {
     margin-inline: auto;
     text-align: center;
 }
+
+
+/* =========================================================================== */
+/*  メディアクエリ設定
+/* =========================================================================== */
+/* landscape:横の設定 */
+#responsible:before { content: "16px "; }
+@media (min-width: 1520px) and (max-width: 1540px) and (orientation: landscape) {#responsible:before { content: "13px "; } body { font-size: 13px; background-color: rgba(0, 0, 0, 0.9); }} /* 125%用 */
+@media (min-width: 1280px) and (max-width: 1320px) and (orientation: landscape) {#responsible:before { content: "15px "; } body { font-size: 15px; background-color: rgba(0, 0, 0, 0.85); }}
+@media (min-width: 1150px) and (max-width: 1280px) and (min-height: 801px) and (orientation: landscape) {#responsible:before { content: "14px "; } body { font-size: 14px; background-color: rgba(0, 0, 0, 0.8); }} /* PC090N拡張モニター */
+@media (min-width: 1150px) and (max-width: 1280px) and (max-height: 800px) and (orientation: landscape) { /* 会社 iPad(A16横) 設定 Chrome:w1180h688 Safari:w1180h692 */
+    #responsible:before{content:"iPad横 ";}
+    body{font-size: 14px;}
+    header{display:none;}
+
+    #dashboard2 #chart2 {width: 92svw;}
+    #dashboard3 #chart3 {width: 92svw;}
+
+    #f-dashboard1{height:90svh;}
+    #f-dashboard2{height:90svh;}
+    #f-dashboard3{height:90svh;}
+}
+/*@media (max-width: 1280px) and (min-height: 900px) and (max-height: 1000px) {#responsible:before { content: "13px "; } body { font-size: 13px; background-color: rgba(0, 0, 0, 0.8); }} /*  */
+@media (min-width: 1070px) and (max-width: 1150px) and (orientation: landscape) {#responsible:before { content: "13px "; } body { font-size: 13px; background-color: rgba(0, 0, 0, 0.75); }}
+@media (min-width:  990px) and (max-width: 1070px) and (orientation: landscape) {#responsible:before { content: "12px "; } body { font-size: 12px; background-color: rgba(0, 0, 0, 0.7); }}
+@media (min-width:  900px) and (max-width:  990px) and (orientation: landscape) {#responsible:before { content: "11px "; } body { font-size: 11px; background-color: rgba(0, 0, 0, 0.65); }}
+@media (min-width:  825px) and (max-width:  900px) and (orientation: landscape) {#responsible:before { content: "10px "; } body { font-size: 10px; background-color: rgba(0, 0, 0, 0.6); }}
+@media (min-width:  745px) and (max-width:  825px) and (orientation: landscape) {#responsible:before { content: "9px ";  } body { font-size:  9px; background-color: rgba(0, 0, 0, 0.55); }}
+@media (min-width:  670px) and (max-width:  745px) and (orientation: landscape) {#responsible:before { content: "8px ";  } body { font-size:  8px; background-color: rgba(0, 0, 0, 0.5); }} /* iPad A16縦 */
+@media (min-width:  580px) and (max-width:  670px) and (orientation: landscape) {#responsible:before { content: "7px ";  } body { font-size:  7px; background-color: rgba(0, 0, 0, 0.45); }}
+@media (min-width:  500px) and (max-width:  580px) and (orientation: landscape) {#responsible:before { content: "6px ";  } body { font-size:  6px; background-color: rgba(0, 0, 0, 0.4); }}
+@media (min-width:  420px) and (max-width:  500px) and (orientation: landscape) {#responsible:before { content: "5px ";  } body { font-size:  5px; background-color: rgba(0, 0, 0, 0.35); }}
+@media (min-width:  340px) and (max-width:  420px) and (orientation: landscape) {#responsible:before { content: "4px ";  } body { font-size:  4px; background-color: rgba(0, 0, 0, 0.3); }}
+@media (min-width:    0px) and (max-width:  340px) and (orientation: landscape) {#responsible:before { content: "3px ";  } body { font-size:  3px; background-color: rgba(0, 0, 0, 0.25); }}
+
 /* 自宅 Andoroid Table 設定 */
 @media (min-width: 1280px) and (max-width: 1280px) and (min-height: 620px) and (max-height: 630px) {
     #responsible:before{content:"14px ";} body{font-size:14px;} header{margin-bottom:0.5em;} #dashboard1 table th{height: 1.5em;} #dashboard1 table td{height: 1.5em;}
@@ -182,6 +201,29 @@ footer #responsible {
 @media (min-width: 660px) and (max-width: 670px) and (min-height: 320px) and (max-height: 330px) {
     #responsible:before{content:"6px ";} body{font-size:6px;} header{margin-bottom:0.5em;} #dashboard1 table th{height:2em;} #dashboard1 table td{height:1em;}
 }
+
+/* landscape:横の設定 */
+/* 会社 iPad(A16縦) 設定 Chrome:w820h1048 Safari:w820h1052 */
+@media (min-width: 800px) and (max-width: 840px) and (min-height: 1030px) and (max-height: 1150px) and (orientation: portrait) {
+    #responsible:before{content:"iPad縦 ";}
+    body {font-size:14px;}
+    header {display:none;}
+    
+    #dashboard1 table {width: 80vw;}
+    #dashboard1 table th {font-size: 2.5em; height: 2em;}
+    #dashboard1 table .tddata {font-size: 5em;}
+    #dashboard1 table .tdheader {font-size: 3em; font-weight: 600; height: 3em;}
+
+    #dashboard2 {height:90svh;}
+    #dashboard2 #chart2 {width: 92svw;}
+
+    #dashboard3 {height:90svh;}
+    #dashboard3 #chart3 {width: 92svw;}
+
+    #f-dashboard1{height:90svh;}
+    #f-dashboard2{height:90svh;}
+    #f-dashboard3{height:90svh;}
+ }
 
 /* =========================================================================== */
 /*  ダッシュボードの画面間切り替えの設定
@@ -431,10 +473,10 @@ footer #responsible {
 /* =========================================================================== */
 .popwin-background {
     position: fixed;
-    top: 0;
-    left: 0;
+    /*top: 0;*/
+    /*left: 0;*/
     width: 100vw;
-    height: 100vh;
+    /*height: 100vh;*/
     justify-content: center;
     background-color: rgba(0, 0, 0, 0);
 }
@@ -442,13 +484,13 @@ footer #responsible {
     display: grid;
 }
 #popup-delay {
-    height: 90vh;
+    /*height: 90vh;*/
     margin-top: 10px;
     background-color: rgba(250, 250, 250, 1.0);
     overflow-y: auto; /* 縦スクロールバーを有効化 */
     border-radius: 5px;
     padding-inline: 20px;
-    padding-bottom: 30px;
+    /*padding-bottom: 30px;*/
 }
 #delayPopupTable {
     margin-block: 10px;

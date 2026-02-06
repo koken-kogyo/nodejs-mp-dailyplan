@@ -1,4 +1,17 @@
 // JavascriptでOS（Windows・Linux・Mac・iPad・iPhone）を判定
+function myDevice() {
+    const ua = navigator.userAgent;
+    const platform = navigator.platform;
+    // 非推奨だがplatform=Win32からしかwindowsの判定が出来ない
+    const isWindows = /Windows/.test(ua) ||
+        (platform === 'Win32');
+    // iPad判定（iPadOS13以降のMacintosh偽装にも対応）
+    const isIPad = /iPad/.test(ua) ||
+        (platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (isWindows) { return 'windows' } else
+    if (isIPad) { return 'ipad' } else return 'other';
+}
+// JavascriptでOS（Windows・Linux・Mac・iPad・iPhone）を判定
 function myOS() {
     var ua = window.navigator.userAgent.toLowerCase();
     if (ua.match("windows") !== null) { return "windows"; } else 

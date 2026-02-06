@@ -64,14 +64,14 @@ function drawChart2(label, data1, data2) {
                 type: 'time',
                 time: {
                     unit: 'day',
-                    displayFormats: {day: 'MM/dd'} // 日付のフォーマット [chartjs-adapter-date-fns]
+                    displayFormats: {day: 'M/d'} // 日付のフォーマット [chartjs-adapter-date-fns]
                 },
             },
             yAxis1: {
                 position: 'left',
-                min: 2000,
+                min: 0,
                 ticks: {
-                    stepSize: 2000,
+                    stepSize: 200,
                     callback: function(value) {
                         return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',') + ' 本';
                     },
@@ -203,7 +203,7 @@ function drawChart3(labelData, data1, data2) {
                 min: 0,
                 max: 100,                           // 100%固定
                 ticks: {
-                    stepSize: 25,                   // 25%刻み
+                    stepSize: 20,                   // 20%刻み
                     callback: function(value) {
                         return value + ' %';        // 軸ラベルに%を付ける
                     },

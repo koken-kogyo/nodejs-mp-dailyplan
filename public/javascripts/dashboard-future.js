@@ -446,6 +446,8 @@ function drawChart3(title, labels, weekkbn, qtys, works, dandori) {
                 getDashboardFuturePopup(mcgcd, mccd, eddt)
 
             } else {
+                // ポップアップ画面を非表示
+                noneDelayList();
                 const title = chart3.options.plugins.title.text;
                 if (title.toString().indexOf("-") == -1 || title == "SK-SK2" || title == "ON-S500") {
                     toDashboardTop();
@@ -496,7 +498,6 @@ function getDashboardFuturePopup(mcgcd, mccd, eddt) {
         if (data.length == 0) return;
         // APIで取得したデータをテーブ行に追加
         const table = document.getElementById("delayPopupTable");
-        // 一覧を一旦削除
         do {
             if (table.rows.length > 1) {table.deleteRow(-1);}
         } while (table.rows.length > 1);
@@ -512,6 +513,14 @@ function getDashboardFuturePopup(mcgcd, mccd, eddt) {
         });
         popDelayObj.style.display = "flex";
         popDelayObj.style.zIndex = 99;
+        // 描画後に高さを取得
+        // （表示領域の高さを超える場合は高さを固定にしてスクロールバーを出す）
+        // alert("offsetHeight:" + table.offsetHeight + "\ninnerHeight:" + (window.innerHeight * 0.8))
+        if (table.offsetHeight > (window.innerHeight * 0.8)) { 
+            document.getElementById("popup-delay").style.height = "80vh";
+        } else {
+            document.getElementById("popup-delay").style.height = "";
+        }
     })
     .catch(err => {alert(err);});
 }

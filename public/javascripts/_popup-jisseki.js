@@ -130,7 +130,7 @@ function jiinputClear() {
 }
 // イコール＝処理
 function jiequalqty() {
-    inputBox.value = document.getElementById("jpopODRQTY").innerText
+    inputBox.value = Number(document.getElementById("jpopODRQTY").innerText);
 }
 // 作業開始
 function orderStart() {
@@ -183,22 +183,21 @@ async function orderEntry() {
         // 内部的な実績登録、在庫登録、ステータス更新（データベース）
         const response = await fetch(`/mysqlsv/jissekiRegist/${odrno}:${hmcd}:${mcgcd}:${mccd}:${jiqty}:${mode}:`)
         const data = await response.json();
-        let c = col;
         // 表面上のステータス更新（DOM）
         data.forEach(function (d) {
-            if (d.NEWSTS == "3") {
-                let odrqty = Number(tblobj.rows[row].cells[c].innerText);
-                let newjiqty = Number(d.NEWJIQTY);
-                let remainper = 100 - Math.round(newjiqty / odrqty * 100);
-                tblobj.rows[row].cells[c].style = "--remain-per: " + remainper + "%;";
-                tblobj.rows[row].cells[c].className = "s3";
-            } else if (d.NEWSTS == "4") {
-                tblobj.rows[row].cells[c].className = "s4 td-qty";
+            if ((mode=="ORDER" && d.TARGET=="ORDER") || (mode=="PLAN" && d.TARGET=="PLAN")) {
+                let idx = d.COLIDX;
+                idx = (idx<5) ? idx + 5 : idx + 6; // 配列番号をtableのcolに合わせる
+                if (d.NEWSTS == "3") {
+                    let odrqty = Number(tblobj.rows[row].cells[idx].innerText);
+                    let newjiqty = Number(d.NEWJIQTY);
+                    let remainper = 100 - Math.round(newjiqty / odrqty * 100);
+                    tblobj.rows[row].cells[idx].style = "--remain-per: " + remainper + "%;";
+                    tblobj.rows[row].cells[idx].className = "s3";
+                } else if (d.NEWSTS == "4") {
+                    tblobj.rows[row].cells[idx].className = "s4 td-qty";
+                }
             }
-            do {
-                c++;
-                if (c == 10) c++; // 合計CT時間は飛ばす
-            } while (!tblobj.rows[row].cells[c].innerText && 5 <= c && c <= 15);
         });
         // 表面上の仕掛り在庫更新（DOM）
         const endcol = tblobj.rows[row].cells.length - 1;
@@ -264,29 +263,23 @@ async function orderModify() {
         const response = await fetch(`/mysqlsv/modifyOrder/${odrno}:${hmcd}:${mcgcd}:${mccd}:${preqty}:${modqty}:${mode}:`)
         const data = await response.json();
         // 表面上のステータス更新（DOM）
-        let c = col;
         let jiqty = modqty - preqty;
         data.forEach(function (d) {
-            if (d.NEWSTS == "2") {
-                tblobj.rows[row].cells[c].className = "s2 td-qty";
-            } else if (d.NEWSTS == "3") {
-                let odrqty = Number(tblobj.rows[row].cells[c].innerText);
-                let newjiqty = Number(d.NEWJIQTY);
-                let remainper = 100 - Math.round(newjiqty / odrqty * 100);
-                tblobj.rows[row].cells[c].style = "--remain-per: " + remainper + "%;";
-                tblobj.rows[row].cells[c].className = "s3 td-qty";
-            } else if (d.NEWSTS == "4") {
-                tblobj.rows[row].cells[c].className = "s4 td-qty";
-            }
-            do {
-                if (jiqty > 0) {
-                    c++;
-                    if (c == 10) c++; // 合計CT時間は飛ばす
-                } else {
-                    c--;
-                    if (c == 10) c--; // 合計CT時間は飛ばす
+            if ((mode=="ORDER" && d.TARGET=="ORDER") || (mode=="PLAN" && d.TARGET=="PLAN")) {
+                let idx = d.COLIDX;
+                idx = (idx<5) ? idx + 5 : idx + 6; // 配列番号をtableのcolに合わせる
+                if (d.NEWSTS == "2") {
+                    tblobj.rows[row].cells[idx].className = "s2 td-qty";
+                } else if (d.NEWSTS == "3") {
+                    let odrqty = Number(tblobj.rows[row].cells[idx].innerText);
+                    let newjiqty = Number(d.NEWJIQTY);
+                    let remainper = 100 - Math.round(newjiqty / odrqty * 100);
+                    tblobj.rows[row].cells[idx].style = "--remain-per: " + remainper + "%;";
+                    tblobj.rows[row].cells[idx].className = "s3 td-qty";
+                } else if (d.NEWSTS == "4") {
+                    tblobj.rows[row].cells[idx].className = "s4 td-qty";
                 }
-            } while (!tblobj.rows[row].cells[c].innerText && 5 <= c && c <= 15);
+            }
         });
         // 表面上の仕掛り在庫更新（DOM）
         const endcol = tblobj.rows[row].cells.length - 1;
