@@ -944,21 +944,23 @@ exports.updateKD8460 = async (hmcd, mcgcd, mccd, jiqty, operator) => {
 exports.getDashboardToday = async () => {
     // ダッシュボード
     const sql1 = 
-        "select a.* " +
-            ", ifnull(遅れ目標, 0) as 遅れ目標 " +
-            ", ifnull(遅れ実績, 0) as 遅れ実績 " +
-            ", ifnull(遅れ残り, 0) as 遅れ残り " +
-        "from ( " +
-            "select sum(ODRQTY) as 当日目標, sum(JIQTY) as 当日実績, sum(ODRQTY)-sum(JIQTY) as 当日残り " +
-            "from kd8450 where EDDT=curdate() and " +
-            "ODRSTS<>'9' and MCGCD<>'EX' " +
-        ") a, ( " +
-            "select sum(a.ODRQTY-a.JIQTY) as 遅れ目標, sum((a.ODRQTY-a.JIQTY)-(b.ODRQTY-b.JIQTY)) as 遅れ実績, sum(b.ODRQTY-b.JIQTY) as 遅れ残り " +
-            "from kd8490 a, kd8450 b where a.ODRNO=b.ODRNO and " +
-            "a.TARGETDT=curdate() and a.EDDT<curdate() and " +
-            "b.ODRSTS<>'9' and b.MCGCD<>'EX' " +
-        ") b "
-    ;
+        "select " +
+            "a.当日目標, b.当日実績, (a.当日目標 - b.当日実績) as 当日残り, " +
+            "c.遅れ目標, c.遅れ実績, (c.遅れ目標 - c.遅れ実績) as 遅れ残り " +
+        "from (" +
+            "select ifnull(sum(ODRQTY),0) as 当日目標 " +
+            "from kd8450 where EDDT=curdate() and ODRSTS<>'9' and MCGCD<>'EX' " +
+        ") a,(" +
+            "select ifnull(sum(JIQTY),0) as 当日実績 " +
+            "from kd8480 aa where cast(JIDT as date) = curdate() and not exists" +
+            "(select * from kd8490 bb where bb.TARGETDT=curdate() and bb.HMCD=aa.HMCD)" +
+        ") b,(" +
+            "select ifnull(sum(aa.ODRQTY-aa.JIQTY),0) as 遅れ目標" +
+            ", ifnull(sum((aa.ODRQTY-aa.JIQTY)-(bb.ODRQTY-bb.JIQTY)),0) as 遅れ実績 " +
+            "from kd8490 aa, kd8450 bb " +
+            "where aa.ODRNO=bb.ODRNO and aa.TARGETDT=curdate() and " +
+            "bb.EDDT<curdate() and bb.ODRSTS<>'9' and bb.MCGCD<>'EX' " +
+        ") c ";
     const summary = await getDatabase(sql1);
 
     // chart2 実績数と遅れ点数 /* MySQL には FULL OUTER JOIN がないのでunionで2回実行し左右を重複なしで結合 */
@@ -1047,8 +1049,8 @@ exports.getDelayList = async () => {
         "where 1=1 " + 
         "and a.ODRNO = b.ODRNO " + 
         "and a.HMCD = m.HMCD " + 
-        "and a.ODRSTS <> '4' " + 
         "and a.TARGETDT = CURDATE() " + 
+        "and b.ODRSTS <> '4' " + 
         "group by a.HMCD, ktkey " + 
         ") 集計, kd8490 c " + 
         "where 集計.完了予定日 = c.EDDT and 集計.品番 = c.HMCD and c.TARGETDT=CURDATE() " + 
@@ -1249,6 +1251,7 @@ exports.irepoRegist_2 = async (userid, mcglabel, dandori, hmcd, procqty, jiqty) 
         // https://pc090n:53030/ireporegist2/NC/10807/4441983:120:120:      SW -> NC-5 -> MC-3F
         // https://pc090n:53030/ireporegist2/MC/10925/4441983:60:60:        SW -> NC-5 -> MC-3F
         // https://pc090n:53030/ireporegist2/SW/10841/RP801-63142-2:500:500:
+        // https://nabev2:53030/ireporegist2/SS/11014/129486-59140K:350:350:
 
         // １．更新対象の設備コードを取得（コード票品番）
         const thisequip = await getThisEquipment_2(conn, hmcd, mcglabel);
@@ -1537,12 +1540,26 @@ const finishOrderHMCD_2 = async (conn, hmcd, mcgcd, mccd, jiqty, dandori) => {
         let needQty = odrQty - jiQty;
         if (countdownQty >= needQty) {
             // odrqtyで更新 countdownQty--
-            const update = await conn.execute(
+            const update8450 = await conn.execute(
                 "update kd8450 set JIQTY=ODRQTY, ODRSTS='4', WKEDDT=current_timestamp, MPUPDTID=? " +
                 "where ODRNO=? and LOTSEQ=? and MCGCD=? and MCCD=?"
                 , [dandori, row.ODRNO, row.LOTSEQ, mcgcd, mccd]
             );
-            if (update[0].changedRows != 0) {
+            if (update8450[0].changedRows != 0) {
+                // 子受注が全て完了していたら親受注も完了に更新
+                const update8430 = await conn.execute(
+                    "update kd8430 set JIQTY=ODRQTY, ODRSTS='4', MPUPDTID=? where ODRNO=? and " +
+                    "(select sum(ODRSTS='4') from kd8450 where ODRNO=? and MCGCD<>'EX') = " +
+                    "(select count(*) FROM kd8450 where ODRNO=? and MCGCD<>'EX')"
+                    , [dandori, ...Array(3).fill(row.ODRNO)]
+                );
+                // 上記以外は3:着手に更新
+                if (update8430[0].changedRows == 0) {
+                    await conn.execute(
+                    "update kd8430 set JIQTY=0, ODRSTS='3', MPUPDTID=? where ODRNO=?"
+                    , [userid, row.ODRNO]);
+                }
+                // クライアントに返却
                 if (!result) {
                     result = [{"TARGET": "ORDER", "EDDT": row.EDDT, "NEWSTS": "4", "NEWJIQTY": odrQty}];
                 } else {
@@ -1559,6 +1576,10 @@ const finishOrderHMCD_2 = async (conn, hmcd, mcgcd, mccd, jiqty, dandori) => {
                 , [newjiqty, dandori, row.ODRNO, row.LOTSEQ, mcgcd, mccd]
             );
             if (update[0].changedRows != 0) {
+                // 親受注を3:着手に更新
+                await conn.execute(
+                "update kd8430 set JIQTY=0, ODRSTS='3', MPUPDTID=? where ODRNO=?"
+                , [userid, row.ODRNO]);
                 if (!result) {
                     result = [{"TARGET": "ORDER", "EDDT": row.EDDT, "NEWSTS": "3", "NEWJIQTY": newjiqty}];
                 } else {
@@ -1577,9 +1598,9 @@ const finishOrderHMCD_2 = async (conn, hmcd, mcgcd, mccd, jiqty, dandori) => {
     if (countdownQty > 0 && kmd8430[0].length > 0) {
         const planYMDs = await getYMDPlans(); // 内示開始日付を取得
         const kd8440 = await conn.query("select PLNNO, EDDT, EDTM, ODRQTY, JIQTY from kd8440 " + 
-            "where HMCD=? and EDDT>=? and ODRSTS<>'4' and ODRSTS<>'9' " + 
+            "where HMCD=? and EDDT between ? and ? and ODRSTS<>'4' and ODRSTS<>'9' " + 
             "order by EDDT, EDTM"
-            , [hmcd, planYMDs[0]]);
+            , [hmcd, planYMDs[0], planYMDs[9]]);
         for await (row of kd8440[0]) {
             let odrQty = Number(row.ODRQTY);
             let jiQty = Number(row.JIQTY);
@@ -1649,7 +1670,7 @@ const finishOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
                     "where ODRNO=? and LOTSEQ=? and MCGCD=? and MCCD=?"
                     , [userid, row.ODRNO, row.LOTSEQ, mcgcd, mccd]
                 );
-                // 同一日付同一品番で他にオーダーが存在しないかチェック
+                // 同一日付同一品番で複数のオーダーを含めたステータスチェック
                 const kd8450other = await conn.query(
                     "select count(*) as cnt, sum(ODRQTY) as TTLODRQTY, sum(JIQTY) as TTLJIQTY from kd8450 " + 
                     "where HMCD=? and MCGCD=? and MCCD=? and ODRSTS<>'9' and EDDT=?"
@@ -1659,6 +1680,20 @@ const finishOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
                     newStatus = "3";
                 // 割り込みここまで
                 if (update[0].changedRows != 0) {
+                    // 子受注が全て4:完了していたら親受注も4:完了に更新
+                    const update8430 = await conn.execute(
+                        "update kd8430 set JIQTY=ODRQTY, ODRSTS='4', MPUPDTID=? where ODRNO=? and " +
+                        "(select sum(ODRSTS='4') from kd8450 where ODRNO=? and MCGCD<>'EX') = " +
+                        "(select count(*) FROM kd8450 where ODRNO=? and MCGCD<>'EX')"
+                        , [userid, ...Array(3).fill(row.ODRNO)]
+                    );
+                    // 上記以外は3:着手に更新
+                    if (update8430[0].changedRows == 0) {
+                        await conn.execute(
+                        "update kd8430 set JIQTY=0, ODRSTS='3', MPUPDTID=? where ODRNO=?"
+                        , [userid, row.ODRNO]);
+                    }
+                    // クライアントに返却
                     if (!result) {
                         result = [{"TARGET": "ORDER", "EDDT": formatEDDT, "NEWSTS": newStatus, "ODRQTY": odrQty, "NEWJIQTY": odrQty, "COLIDX": idx}];
                     } else {
@@ -1675,6 +1710,10 @@ const finishOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
                     , [newjiqty, userid, row.ODRNO, row.LOTSEQ, mcgcd, mccd]
                 );
                 if (update[0].changedRows != 0) {
+                    // 親受注も3:着手に更新
+                    await conn.execute(
+                    "update kd8430 set JIQTY=0, ODRSTS='3', MPUPDTID=? where ODRNO=?"
+                    , [userid, row.ODRNO]);
                     if (!result) {
                         result = [{"TARGET": "ORDER", "EDDT": formatEDDT, "NEWSTS": "3", "ODRQTY": odrQty, "NEWJIQTY": newjiqty, "COLIDX": idx}];
                     } else {
@@ -1696,10 +1735,10 @@ const finishOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
         const plansql = (mode=="PLAN") ? 
             "and EDDT>=(select EDDT from kd8440 where PLNNO='" + odrno + "') " : "";
         const kd8440 = await conn.query("select PLNNO, EDDT, EDTM, ODRQTY, JIQTY from kd8440 " + 
-            "where HMCD=? and EDDT>=? and ODRSTS<>'4' and ODRSTS<>'9' " + 
+            "where HMCD=? and EDDT between ? and ? and ODRSTS<>'4' and ODRSTS<>'9' " + 
             plansql +
             "order by EDDT, EDTM"
-            , [hmcd, planYMDs[0]]);
+            , [hmcd, planYMDs[0], planYMDs[9]]);
         for await (row of kd8440[0]) {
             let odrQty = Number(row.ODRQTY);
             let jiQty = Number(row.JIQTY);
@@ -1714,7 +1753,7 @@ const finishOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
                     "where PLNNO=?"
                     , [userid, row.PLNNO]
                 );
-                // 同一日付同一品番で他に内示が存在しないかチェック
+                // 同一日付同一品番で複数の内示を含めたステータスチェック
                 const kd8440other = await conn.query(
                     "select count(*) as cnt, sum(ODRQTY) as TTLODRQTY, sum(JIQTY) as TTLJIQTY from kd8440 " + 
                     "where HMCD=? and ODRSTS<>'9' and EDDT=?"
@@ -1764,13 +1803,11 @@ const modifyOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
             , [hmcd, mcgcd, mccd]);
         if (countdownQty > 0 && kmd8430[0].length > 0) {
             const planYMDs = await getYMDPlans(); // 内示開始日付を取得
-            const plansql = (mode=="PLAN") ? 
-                "and EDDT<=(select EDDT from kd8440 where PLNNO='" + odrno + "') " : "";
             const kd8440 = await conn.query("select PLNNO, EDDT, EDTM, ODRQTY, JIQTY from kd8440 " + 
                 "where HMCD=? and EDDT between ? and ? and ODRSTS not in ('1','2','9') " + 
-                plansql +
+                "and EDDT<=(select EDDT from kd8440 where PLNNO=?) " +
                 "order by EDDT desc, EDTM desc"
-                , [hmcd, planYMDs[0], planYMDs[9]]);
+                , [hmcd, planYMDs[0], planYMDs[9], odrno]);
             for await (row of kd8440[0]) {
                 let jiQty = Number(row.JIQTY);
                 let tmp = new Date(row.EDDT);
@@ -1783,7 +1820,7 @@ const modifyOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
                         "where PLNNO=?"
                         , [userid, row.PLNNO]
                     );
-                    // 同一日付同一品番で他にオーダーが存在しないかチェック
+                    // 同一日付同一品番で複数の内示を含めたステータスチェック
                     const kd8440other = await conn.query(
                         "select count(*) as cnt, sum(ODRQTY) as TTLODRQTY, sum(JIQTY) as TTLJIQTY from kd8440 " + 
                         "where HMCD=? and ODRSTS<>'9' and EDDT=?"
@@ -1841,14 +1878,14 @@ const modifyOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
             let tmp = new Date(row.EDDT);
             let formatEDDT = `${tmp.getFullYear()}-${tmp.getMonth()+1}-${tmp.getDate()}`;
             let idx = orderYMDs.findIndex(e => e==formatEDDT);
-            if (countdownQty >= jiQty) {
+            if (countdownQty >= jiQty) { // 手配数よりマイナスする実績数が同じもしくは多い場合
 
-                const update = await conn.execute(
+                const update8450 = await conn.execute(
                     "update kd8450 set JIQTY=0, ODRSTS='2', WKSTDT=null, WKEDDT=null, MPUPDTID=? " +
                     "where ODRNO=? and LOTSEQ=? and MCGCD=? and MCCD=?"
                     , [userid, row.ODRNO, row.LOTSEQ, mcgcd, mccd]
                 );
-                // 同一日付同一品番で他にオーダーが存在しないかチェック
+                // 同一日付同一品番で複数のオーダーを含めたステータスチェック
                 const kd8450other = await conn.query(
                     "select count(*) as cnt, sum(ODRQTY) as TTLODRQTY, sum(JIQTY) as TTLJIQTY from kd8450 " + 
                     "where HMCD=? and MCGCD=? and MCCD=? and ODRSTS<>'9' and EDDT=?"
@@ -1860,7 +1897,20 @@ const modifyOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
                     newJiQty = Number(kd8450other[0][0].TTLJIQTY);
                 }
                 // 割り込みここまで
-                if (update[0].changedRows != 0) {
+                if (update8450[0].changedRows != 0) {
+                    // 子受注が全て2:確定の場合親受注も2:確定に更新
+                    const update8430 = await conn.execute(
+                        "update kd8430 set JIQTY=0, ODRSTS='2', MPUPDTID=? where ODRNO=? and " +
+                        "(select sum(ODRSTS='2') from kd8450 where ODRNO=? and MCGCD<>'EX') = " +
+                        "(select count(*) FROM kd8450 where ODRNO=? and MCGCD<>'EX')"
+                        , [userid, ...Array(3).fill(row.ODRNO)]
+                    );
+                    // 上記以外は3:着手に更新
+                    if (update8430[0].changedRows == 0) {
+                        await conn.execute(
+                        "update kd8430 set JIQTY=0, ODRSTS='3', MPUPDTID=? where ODRNO=?"
+                        , [userid, row.ODRNO]);
+                    }
                     if (!result) {
                         result = [{"TARGET": "ORDER", "EDDT": formatEDDT, "NEWSTS": newStatus, "NEWJIQTY": newJiQty, "COLIDX": idx}];
                     } else {
@@ -1872,12 +1922,25 @@ const modifyOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
                 // 訂正数量に変更して更新 countdownQty=0
                 let newjiqty = jiQty - countdownQty;
                 let newsts = (countdownQty == 0) ? "2" : "3";
-                const update = await conn.execute(
+                const update8450 = await conn.execute(
                     "update kd8450 set JIQTY=?, ODRSTS=?, WKEDDT=null, MPUPDTID=? " +
                     "where ODRNO=? and LOTSEQ=? and MCGCD=? and MCCD=?"
                     , [newjiqty, newsts, userid, row.ODRNO, row.LOTSEQ, mcgcd, mccd]
                 );
-                if (update[0].changedRows != 0) {
+                if (update8450[0].changedRows != 0) {
+                    // 子受注が全て2:確定の場合親受注も2:確定に更新
+                    const update8430 = await conn.execute(
+                        "update kd8430 set JIQTY=0, ODRSTS='2', MPUPDTID=? where ODRNO=? and " +
+                        "(select sum(ODRSTS='2') from kd8450 where ODRNO=? and MCGCD<>'EX') = " +
+                        "(select count(*) FROM kd8450 where ODRNO=? and MCGCD<>'EX')"
+                        , [userid, ...Array(3).fill(row.ODRNO)]
+                    );
+                    // 上記以外は3:着手に更新
+                    if (update8430[0].changedRows == 0) {
+                        await conn.execute(
+                        "update kd8430 set JIQTY=0, ODRSTS='3', MPUPDTID=? where ODRNO=?"
+                        , [userid, row.ODRNO]);
+                    }
                     if (!result) {
                         result = [{"TARGET": "ORDER", "EDDT": formatEDDT, "NEWSTS": newsts, "NEWJIQTY": newjiqty, "COLIDX": idx}];
                     } else {

@@ -4,13 +4,33 @@
 
 /* ポップアップ関連 ここから */
 const inputBox = document.getElementById("inputJIQTY");
-// イベントリスナー（フォーカス時全選択）（アロー関数編）
+const startObj = document.getElementById("jiqtyStart");
+const finishObj = document.getElementById("jiqtyEntry");
+const modifyObj = document.getElementById("jiqtyModify");
+// TDで描画したボタンにフォーカスがあてられるように設定
+finishObj.setAttribute("tabindex", "-1");
+modifyObj.setAttribute("tabindex", "-1");
+// イベントリスナー（フォーカス時全選択）（アロー関数での書き方と）
 inputBox.addEventListener("focus", event => event.target.select());
-// イベントリスナー（キーダウン）（無名関数編）
+// イベントリスナー（実績数キーダウン）（無名関数での書き方とで比較してみた）
 inputBox.addEventListener("keydown", function(event) {
-    if (event.key == "Enter") inputBox.blur();
+    if (event.key == "Enter") {
+        inputBox.blur();
+        const finishObj = document.getElementById("jiqtyEntry");
+        const modifyObj = document.getElementById("jiqtyModify");
+        if (!finishObj.classList.contains("disable")) finishObj.focus();
+        if (!modifyObj.classList.contains("disable")) modifyObj.focus();
+    }
     if (event.keyCode == 27) document.getElementById("jiqtyPopupWindow").style.display = "none";
 });
+// イベントリスナー（ボタンキーダウン）（1行で簡潔に記述してみた）
+finishObj.addEventListener("keydown", e => e.key === "Enter" && orderEntry());
+modifyObj.addEventListener("keydown", e => e.key === "Enter" && orderModify());
+// イベントリスナー（閉じる）
+document.getElementById("jiqtyClose").addEventListener("click", () => {
+    document.getElementById("jiqtyPopupWindow").style.display = "none";
+});
+
 // 二重送信防止フラグ
 let flgSubmit = false;
 
@@ -43,19 +63,13 @@ async function jissekiPopup(tblno, row, col, mode) {
     .then(response => response.json())
     .then(data => {
         flgSubmit = false;
-        /*// タップした行から4行前の行を最上部にスクロール
-        if (row > 4) {
-            tblobj.rows[row - 4].scrollIntoView({block: "start", behavior: "smooth"});
-            tblobj.rows[row].cells[col].classList.add("highlight"); // タップしたセルが分かるようハイライトを追加
-        }
-        廃止    */
         if (data.length == 0) {
             alert("遅れ分の実績訂正には対応していません．");
             return;
         }
         // ポップアップウィンドウに値をセット
         let odrno = data[0].ODRNO;
-        let odrsts = data[0].ODRSTS; //旧：tblobj.rows[row].cells[col].className.substr(1,1);
+        let odrsts = data[0].ODRSTS;
         document.getElementById("jpopHMCD").innerText = hmcd;
         document.getElementById("jpopODRNO").innerText = odrno;
         document.getElementById("jpopODRSTS").innerText = (odrsts=="1") ? "追加分" : (odrsts=="2") ? "着手前" : (odrsts=="3") ? "着手中" : (odrsts=="4") ? "完了" : (odrsts=="9") ? "取消" : "不明";
@@ -72,9 +86,11 @@ async function jissekiPopup(tblno, row, col, mode) {
         document.getElementById("jpophMODE").value = mode;
         inputBox.value = "";
         // 使用可能ボタンを判定
+        /*
         const startObj = document.getElementById("jiqtyStart");
         const finishObj = document.getElementById("jiqtyEntry");
         const modifyObj = document.getElementById("jiqtyModify");
+        */
         startObj.classList.remove("disable");
         finishObj.classList.remove("disable");
         modifyObj.classList.remove("disable");
@@ -98,11 +114,6 @@ async function jissekiPopup(tblno, row, col, mode) {
             finishObj.classList.add("disable");
             modifyObj.classList.add("disable");
         }
-        // 閉じるイベントリスナー設定
-        document.getElementById("jiqtyClose").addEventListener("click", () => {
-            tblobj.rows[row].cells[col].classList.remove("highlight");
-            document.getElementById("jiqtyPopupWindow").style.display = "none";
-        });
         // ポップアップウィンドウを表示
         document.getElementById("jiqtyPopupWindow").style.display = "flex";
         inputBox.focus();
@@ -155,11 +166,11 @@ async function orderEntry() {
     if (checkInputBox() == "false") {return;}
     let odrno = document.getElementById("jpopODRNO").innerText;
     let hmcd = document.getElementById("jpopHMCD").innerText;
-    let odrqty = Number(document.getElementById("jpopODRQTY").innerText);   // 手配数
-    let prejiqty = Number(document.getElementById("jpopJIQTY").innerText);     // 変更前の実績数
+    let odrqty = Number(document.getElementById("jpopODRQTY").innerText);       // 手配数
+    let prejiqty = Number(document.getElementById("jpopJIQTY").innerText);      // 変更前の実績数
     let futureodr = Number(document.getElementById("jpopFUTUREODR").innerText);
     let futureqty = Number(document.getElementById("jpopFUTUREQTY").innerText);
-    let jiqty = Number(inputBox.value);
+    let jiqty = Number(inputBox.value);                                         // 変更後の実績数
     let mode = document.getElementById("jpophMODE").value;
     let tblno = document.getElementById("jpophTBLNO").value;
     let mcgcd = document.getElementById("mcgcd").value;

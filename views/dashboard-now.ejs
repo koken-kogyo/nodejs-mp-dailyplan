@@ -188,7 +188,7 @@
                     isChange = true;
                     setTimeout(() => {delaysResultObj.classList.remove("animation");}, 6000); // 5000ミリ秒（5秒）
                 };
-                if (todaysRemainObj.innerText != data.summary.当日残り   .toLocaleString() + "本") {
+                if (todaysRemainObj.innerText != data.summary.当日残り.toLocaleString() + "本") {
                     todaysRemainObj.innerHTML = data.summary.当日残り.toLocaleString() + "<span class='hon'>本</span>";
                     isChange = true;
                     setTimeout(() => {todaysRemainObj.classList.remove("animation");}, 6000); // 5000ミリ秒（5秒）
