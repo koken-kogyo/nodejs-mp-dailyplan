@@ -142,11 +142,17 @@ QRコード読取
                     <% let sumct2 = 0; %>
                     <% data[1].forEach(function (d) { %>
                     <tr>
-                        <td class="tdrow lef td-big">
+                        <td class="tdrow lef td-big <%= d.COMMONPART %>">
+                            <% if (d.COMMONPART == "k") { %>
+                                <span title="<%= d.TOOLTIP %>">
+                            <% }; %>
                             <% if (osType == "windows") { %>
                                 <a href="javascript:apemCustomURL(0, '<%= d.HMCD %>')" class="td-apem-a"><%= d.HMCD %></a>
                             <% } else { %>
                                 <a href="javascript:apemCustomURL(1, '<%= d.HMCD %>')" class="td-apem-a"><%= d.HMCD %></a>
+                            <% }; %>
+                            <% if (d.COMMONPART == "k") { %>
+                                </span>
                             <% }; %>
                         </td>
                         <td class="tdrow lef"><%= d.HMNM %></td>

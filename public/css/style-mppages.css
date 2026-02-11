@@ -501,6 +501,10 @@ a {
     color: rgba(55, 55, 55, 0.6);
     background-color: rgba(150, 150, 150, 0.2);
 }
+/* 共通部品 */
+#details .k {
+    background-color: rgba(0, 250, 150, 0.1);
+}
 .highlight {
     animation: blinkAnimeHighlight 1.0s  infinite alternate;
 }

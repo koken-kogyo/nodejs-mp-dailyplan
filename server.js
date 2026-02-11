@@ -327,10 +327,12 @@ app.get("/ireporegist/sw/:id/:args", async function (req, res, next) {
 
 // チェックシートから実績登録
 // https://pc090n:53030/ireporegist2/MC/21343/V1311-62551-2:17:20:
+// https://pc090n:53030/ireporegist2/sw/11014/T1855-70743:62:60:
+// https://pc090n:53030/ireporegist2/sw/11014/TD170-56144-3:82:80:
 app.get("/ireporegist2/:mcglabel/:dandori/:args", async function (req, res, next) {
     try {
         const userid = req.session.userid ?? 'DEBUG';
-        const mcglabel = req.params.mcglabel;
+        const mcglabel = req.params.mcglabel.toUpperCase();
         const dandori = req.params.dandori;
         const args = req.params.args;
         const hmcd = args.split(":")[0];
@@ -344,58 +346,29 @@ app.get("/ireporegist2/:mcglabel/:dandori/:args", async function (req, res, next
 
         //　i-Reporter登録内容をデバッグログに記録
         const logger = log4js.getLogger();
-        logger.debug(`/ireporegist2/${mcglabel}/${dandori}/${hmcd}:${procqty}:${jiqty}:`);
+        logger.debug(`/ireporegist2/${req.params.mcglabel}/${dandori}/${args}`);
         
-        // チェックシートからの実績登録処理
-        const results = await mysqlHandler.irepoRegist_2(userid, mcglabel, dandori, hmcd, procqty, jiqty);
+        // 事前チェック
+        Promise.all([mysqlHandler.isKM8430HMCD(hmcd), mysqlHandler.isKM8430HMCD(hmcd, mcglabel)])
+        .then( async ([isHMCD, isMCGCD]) => {
+            if (!isHMCD || !isMCGCD) {
+                const msg = `コード票マスタに存在しません[${hmcd}:${mcglabel}]処理を中断します．`;
+                const logger = log4js.getLogger("e");
+                logger.error(msg);
+                logger.error(`[/ireporegist2/${req.params.mcglabel}/${dandori}/${args}]`);
+                return res.render("error.ejs", {err: msg});
+            }
 
-        // 登録完了画面にしダイレクトして終了
-        res.redirect(`/mp/confirm`);
+            // チェックシートからの実績登録処理
+            const results = await mysqlHandler.irepoRegist_2(userid, mcglabel, dandori, hmcd, procqty, jiqty);
 
+            // 登録完了画面にリダイレクトして終了（アドレスバーに登録用URLを残さない措置）
+            res.redirect(`/mp/confirm`);
+        }).catch((err) => {
+            next(err);
+        });
     }
     catch (err) {
-        next(err);
-    }
-});
-
-// 登録後の確認画面
-app.get("/mp/confirm", async (req, res, next) => {
-    res.render("confirm.ejs");
-});
-
-// 品番,設備,手配日付から、注文番号[ODRNO],手配状態[ODRSTS],実績数[JIQTY],未来の実績数[FUTUREQTY],過去の実績残数[ZANQTY]を取得するAPI
-app.get("/mysqlsv/getOdrno/:args", async (req, res, next) => {
-    const args = req.params.args;
-    const hmcd = args.split(":")[0];
-    const mcgcd = args.split(":")[1];
-    const mccd = args.split(":")[2]; 
-    const eddt = args.split(":")[3];
-    const stdt = args.split(":")[4];
-    const kd8450 = await mysqlHandler.getOdrno(hmcd, mcgcd, mccd, eddt, stdt);
-    res.status(200).json(kd8450);
-});
-// 品番,設備,手配日付から、注文番号[PLNNO],手配状態[ODRSTS],実績数[JIQTY],未来の実績数[FUTUREQTY],過去の実績残数[ZANQTY]を取得するAPI
-app.get("/mysqlsv/getPlnno/:args", async (req, res, next) => {
-    const args = req.params.args;
-    const hmcd = args.split(":")[0];
-    const mcgcd = args.split(":")[1];
-    const mccd = args.split(":")[2];
-    const eddt = args.split(":")[3];
-    const stdt = args.split(":")[4];
-    const kd8440 = await mysqlHandler.getPlnno(hmcd, mcgcd, mccd, eddt, stdt);
-    res.status(200).json(kd8440);
-});
-
-// API 作業開始
-app.get("/mysqlsv/startOrder/:args", async function (req, res, next) {
-    const args = req.params.args;
-    const odrno = args.split(":")[0];
-    const mcgcd = args.split(":")[1];
-    const mccd = args.split(":")[2];
-    try {
-        await mysqlHandler.startOrder(odrno, mcgcd, mccd);
-        res.status(200).end();
-    } catch (err) {
         next(err);
     }
 });
@@ -443,6 +416,48 @@ app.get("/mysqlsv/modifyOrder/:args", async function (req, res, next) {
     try {
         const updateresult = await mysqlHandler.apiModify_2(odrno, hmcd, mcgcd, mccd, preqty, modqty, mode, userid);
         res.status(200).json(updateresult);
+    } catch (err) {
+        next(err);
+    }
+});
+
+// 登録後の確認画面
+app.get("/mp/confirm", async (req, res, next) => {
+    res.render("confirm.ejs");
+});
+
+// 品番,設備,手配日付から、注文番号[ODRNO],手配状態[ODRSTS],実績数[JIQTY],未来の実績数[FUTUREQTY],過去の実績残数[ZANQTY]を取得するAPI
+app.get("/mysqlsv/getOdrno/:args", async (req, res, next) => {
+    const args = req.params.args;
+    const hmcd = args.split(":")[0];
+    const mcgcd = args.split(":")[1];
+    const mccd = args.split(":")[2]; 
+    const eddt = args.split(":")[3];
+    const stdt = args.split(":")[4];
+    const kd8450 = await mysqlHandler.getOdrno(hmcd, mcgcd, mccd, eddt, stdt);
+    res.status(200).json(kd8450);
+});
+// 品番,設備,手配日付から、注文番号[PLNNO],手配状態[ODRSTS],実績数[JIQTY],未来の実績数[FUTUREQTY],過去の実績残数[ZANQTY]を取得するAPI
+app.get("/mysqlsv/getPlnno/:args", async (req, res, next) => {
+    const args = req.params.args;
+    const hmcd = args.split(":")[0];
+    const mcgcd = args.split(":")[1];
+    const mccd = args.split(":")[2];
+    const eddt = args.split(":")[3];
+    const stdt = args.split(":")[4];
+    const kd8440 = await mysqlHandler.getPlnno(hmcd, mcgcd, mccd, eddt, stdt);
+    res.status(200).json(kd8440);
+});
+
+// API 作業開始
+app.get("/mysqlsv/startOrder/:args", async function (req, res, next) {
+    const args = req.params.args;
+    const odrno = args.split(":")[0];
+    const mcgcd = args.split(":")[1];
+    const mccd = args.split(":")[2];
+    try {
+        await mysqlHandler.startOrder(odrno, mcgcd, mccd);
+        res.status(200).end();
     } catch (err) {
         next(err);
     }
@@ -549,6 +564,35 @@ app.get("/mysqlsv/getDefid/:args", async (req, res, next) => {
 });
 
 
+// API IREPOSVの稼働確認（fetchのレスポンスを確認）
+app.get("/ireposv/isireposv", async (req, res, next) => {
+    const IREPOSV_TIMEOUT = 5000; // タイムアウト時間（ミリ秒）
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), IREPOSV_TIMEOUT);
+    let ret = false;
+    try {
+        const response = await fetch("http://ireposv/ConMasManager/", {
+            method: "GET",
+            cache: "no-store", // キャッシュを使わない
+            signal: controller.signal
+        });
+        ret = true;
+        clearTimeout(timeoutId);
+        /*if (response.ok) {
+            console.log(`✅ サーバー稼働中 (HTTP ${response.status})`);
+        } else {
+            console.log(`⚠️ サーバー応答あり (HTTP ${response.status})`);
+        }*/
+    } catch (error) {
+        if (error.name === "AbortError") {
+            console.error("⏳ IREPOSVタイムアウト: サーバー応答なし");
+        } else {
+            console.error(`❌ IREPOSV接続エラー: ${error.message}`);
+        }
+    }
+    res.status((ret == true) ? 200 : 504).end();
+});
+
 // API IREPOSVのPostgreSQLからview_report_defidの編集中ステータスの帳票IDを取得
 // （パラメータ3個：1帳票につき複数品番のパターン・・・SWの品番入力欄等）
 // （パラメータ1個：1帳票につき1品番のパターン（共通部品も1帳票））
@@ -558,51 +602,24 @@ app.get("/mysqlsv/getDefid/:args", async (req, res, next) => {
 // curl http://pc090n:53030/ireposv/getHoldid/1509:RD479-63171-1:16:
 app.get("/ireposv/getHoldid/:args", async (req, res, next) => {
     const args = req.params.args;
-    // IREPOSVサーバー接続確認
-    const socket = new net.Socket();
-    socket.setTimeout(3000); // タイムアウト時間を設定（ミリ秒）
-    socket.connect(pgHandler.PORT, pgHandler.HOST, async () => {
-        socket.end(); // 接続を閉じる
+    if (args.split(":").length == 1) {
+        const defid = args.split(":")[0];
+        const viewreport = await pgHandler.getHoldReportIDSingle(defid);
+        res.status(200).json(viewreport.rows[0].repid);
 
-        if (args.split(":").length == 1) {
-            const defid = args.split(":")[0];
-            const viewreport = await pgHandler.getHoldReportIDSingle(defid);
-            res.status(200).json(viewreport.rows[0].repid);
-        } else {
-            const defid = args.split(":")[0];
-            const hmcd = args.split(":")[1];
-            const clusterno = args.split(":")[2];
-            const viewreport = await pgHandler.getHoldReportID(defid, hmcd, clusterno);
-            res.status(200).json(viewreport.rows[0].repid);
-        }
-    });
-    socket.on('error', (e) => {
-        res.status(500).send({errormessage: "IREPOSVへの接続に失敗しました"});
-    });
-    socket.on('timeout', () => {
-        socket.destroy(); // タイムアウト時にソケットを破棄
-        res.status(500).send({errormessage: "IREPOSV接続タイムアウト"});
-    });
+    } else {
+        const defid = args.split(":")[0];
+        const hmcd = args.split(":")[1];
+        const clusterno = args.split(":")[2];
+        const viewreport = await pgHandler.getHoldReportID(defid, hmcd, clusterno);
+        res.status(200).json(viewreport.rows[0].repid);
+    }
 });
 // 帳票一覧取得API
 app.get("/ireposv/getViewReport/:defid", async (req, res, next) => {
     const defid = req.params.defid;
-    // IREPOSVサーバー接続確認
-    const socket = new net.Socket();
-    socket.setTimeout(3000); // タイムアウト時間を設定（ミリ秒）
-    socket.connect(pgHandler.PORT, pgHandler.HOST, async () => {
-        socket.end(); // 接続を閉じる
-
-        const viewreport = await pgHandler.getViewReport(defid);
-        res.status(200).json(viewreport);
-    });
-    socket.on('error', (e) => {
-        res.status(500).send({errormessage: "IREPOSVへの接続に失敗しました．"});
-    });
-    socket.on('timeout', () => {
-        socket.destroy(); // タイムアウト時にソケットを破棄
-        res.status(500).send({errormessage: "IREPOSV接続タイムアウト"});
-    });
+    const viewreport = await pgHandler.getViewReport(defid);
+    res.status(200).json(viewreport);
 });
 
 app.get("/error/:msg", async (req, res, next) => {

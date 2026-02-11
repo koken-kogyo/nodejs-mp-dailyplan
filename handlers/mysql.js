@@ -262,11 +262,15 @@ const getKD8450Orders = async (mcgcd, mccds, ymds) => {
     const orderby = getMCOrderby(mcgcd);
     
     // 過去の遅れ分を抽出する為の日付を取得（開始日から過去10営業日でさかのぼる）
-    let okureSql = "select YMD from (" + 
+    const okureSql = "select YMD from (" + 
         "select row_number() over (order by YMD desc) as LINENO, YMD from s0820 " + 
         "where CALTYP='00001' and WKKBN='1' and YMD between ? - interval 30 day and ?" +  
         ") a where a.LINENO=10";
-    let okure = await conn.query(okureSql, [ymds[0], ymds[0]]);
+    const okure = await conn.query(okureSql, [ymds[0], ymds[0]]);
+
+    // 切削オーダーに共通部品情報報を取得して付加
+    let mcgcdrep = mcgcd.replace("ON","MC").replace("3BP","MC");
+    const km8435 = await conn.query("select HMCD, HMCDS from km8435 where MCGCD=?", [mcgcdrep]);
 
     const mc = [];
     for (let mccd of mccds) {
@@ -355,6 +359,13 @@ const getKD8450Orders = async (mcgcd, mccds, ymds) => {
                 row.ZAIQTY = kd8460[0][idx].ZAIQTY ?? 0;
                 row.STORE = 0; // kd8460[idx].STORE === null ? 0 : kd8460[idx].STORE; タナコンサーバーから直接取得するよう変更
             }
+            // 共通部品情報を付与
+            idx = km8435[0].findIndex(s => s.HMCD == row.HMCD);
+            row.COMMONPART = (idx < 0) ? "" : "k"; // cssのクラス.kで色付け
+            let tooltip = km8435[0].filter(s => s.HMCD == row.HMCD);
+            if (tooltip.length > 0) {
+                row.TOOLTIP = "共通部品：\n" + tooltip.map(r => r.HMCDS).join('\n');
+            }
         }
 
         // １設備分の情報が出来上がり
@@ -375,6 +386,10 @@ const getKD8440Plans = async (mcgcd, mccds, ymds) => {
     targetday.setMonth(targetday.getMonth() - 4); // 4カ月前を取得
     const startodrno = ("00" + (targetday.getFullYear())).slice(-2) + 
                        ("00" + (targetday.getMonth()+1)).slice(-2) + "000000";
+
+    // 切削オーダーに共通部品情報報を取得して付加
+    let mcgcdrep = mcgcd.replace("ON","MC").replace("3BP","MC");
+    const km8435 = await conn.query("select HMCD, HMCDS from km8435 where MCGCD=?", [mcgcdrep]);
 
     // グループの設備一覧を取得
     const orderby = await getMCOrderby(mcgcd);
@@ -491,6 +506,13 @@ const getKD8440Plans = async (mcgcd, mccds, ymds) => {
                 row.DEFID = km8430[0][idx].DEFID ?? 0;
                 row.CT = km8430[0][idx].CT ?? 0;
             }
+            // 共通部品情報を付与（おまけ６）
+            idx = km8435[0].findIndex(s => s.HMCD == row.HMCD);
+            row.COMMONPART = (idx < 0) ? "" : "k"; // cssのクラス.kで色付け
+            let tooltip = km8435[0].filter(s => s.HMCD == row.HMCD);
+            if (tooltip.length > 0) {
+                row.TOOLTIP = "共通部品：\n" + tooltip.map(r => r.HMCDS).join('\n');
+            }
         }
 
         // 仕掛かり在庫のみデータを内示一覧に追加（おまけ５）
@@ -520,6 +542,13 @@ const getKD8440Plans = async (mcgcd, mccds, ymds) => {
                 } else {
                     row.DEFID = km8430[0][idx].DEFID ?? 0;
                     row.CT = km8430[0][idx].CT ?? 0;
+                }
+                // 共通部品情報を付与（おまけ６）
+                idx = km8435[0].findIndex(s => s.HMCD == row.HMCD);
+                row.COMMONPART = (idx < 0) ? "" : "k";
+                let tooltip = km8435[0].filter(s => s.HMCD == row.HMCD);
+                if (tooltip.length > 0) {
+                    row.TOOLTIP = "共通部品：\n" + tooltip.map(r => r.HMCDS).join('\n');
                 }
                 // 通常の内示一覧に仕掛かり在庫のみのデータを追加する
                 kd8440[0].push(row);
@@ -902,6 +931,18 @@ exports.modifyZaiko = async (hmcd, mcgcd, mccd, modqty, userid) => {
     }
 };
 
+// 品番がコード票マスタに存在するかチェック
+exports.isKM8430HMCD = async (hmcd) => {
+    const result = await getDatabase("select * from km8430 where HMCD=?", [hmcd]);
+    return (result.length > 0);
+}
+
+// 設備グループコードがコード票マスタに存在するかチェック
+exports.isKM8430MCGCD = async (hmcd, mcgcd) => {
+    const result = await getDatabase("select * from km8430 where HMCD=? and KTKEY like '*?*'", [hmcd, mcgcd]);
+    return (result.length > 0);
+}
+
 // 在庫テーブルに品番が存在するかチェック
 // レコードなし:-1、それ以外は在庫数を返却
 exports.isKD8460 = async (hmcd, mcgcd, mccd) => {
@@ -945,15 +986,14 @@ exports.getDashboardToday = async () => {
     // ダッシュボード
     const sql1 = 
         "select " +
-            "a.当日目標, b.当日実績, (a.当日目標 - b.当日実績) as 当日残り, " +
+            "a.当日目標, (b.当日実績 - c.遅れ実績) as 当日実績, (a.当日目標 - b.当日実績) as 当日残り, " +
             "c.遅れ目標, c.遅れ実績, (c.遅れ目標 - c.遅れ実績) as 遅れ残り " +
         "from (" +
             "select ifnull(sum(ODRQTY),0) as 当日目標 " +
             "from kd8450 where EDDT=curdate() and ODRSTS<>'9' and MCGCD<>'EX' " +
         ") a,(" +
             "select ifnull(sum(JIQTY),0) as 当日実績 " +
-            "from kd8480 aa where cast(JIDT as date) = curdate() and not exists" +
-            "(select * from kd8490 bb where bb.TARGETDT=curdate() and bb.HMCD=aa.HMCD)" +
+            "from kd8480 aa where cast(JIDT as date) = curdate() " +
         ") b,(" +
             "select ifnull(sum(aa.ODRQTY-aa.JIQTY),0) as 遅れ目標" +
             ", ifnull(sum((aa.ODRQTY-aa.JIQTY)-(bb.ODRQTY-bb.JIQTY)),0) as 遅れ実績 " +
@@ -1430,7 +1470,7 @@ const getThisEquipment_2 = async (conn, hmcd, mcglabel) => {
     if (result1[0][0].ANSWER == '手配検索対象外') {
         return result1[0][0];
     }
-    // ２．コード票に同じ工程が複数ある場合は未完了の手配から対象の設備コードを検索
+    // ２．コード票に同じ工程が複数ある場合は未完了の手配から対象の設備コードを検索(194555-48240:MS-1>MC>EX-MT1>MC-3BP>EX-BT1)
     const sql2 = 
         "select MPSEQ as KTSEQ, MCGCD, MCCD, '手配検索対象' as ANSWER from kd8450 where " +
             `HMCD=? ` +
@@ -1557,7 +1597,7 @@ const finishOrderHMCD_2 = async (conn, hmcd, mcgcd, mccd, jiqty, dandori) => {
                 if (update8430[0].changedRows == 0) {
                     await conn.execute(
                     "update kd8430 set JIQTY=0, ODRSTS='3', MPUPDTID=? where ODRNO=?"
-                    , [userid, row.ODRNO]);
+                    , [dandori, row.ODRNO]);
                 }
                 // クライアントに返却
                 if (!result) {
@@ -1579,7 +1619,7 @@ const finishOrderHMCD_2 = async (conn, hmcd, mcgcd, mccd, jiqty, dandori) => {
                 // 親受注を3:着手に更新
                 await conn.execute(
                 "update kd8430 set JIQTY=0, ODRSTS='3', MPUPDTID=? where ODRNO=?"
-                , [userid, row.ODRNO]);
+                , [dandori, row.ODRNO]);
                 if (!result) {
                     result = [{"TARGET": "ORDER", "EDDT": row.EDDT, "NEWSTS": "3", "NEWJIQTY": newjiqty}];
                 } else {

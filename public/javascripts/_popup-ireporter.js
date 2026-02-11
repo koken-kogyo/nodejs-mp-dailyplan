@@ -10,6 +10,13 @@ async function iReporter(tblno, row) {
     const mcgcd = document.getElementById("mcgcd").value;
     const mccd = document.getElementById(`mccd${tblno}`).value;
     //alert(tblno + ":" + row + ":" + hmcd)
+
+    // iRepoサーバーの稼働確認
+    const isireposv = await fetch("/ireposv/isireposv");
+    if (!isireposv.ok) {
+        alert("IREPOSVの稼働が確認できませんでした．");
+        return;
+    }
     // iRepo情報の取得API
     const irepoinfo = await this.getDefid(hmcd, mcgcd, mccd);
     if (!irepoinfo) return;
@@ -81,7 +88,7 @@ function iRepoCustomURL(tblno, row, mcgcd, hmcd, defid, clusterno, repid) {
     // iRepo呼び出し用データの取得
     const tblobj = document.getElementById(`tbl${tblno}`);
     const irepourl = "jp.co.cimtops.ireporter";
-    
+
     // 新規帳票定義を起動
     if (repid == 0) {
         if (mcgcd == "SW") {

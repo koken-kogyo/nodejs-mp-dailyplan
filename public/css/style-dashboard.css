@@ -214,15 +214,15 @@ footer #responsible {
     #dashboard1 table .tddata {font-size: 5em;}
     #dashboard1 table .tdheader {font-size: 3em; font-weight: 600; height: 3em;}
 
-    #dashboard2 {height:90svh;}
+    #dashboard2 {height:85svh;}
     #dashboard2 #chart2 {width: 92svw;}
 
-    #dashboard3 {height:90svh;}
+    #dashboard3 {height:85svh;}
     #dashboard3 #chart3 {width: 92svw;}
 
-    #f-dashboard1{height:90svh;}
-    #f-dashboard2{height:90svh;}
-    #f-dashboard3{height:90svh;}
+    #f-dashboard1{height:85svh;}
+    #f-dashboard2{height:85svh;}
+    #f-dashboard3{height:85svh;}
  }
 
 /* =========================================================================== */
