@@ -327,7 +327,7 @@ app.get("/ireporegist/sw/:id/:args", async function (req, res, next) {
 
 // チェックシートから実績登録
 // https://pc090n:53030/ireporegist2/MC/21343/V1311-62551-2:17:20:
-// https://pc090n:53030/ireporegist2/sw/11014/T1855-70743:62:60:
+// https://pc090n:53030/ireporegist2/sw/11014/05719-52741-1:62:60:
 // https://pc090n:53030/ireporegist2/sw/11014/TD170-56144-3:82:80:
 app.get("/ireporegist2/:mcglabel/:dandori/:args", async function (req, res, next) {
     try {
@@ -361,9 +361,13 @@ app.get("/ireporegist2/:mcglabel/:dandori/:args", async function (req, res, next
 
             // チェックシートからの実績登録処理
             const results = await mysqlHandler.irepoRegist_2(userid, mcglabel, dandori, hmcd, procqty, jiqty);
+            if (results) {
+                // 登録完了画面にリダイレクトして終了（アドレスバーに登録用URLを残さない措置）
+                res.redirect(`/mp/confirm`);
+            } else {
+                res.redirect(`/error/手配の消込はありませんでした．仕掛在庫と実績を計上しました．`);
+            }
 
-            // 登録完了画面にリダイレクトして終了（アドレスバーに登録用URLを残さない措置）
-            res.redirect(`/mp/confirm`);
         }).catch((err) => {
             next(err);
         });
@@ -399,7 +403,7 @@ app.get("/mysqlsv/jissekiRegist/:args", async function (req, res, next) {
 
 // API 実績訂正
 app.get("/mysqlsv/modifyOrder/:args", async function (req, res, next) {
-    const userid = req.session.userid;
+    const userid = req.session.userid ?? 'DEBUG';
     const args = req.params.args;
     const odrno = args.split(":")[0];
     const hmcd = args.split(":")[1];
@@ -415,7 +419,11 @@ app.get("/mysqlsv/modifyOrder/:args", async function (req, res, next) {
 
     try {
         const updateresult = await mysqlHandler.apiModify_2(odrno, hmcd, mcgcd, mccd, preqty, modqty, mode, userid);
-        res.status(200).json(updateresult);
+        if (updateresult) {
+            res.status(200).json(updateresult);
+        } else {
+            res.status(204).end(); // HTTPステータスコード 204: No Content
+        }
     } catch (err) {
         next(err);
     }
@@ -583,11 +591,11 @@ app.get("/ireposv/isireposv", async (req, res, next) => {
         } else {
             console.log(`⚠️ サーバー応答あり (HTTP ${response.status})`);
         }*/
-    } catch (error) {
-        if (error.name === "AbortError") {
+    } catch (err) {
+        if (err.name === "AbortError") {
             console.error("⏳ IREPOSVタイムアウト: サーバー応答なし");
         } else {
-            console.error(`❌ IREPOSV接続エラー: ${error.message}`);
+            console.error(`❌ IREPOSV接続エラー: ${err.message}`);
         }
     }
     res.status((ret == true) ? 200 : 504).end();

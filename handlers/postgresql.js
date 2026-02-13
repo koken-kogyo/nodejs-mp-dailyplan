@@ -1,7 +1,5 @@
 const { Client } = require('pg');
 const { pgConfig } = require('../config.js');
-exports.HOST = pgConfig.host;
-exports.PORT = pgConfig.port;
 
 // Database から データを取得する (都度コネクション貼って取得後に解放)
 const getDatabase = async (sql, param) => {

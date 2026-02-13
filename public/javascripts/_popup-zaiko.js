@@ -4,13 +4,21 @@
 
 
 const inputZaiko = document.getElementById("inputZAIQTY");
+const zaiModifyObj = document.getElementById("zaiqtyModify");
+// TDで描画したボタンにフォーカスがあてられるように設定
+zaiModifyObj.setAttribute("tabindex", "-1");
 // イベントリスナー（フォーカス時全選択）（アロー関数編）
 inputZaiko.addEventListener("focus", event => event.target.select());
 // イベントリスナー（キーダウン）（無名関数編）
 inputZaiko.addEventListener("keydown", function(event) {
-    if (event.key == "Enter") inputZaiko.blur();
+    if (event.key == "Enter") {
+        inputZaiko.blur();
+        zaiModifyObj.focus();
+    }
     if (event.keyCode == 27) document.getElementById("zaiqtyPopupWindow").style.display = "none";
 });
+// イベントリスナー（ボタンキーダウン）（1行で簡潔に記述してみた）
+zaiModifyObj.addEventListener("keydown", e => e.key === "Enter" && zaikoModify());
 
 // 仕掛り在庫の表示
 function zaiqtyPopup(tblno, row) {

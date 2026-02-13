@@ -199,14 +199,15 @@ async function orderEntry() {
             if ((mode=="ORDER" && d.TARGET=="ORDER") || (mode=="PLAN" && d.TARGET=="PLAN")) {
                 let idx = d.COLIDX;
                 idx = (idx<5) ? idx + 5 : idx + 6; // 配列番号をtableのcolに合わせる
-                if (d.NEWSTS == "3") {
-                    let odrqty = Number(tblobj.rows[row].cells[idx].innerText);
+                let newRow = (hmcd == d.HMCD) ? row : findRowNumbersByPartNumber(tblno, d.HMCD);
+                if (d.NEWSTS == "3" && newRow != -1) {
+                    let odrqty = Number(tblobj.rows[newRow].cells[idx].innerText);
                     let newjiqty = Number(d.NEWJIQTY);
                     let remainper = 100 - Math.round(newjiqty / odrqty * 100);
-                    tblobj.rows[row].cells[idx].style = "--remain-per: " + remainper + "%;";
-                    tblobj.rows[row].cells[idx].className = "s3";
-                } else if (d.NEWSTS == "4") {
-                    tblobj.rows[row].cells[idx].className = "s4 td-qty";
+                    tblobj.rows[newRow].cells[idx].style = "--remain-per: " + remainper + "%;";
+                    tblobj.rows[newRow].cells[idx].className = "s3";
+                } else if (d.NEWSTS == "4" && newRow != -1) {
+                    tblobj.rows[newRow].cells[idx].className = "s4 td-qty";
                 }
             }
         });
@@ -220,6 +221,21 @@ async function orderEntry() {
     } catch (err) {
         alert(err);
     }
+}
+// 品番列から検索して行番号を取得する関数
+function findRowNumbersByPartNumber(tblno, partNumber) {
+    const rows = document.getElementById(`tbl${tblno}`).getElementsByTagName("tr");
+    // ヘッダー行を除外して検索
+    for (let i = 1; i < rows.length; i++) {
+        const cells = rows[i].getElementsByTagName("td");
+        if (cells.length > 0) {
+            const cellValue = cells[0].textContent.trim(); // 品番列は0番目
+            if (cellValue === partNumber) {
+                return i; // 行番号（1始まり）
+            }
+        }
+    }
+    return -1;
 }
 // 共通の入力ボックスチェック
 function checkInputBox() {
@@ -272,6 +288,11 @@ async function orderModify() {
     try {
         // 内部的な実績登録、在庫登録、ステータス更新（データベース）
         const response = await fetch(`/mysqlsv/modifyOrder/${odrno}:${hmcd}:${mcgcd}:${mccd}:${preqty}:${modqty}:${mode}:`)
+        if (response.status == 204) {
+            alert("更新対象のデータはありませんでした．");
+            popWin.style.display = "none";
+            return;
+        }
         const data = await response.json();
         // 表面上のステータス更新（DOM）
         let jiqty = modqty - preqty;

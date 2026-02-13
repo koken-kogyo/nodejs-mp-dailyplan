@@ -1292,6 +1292,10 @@ exports.irepoRegist_2 = async (userid, mcglabel, dandori, hmcd, procqty, jiqty) 
         // https://pc090n:53030/ireporegist2/MC/10925/4441983:60:60:        SW -> NC-5 -> MC-3F
         // https://pc090n:53030/ireporegist2/SW/10841/RP801-63142-2:500:500:
         // https://nabev2:53030/ireporegist2/SS/11014/129486-59140K:350:350:
+        // https://nabev2:53030/ireporegist2/SW/11014/RP801-63142-2:70:70:
+        // https://nabev2:53030/ireporegist2/SW/11014/RP801-63142-2:105:105:
+        // https://nabev2:53030/ireporegist2/SW/11014/RP801-63142-2:165:165:
+        // https://nabev2:53030/ireporegist2/SW/11014/RP801-63142-2:350:350:
 
         // １．更新対象の設備コードを取得（コード票品番）
         const thisequip = await getThisEquipment_2(conn, hmcd, mcglabel);
@@ -1305,9 +1309,40 @@ exports.irepoRegist_2 = async (userid, mcglabel, dandori, hmcd, procqty, jiqty) 
         // ３．仕掛り在庫に加算
         const resultZaiko = await updateKD8460_2(conn, hmcd, mcgcd, mccd, jiqty, dandori, "IN");
 
-        // ４．手配もしくは内示実績の更新
-        const resultOrder = await finishOrderHMCD_2(conn, hmcd, mcgcd, mccd, jiqty, dandori);
-        //if (resultOrder) console.log("手配実績更新件数：" + resultOrder.length + "件");
+        // ３．５．共通部品処理（手配と内示をマージして取得）
+        // https://pc090n:53030/ireporegist2/SW/11014/RD451-64073-3:315:315:
+        // https://pc090n:53030/ireporegist2/SW/11014/RD451-64073-3:630:630:
+        // https://pc090n:53030/ireporegist2/SW/11014/06673-00068:100:100:
+        // https://pc090n:53030/ireporegist2/SW/11014/06673-00068:178:178:
+        // https://pc090n:53030/ireporegist2/SW/11014/06673-00068:268:268:
+        // https://pc090n:53030/ireporegist2/SW/11014/06673-00068-K:88:88:
+        const commonOrders = await selectCommonOrders_2(conn, hmcd, mcgcd, mccd);
+        let resultOrder = [];
+        if (commonOrders[0].length == 0) {
+
+            // ４．手配もしくは内示実績の更新
+            const result = await finishOrderHMCD_2(conn, hmcd, mcgcd, mccd, jiqty, dandori);
+            //if (resultOrder) console.log("手配実績更新件数：" + resultOrder.length + "件");
+            if (result) resultOrder.push(...result);
+        } else {
+
+            // ４．５．共通部品オーダーで回して古い手配日から順に実績更新
+            let countdownQty = jiqty;
+            for await (row of commonOrders[0]) {
+                let rowQty = Number(row.ODRQTY) - Number(row.JIQTY);
+                let newQty = (countdownQty >= rowQty) ? rowQty : countdownQty;
+                const result = await finishOrderHMCD_2(conn, row.HMCD, mcgcd, mccd, newQty, dandori);
+                //if (resultOrder) console.log("手配実績更新件数：" + resultOrder.length + "件");
+                if (result) resultOrder.push(...result);
+                countdownQty -= newQty;
+                if (countdownQty <= 0) break;
+            }
+            if (countdownQty > 0) {
+                const result = await finishOrderHMCD_2(conn, hmcd, mcgcd, mccd, countdownQty, dandori);
+                //if (remainOrder) console.log("手配実績更新件数：" + remainOrder.length + "件");
+                if (result) resultOrder.push(...result);
+            }
+        }
 
         // ５．前工程在庫の引き落とし
         if (thisequip.KTSEQ > 1) {
@@ -1321,6 +1356,7 @@ exports.irepoRegist_2 = async (userid, mcglabel, dandori, hmcd, procqty, jiqty) 
         
         //await conn?.rollback(); // DEBUG時
         await conn.commit();    // すべて成功したらコミット
+        return resultOrder;     // 実績更新結果を返却
 
     } catch (err) {
         await conn?.rollback(); // エラー時はロールバック
@@ -1344,6 +1380,8 @@ exports.apiRegist_2 = async (odrno, hmcd, mcgcd, mccd, jiqty, mode, userid) => {
         // https://pc090n:53030/ireporegist2/SW/10841/4441983:120:120:      SW -> NC-5 -> MC-3F
         // https://pc090n:53030/ireporegist2/NC/10807/4441983:120:120:      SW -> NC-5 -> MC-3F
         // https://pc090n:53030/ireporegist2/MC/10925/4441983:60:60:        SW -> NC-5 -> MC-3F
+        // https://pc090n:53030/ireporegist2/SW/11014/06673-00068:178:178:
+        // https://pc090n:53030/ireporegist2/SW/11014/06673-00068:268:268:
 
         // １．更新対象の設備コードを取得（コード票品番）
         const thisequip = await getThisEquipment_2(conn, hmcd, mcgcd);
@@ -1355,9 +1393,36 @@ exports.apiRegist_2 = async (odrno, hmcd, mcgcd, mccd, jiqty, mode, userid) => {
         // ３．仕掛り在庫に加算
         const resultZaiko = await updateKD8460_2(conn, hmcd, mcgcd, mccd, jiqty, userid, "IN");
 
-        // ４．手配もしくは内示実績の更新
-        const resultOrder = await finishOrderODRNO_2(conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, userid);
-        //if (resultOrder) console.log("手配実績更新件数：" + resultOrder.length + "件");
+        // https://pc090n:53030/ireporegist2/SW/11014/RD451-64073-3:630:630:
+        const commonOrders = await selectCommonOrdersODRNO_2(conn, odrno, hmcd, mcgcd, mccd, mode);
+        let resultOrder = [];
+        if (commonOrders[0].length == 0) {
+
+            // ４．手配もしくは内示実績の更新
+            const result = await finishOrderODRNO_2(conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, userid);
+            //if (result) console.log("手配実績更新件数：" + result.length + "件");
+            if (result) resultOrder.push(...result);
+        } else {
+
+            // ４．５．共通部品オーダーで回して古い手配日から順に実績更新
+            // https://pc090n:53030/ireporegist2/SW/11014/06673-00068:178:178:
+            // https://pc090n:53030/ireporegist2/SW/11014/06673-00068:268:268:
+            let countdownQty = jiqty;
+            for await (row of commonOrders[0]) {
+                let rowQty = Number(row.ODRQTY) - Number(row.JIQTY);
+                let newQty = (countdownQty >= rowQty) ? rowQty : countdownQty;
+                const result = await finishOrderODRNO_2(conn, row.ODRNO, row.HMCD, mcgcd, mccd, newQty, row.MODE, userid);
+                //if (result) console.log("手配実績更新件数：" + result.length + "件");
+                if (result) resultOrder.push(...result);
+                countdownQty -= newQty;
+                if (countdownQty <= 0) break;
+            }
+            if (countdownQty > 0) {
+                const result = await finishOrderODRNO_2(conn, odrno, hmcd, mcgcd, mccd, countdownQty, mode, userid);
+                //if (result) console.log("手配実績更新件数：" + result.length + "件");
+                if (result) resultOrder.push(...result);
+            }
+        }
 
         // ５．前工程在庫の引き落とし
         if (thisequip.KTSEQ > 1) {
@@ -1735,9 +1800,13 @@ const finishOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
                     }
                     // クライアントに返却
                     if (!result) {
-                        result = [{"TARGET": "ORDER", "EDDT": formatEDDT, "NEWSTS": newStatus, "ODRQTY": odrQty, "NEWJIQTY": odrQty, "COLIDX": idx}];
+                        result = [
+                            {"TARGET": "ORDER", "EDDT": formatEDDT, "NEWSTS": newStatus, "ODRQTY": odrQty, "NEWJIQTY": odrQty, "COLIDX": idx, "HMCD": hmcd}
+                        ];
                     } else {
-                        result.push({"TARGET": "ORDER", "EDDT": formatEDDT, "NEWSTS": newStatus, "ODRQTY": odrQty, "NEWJIQTY": odrQty, "COLIDX": idx});
+                        result.push(
+                            {"TARGET": "ORDER", "EDDT": formatEDDT, "NEWSTS": newStatus, "ODRQTY": odrQty, "NEWJIQTY": odrQty, "COLIDX": idx, "HMCD": hmcd}
+                        );
                     }
                     countdownQty -= needQty;
                 }
@@ -1755,9 +1824,13 @@ const finishOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
                     "update kd8430 set JIQTY=0, ODRSTS='3', MPUPDTID=? where ODRNO=?"
                     , [userid, row.ODRNO]);
                     if (!result) {
-                        result = [{"TARGET": "ORDER", "EDDT": formatEDDT, "NEWSTS": "3", "ODRQTY": odrQty, "NEWJIQTY": newjiqty, "COLIDX": idx}];
+                        result = [
+                            {"TARGET": "ORDER", "EDDT": formatEDDT, "NEWSTS": "3", "ODRQTY": odrQty, "NEWJIQTY": newjiqty, "COLIDX": idx, "HMCD": hmcd}
+                        ];
                     } else {
-                        result.push({"TARGET": "ORDER", "EDDT": formatEDDT, "NEWSTS": "3", "ODRQTY": odrQty, "NEWJIQTY": newjiqty, "COLIDX": idx});
+                        result.push(
+                            {"TARGET": "ORDER", "EDDT": formatEDDT, "NEWSTS": "3", "ODRQTY": odrQty, "NEWJIQTY": newjiqty, "COLIDX": idx, "HMCD": hmcd}
+                        );
                     }
                     countdownQty = 0;
                 }
@@ -1804,9 +1877,13 @@ const finishOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
                 // 割り込みここまで
                 if (update[0].changedRows != 0) {
                     if (!result) {
-                        result = [{"TARGET": "PLAN", "EDDT": formatEDDT, "NEWSTS": newStatus, "NEWJIQTY": odrQty, "COLIDX": idx}];
+                        result = [
+                            {"TARGET": "PLAN", "EDDT": formatEDDT, "NEWSTS": newStatus, "NEWJIQTY": odrQty, "COLIDX": idx, "HMCD": hmcd}
+                        ];
                     } else {
-                        result.push({"TARGET": "PLAN", "EDDT": formatEDDT, "NEWSTS": newStatus, "NEWJIQTY": odrQty, "COLIDX": idx});
+                        result.push(
+                            {"TARGET": "PLAN", "EDDT": formatEDDT, "NEWSTS": newStatus, "NEWJIQTY": odrQty, "COLIDX": idx, "HMCD": hmcd}
+                        );
                     }
                     countdownQty -= needQty;
                 }
@@ -1820,9 +1897,13 @@ const finishOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
                 );
                 if (update[0].changedRows != 0) {
                     if (!result) {
-                        result = [{"TARGET": "PLAN", "EDDT": formatEDDT, "NEWSTS": "3", "NEWJIQTY": newjiqty, "COLIDX": idx}];
+                        result = [
+                            {"TARGET": "PLAN", "EDDT": formatEDDT, "NEWSTS": "3", "NEWJIQTY": newjiqty, "COLIDX": idx, "HMCD": hmcd}
+                        ];
                     } else {
-                        result.push({"TARGET": "PLAN", "EDDT": formatEDDT, "NEWSTS": "3", "NEWJIQTY": newjiqty, "COLIDX": idx});
+                        result.push(
+                            {"TARGET": "PLAN", "EDDT": formatEDDT, "NEWSTS": "3", "NEWJIQTY": newjiqty, "COLIDX": idx, "HMCD": hmcd}
+                        );
                     }
                     countdownQty = 0;
                 }
@@ -1996,6 +2077,59 @@ const modifyOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
     return result;
 };
 
+
+// 共通部品オーダーの取得（品目指定）（手配と内示をマージして取得）
+const selectCommonOrders_2 = async (conn, hmcd, mcgcd, mccd) => {
+    const planYMDs = await getYMDPlans(); // 内示開始日付を取得
+    const sql =
+        "select a.EDDT, a.HMCD, a.ODRQTY, a.JIQTY, a.ODRNO as ODRNO, 'ORDER' as MODE from kd8450 a, km8435 b " +
+        "where a.EDDT>(now()-interval 1 month) and a.ODRSTS not in ('4','9') and " +
+        "a.HMCD=b.HMCDS and b.HMCD=? and a.MCGCD=? and a.MCCD=? " +
+        "union " +
+        "select c.EDDT, c.HMCD, c.ODRQTY, c.JIQTY, c.PLNNO as ODRNO, 'PLAN' as MODE from kd8440 c, km8435 d " +
+        "where c.EDDT<=? and c.ODRSTS not in ('4','9') and " +
+        "c.HMCD=d.HMCDS and d.HMCD=? and " +
+        "exists (select*from km8430 where hmcd=? and kt1mcgcd=? and kt1mccd=?) " +
+        "order by EDDT asc, HMCD asc";
+    const commonOrders = await conn.query(sql, [
+        hmcd, mcgcd, mccd,
+        planYMDs[9], hmcd,
+        hmcd, mcgcd, mccd
+    ]);
+    return commonOrders;
+}
+
+// 共通部品オーダーの取得（手配または内示指定）（手配と内示をマージして取得）
+const selectCommonOrdersODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, mode) => {
+    const planYMDs = await getYMDPlans(); // 内示開始日付を取得
+    // 開始日付を算出
+    let sql = "";
+    if (mode == "ORDER") {
+        sql = "select EDDT from kd8430 where odrno=?";
+    } else if (mode == "PLAN") {
+        sql = "select EDDT from kd8440 where plnno=?";
+    }
+    const result = await conn.query(sql, [odrno]);
+    // 開始日以降の未完オーダーを抽出
+    sql =
+        "select a.EDDT, a.HMCD, a.ODRQTY, a.JIQTY, a.ODRNO as ODRNO, 'ORDER' as MODE from kd8450 a, km8435 b " +
+        "where a.EDDT>(now()-interval 1 month) and a.ODRSTS not in ('4','9') and " +
+        "a.HMCD=b.HMCDS and b.HMCD=? and a.MCGCD=? and a.MCCD=? " +
+        "union " +
+        "select c.EDDT, c.HMCD, c.ODRQTY, c.JIQTY, c.PLNNO as ODRNO, 'PLAN' as MODE from kd8440 c, km8435 d " +
+        "where c.EDDT<=? and c.ODRSTS not in ('4','9') and " +
+        "c.HMCD=d.HMCDS and d.HMCD=? and " +
+        "exists (select*from km8430 where hmcd=? and kt1mcgcd=? and kt1mccd=?) " +
+        "having EDDT>=? " +
+        "order by EDDT asc, HMCD asc";
+    const commonOrders = await conn.query(sql, [
+        hmcd, mcgcd, mccd,
+        planYMDs[9], hmcd,
+        hmcd, mcgcd, mccd,
+        result[0][0].EDDT
+    ]);
+    return commonOrders;
+}
 
 // https://pc090n:53030/ireporegist2/MC/21343/V1311-62551-2:17:20:
 // https://pc090n:53030/ireporegist2/MC/21343/4033281:20:17:        MC-MC -> MC-3F (MC2工程)
