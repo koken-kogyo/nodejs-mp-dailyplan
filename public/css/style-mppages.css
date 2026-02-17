@@ -421,6 +421,10 @@ a {
     padding: 10px 0 10px 3px;
     color: cadetblue;
 }
+/* オリエント品番16文字を超える AA090T0141-0000:対象外 A69C0G01B2-0400-7(K):対象 */
+#details .fontSize1p15em {
+    font-size: 1.15em;
+}
 /* 仕掛かり在庫リンク */
 #details .td-zai-a {
     display: block;

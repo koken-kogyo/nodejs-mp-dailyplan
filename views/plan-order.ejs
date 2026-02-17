@@ -147,9 +147,13 @@ QRコード読取
                                 <span title="<%= d.TOOLTIP %>">
                             <% }; %>
                             <% if (osType == "windows") { %>
-                                <a href="javascript:apemCustomURL(0, '<%= d.HMCD %>')" class="td-apem-a"><%= d.HMCD %></a>
+                                <a href="javascript:apemCustomURL(0, '<%= d.HMCD %>')" class="td-apem-a<% if (d.HMCD.length > 16) { %> fontSize1p15em<% }%>">
+                                    <%= d.HMCD %>
+                                </a>
                             <% } else { %>
-                                <a href="javascript:apemCustomURL(1, '<%= d.HMCD %>')" class="td-apem-a"><%= d.HMCD %></a>
+                                <a href="javascript:apemCustomURL(1, '<%= d.HMCD %>')" class="td-apem-a<% if (d.HMCD.length > 16) { %> fontSize1p15em<% }%>">
+                                    <%= d.HMCD %>
+                                </a>
                             <% }; %>
                             <% if (d.COMMONPART == "k") { %>
                                 </span>

@@ -23,7 +23,6 @@ async function iReporter(tblno, row) {
     // 直接呼出し工程（値やフラグを渡してあげないといけない）
     if (mcgcd == "SW") {
         const repid = await getHoldid(irepoinfo.DEFID, hmcd, irepoinfo.HMCDCID);
-        if (!repid) return;
         iRepoCustomURL(tblno, row, mcgcd, hmcd, irepoinfo.DEFID, irepoinfo.HMCDCID, repid)
 
     // ポップアップで選択工程
