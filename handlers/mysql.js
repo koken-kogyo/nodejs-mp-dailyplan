@@ -48,7 +48,10 @@ const getYMDOrders = async () => {
         baseday.setDate(baseday.getDate() - baseday.getDay() + 1);  // 今週の月曜日を取得
     }
     // カレンダー配列を作成
-    const ymd = [];
+    // const ymd = [];
+    // 2026.04.21用
+    const ymd = ['2026-4-20','2026-4-21','2026-4-22','2026-4-23','2026-4-24',
+                 '2026-4-27','2026-4-28','2026-4-29','2026-5-7','2026-5-8'];
     while (ymd.length < 9) {
         // 基準日の週に稼働日が1日でもあれば配列にセット
         let dstring = baseday.getFullYear() + "-" + (baseday.getMonth() + 1) + "-" + baseday.getDate();        
@@ -89,7 +92,13 @@ const getYMDPlans = async () => {
         baseday.setDate(baseday.getDate() - baseday.getDay() + 1);  // 今週の月曜日を取得
     }
     // カレンダー配列を作成
-    const ymd = [];
+    //const ymd = [];
+    // 2026.04.14用
+    //const ymd = ['2026-4-27','2026-4-28','2026-4-29','2026-5-7','2026-5-8',
+    //             '2026-5-11','2026-5-12','2026-5-13','2026-5-14','2026-5-15'];
+    // 2026.04.21用
+    const ymd = ['2026-5-11','2026-5-12','2026-5-13','2026-5-14','2026-5-15',
+                 '2026-5-18','2026-5-19','2026-5-20','2026-5-21','2026-5-22'];
     let weekcount = 0;
     while (ymd.length < 9) {
         // 基準日の週に稼働日があるか調査
