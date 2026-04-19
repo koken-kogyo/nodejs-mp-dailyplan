@@ -71,7 +71,6 @@ function drawChart2(label, data1, data2) {
                 position: 'left',
                 min: 0,
                 ticks: {
-                    stepSize: 200,
                     callback: function(value) {
                         return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',') + ' 本';
                     },

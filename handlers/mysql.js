@@ -526,60 +526,60 @@ const getKD8440Plans = async (mcgcd, mccds, ymds) => {
 
         // 仕掛かり在庫のみデータを内示一覧に追加（おまけ５）
         let countAdded = 0;
-        for await (row of kd8460mccd[0]) {
-            let idx = 0;
-            // 内示情報を検索
-            idx = kd8440[0].findIndex(t => t.HMCD === row.HMCD);
-            if (idx < 0) {
-                // 手配残データを付与（おまけ１）
-                idx = kd8450[0].findIndex(t => t.HMCD === row.HMCD);
-                if (idx < 0) {
-                    row.DA = null;
-                    row.DAZ = 0;
-                    row.STSA = null;
-                } else {
-                    row.DA = kd8450[0][idx].ODRQTY;
-                    row.DAZ = kd8450[0][idx].ZANQTY;
-                    row.STSA = kd8450[0][idx].ODRSTS;
-                }
-                row.STORE = 0;
-                // IREPO帳票IDを付与（おまけ４）
-                idx = km8430[0].findIndex(t => t.HMCD === row.HMCD);
-                if (idx < 0) {
-                    row.DEFID = 0;
-                    row.CT = 0;
-                } else {
-                    row.DEFID = km8430[0][idx].DEFID ?? 0;
-                    row.CT = km8430[0][idx].CT ?? 0;
-                }
-                // 共通部品情報を付与（おまけ６）
-                idx = km8435[0].findIndex(s => s.HMCD == row.HMCD);
-                row.COMMONPART = (idx < 0) ? "" : "k";
-                let tooltip = km8435[0].filter(s => s.HMCD == row.HMCD);
-                if (tooltip.length > 0) {
-                    row.TOOLTIP = "共通部品：\n" + tooltip.map(r => r.HMCDS).join('\n');
-                }
-                // 通常の内示一覧に仕掛かり在庫のみのデータを追加する
-                kd8440[0].push(row);
-                countAdded++;
-            }
-        }
+        // for await (row of kd8460mccd[0]) {
+        //     let idx = 0;
+        //     // 内示情報を検索
+        //     idx = kd8440[0].findIndex(t => t.HMCD === row.HMCD);
+        //     if (idx < 0) {
+        //         // 手配残データを付与（おまけ１）
+        //         idx = kd8450[0].findIndex(t => t.HMCD === row.HMCD);
+        //         if (idx < 0) {
+        //             row.DA = null;
+        //             row.DAZ = 0;
+        //             row.STSA = null;
+        //         } else {
+        //             row.DA = kd8450[0][idx].ODRQTY;
+        //             row.DAZ = kd8450[0][idx].ZANQTY;
+        //             row.STSA = kd8450[0][idx].ODRSTS;
+        //         }
+        //         row.STORE = 0;
+        //         // IREPO帳票IDを付与（おまけ４）
+        //         idx = km8430[0].findIndex(t => t.HMCD === row.HMCD);
+        //         if (idx < 0) {
+        //             row.DEFID = 0;
+        //             row.CT = 0;
+        //         } else {
+        //             row.DEFID = km8430[0][idx].DEFID ?? 0;
+        //             row.CT = km8430[0][idx].CT ?? 0;
+        //         }
+        //         // 共通部品情報を付与（おまけ６）
+        //         idx = km8435[0].findIndex(s => s.HMCD == row.HMCD);
+        //         row.COMMONPART = (idx < 0) ? "" : "k";
+        //         let tooltip = km8435[0].filter(s => s.HMCD == row.HMCD);
+        //         if (tooltip.length > 0) {
+        //             row.TOOLTIP = "共通部品：\n" + tooltip.map(r => r.HMCDS).join('\n');
+        //         }
+        //         // 通常の内示一覧に仕掛かり在庫のみのデータを追加する
+        //         kd8440[0].push(row);
+        //         countAdded++;
+        //     }
+        // }
 
         // 仕掛かり在庫の追加があった場合は JSON の並び替えを行う
         // [ order by MATESIZE asc, HMCD asc ] ・・・ desc にしたい場合は 1 と -1 を入れ替えればよい
-        if (countAdded > 0) {
-            kd8440[0].sort((a, b) => {
-                var key1A = a.MATESIZE;
-                var key1B = b.MATESIZE;
-                var key2A = a.HMCD;
-                var key2B = b.HMCD;
-                if (key1A > key1B) return -1;
-                if (key1A < key1B) return 1;
-                if (key2A > key2B) return 1;
-                if (key2A < key2B) return -1;
-                return 0;
-            });    
-        }
+        // if (countAdded > 0) {
+        //     kd8440[0].sort((a, b) => {
+        //         var key1A = a.MATESIZE;
+        //         var key1B = b.MATESIZE;
+        //         var key2A = a.HMCD;
+        //         var key2B = b.HMCD;
+        //         if (key1A > key1B) return -1;
+        //         if (key1A < key1B) return 1;
+        //         if (key2A > key2B) return 1;
+        //         if (key2A < key2B) return -1;
+        //         return 0;
+        //     });    
+        // }
         
         // １設備分の情報が出来上がり
         mc.push([mccd, kd8440[0]]);
@@ -995,20 +995,21 @@ exports.getDashboardToday = async () => {
     // ダッシュボード
     const sql1 = 
         "select " +
-            "a.当日目標, (b.当日実績 - c.遅れ実績) as 当日実績, (a.当日目標 - b.当日実績) as 当日残り, " +
+            "a.当日目標, b.当日実績, (a.当日目標 - b.当日実績) as 当日残り, " +
             "c.遅れ目標, c.遅れ実績, (c.遅れ目標 - c.遅れ実績) as 遅れ残り " +
         "from (" +
             "select ifnull(sum(ODRQTY),0) as 当日目標 " +
             "from kd8450 where EDDT=curdate() and ODRSTS<>'9' and MCGCD<>'EX' " +
         ") a,(" +
             "select ifnull(sum(JIQTY),0) as 当日実績 " +
-            "from kd8480 aa where cast(JIDT as date) = curdate() " +
+            "from kd8480 aa where cast(JIDT as date) = curdate() and " +
+            "not exists (select * from kd8490 tmp where tmp.HMCD=aa.HMCD and tmp.TARGETDT=curdate() and tmp.EDDT<curdate())" + 
         ") b,(" +
             "select ifnull(sum(aa.ODRQTY-aa.JIQTY),0) as 遅れ目標" +
             ", ifnull(sum((aa.ODRQTY-aa.JIQTY)-(bb.ODRQTY-bb.JIQTY)),0) as 遅れ実績 " +
-            "from kd8490 aa, kd8450 bb " +
+            "from kd8490 aa, kd8430 bb " +
             "where aa.ODRNO=bb.ODRNO and aa.TARGETDT=curdate() and " +
-            "bb.EDDT<curdate() and bb.ODRSTS<>'9' and bb.MCGCD<>'EX' " +
+            "bb.EDDT<curdate() and bb.ODRSTS<>'9' " +
         ") c ";
     const summary = await getDatabase(sql1);
 
@@ -1099,6 +1100,7 @@ exports.getDelayList = async () => {
         "and a.ODRNO = b.ODRNO " + 
         "and a.HMCD = m.HMCD " + 
         "and a.TARGETDT = CURDATE() " + 
+        "and a.EDDT < CURDATE() " + 
         "and b.ODRSTS <> '4' " + 
         "group by a.HMCD, ktkey " + 
         ") 集計, kd8490 c " + 
