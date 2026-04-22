@@ -2,6 +2,7 @@
 
 # VSCode
 *.code-workspace
+*.WinMerge
 npm*
 
 # config
@@ -14,12 +15,20 @@ logs/
 
 # node.js
 node_modules/
-
-# node_modules
 package-lock.json
 
 # downloads
 downloads/
+
+# PDF
+pdfs/
+
+# JPEGS
+jpegs/
+
+# pythonPopplerLibrary
+pythonPopplerLibrary/
+pythonPopplerShare/
 
 # sample sources
 sample/
