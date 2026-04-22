@@ -1,5 +1,7 @@
 const mysql = require('mysql2/promise');
 const { mysqlConfig } = require('../config.js');
+const { decryptPassword } = require("./decrypt-password.js");
+const decPasswd = decryptPassword(mysqlConfig.PASSWORD);
 
 // MySQL接続情報
 const connectionString = {
@@ -7,7 +9,7 @@ const connectionString = {
     , port: mysqlConfig.PORT
     , database: mysqlConfig.DATABASE
     , user: mysqlConfig.USER
-    , password: mysqlConfig.PASSWORD
+    , password: decPasswd
     , dateStrings: 'date' /*または'true'*/
 };
 exports.database = connectionString.database;

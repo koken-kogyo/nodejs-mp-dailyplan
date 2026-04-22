@@ -1,10 +1,12 @@
 const oracleodbc = require('odbc');
 const { oracleTanaConfig } = require('../config.js');
+const { decryptPassword } = require("./decrypt-password.js");
+const decPasswd = decryptPassword(oracleTanaConfig.PASSWORD);
 
 // Oracle ODBC 接続情報
 exports.HOST = oracleTanaConfig.HOST;
 exports.PORT = 1521;
-const connectionString = `DSN=TANACON;UID=${oracleTanaConfig.USER};PWD=${oracleTanaConfig.PASSWORD};`;
+const connectionString = `DSN=TANACON;UID=${oracleTanaConfig.USER};PWD=${decPasswd};`;
 
 // [Oracle] タナコン在庫一覧取得
 const getTLOCStock = async () => {

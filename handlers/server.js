@@ -8,6 +8,8 @@ const iconv = require("iconv-lite");
 
 // nodemailer設定
 const { smtpConfig, SMTPFROM, SMTPTO } = require("../config.js");
+const { decryptPassword } = require("./decrypt-password.js");
+smtpConfig.auth.pass = decryptPassword(smtpConfig.auth.pass);
 const nodemailer = require("nodemailer");
 
 // Topics の読み込み

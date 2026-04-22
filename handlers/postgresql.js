@@ -1,5 +1,7 @@
 const { Client } = require('pg');
 const { pgConfig } = require('../config.js');
+const { decryptPassword } = require("./decrypt-password.js");
+pgConfig.password = decryptPassword(pgConfig.password);
 
 // Database から データを取得する (都度コネクション貼って取得後に解放)
 const getDatabase = async (sql, param) => {
