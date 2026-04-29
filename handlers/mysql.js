@@ -169,36 +169,17 @@ const getNextDay = async (planday) => {
 };
 exports.getNextDay = getNextDay;
 
-// 稼働日ベースでの今週と来週の月曜日,土曜日を取得
+// 手配先管理期間マスタの取得
 const get2WeeksMondaySaturday = async () => {
-    let baseday = new Date();                                       // 現在の日時を取得 例: Tue Jan 26 2021 21:25:35 GMT+0900 (日本標準時)
-    //baseday = new Date(2025, 4, 5, 12, 3, 15, 0);                 // Debug用（※月は 0 から始まるので2025/5/5 12:03:15.000をセット）
-    if (baseday.getDay() <= 1) {                                    // 現在の日時が日・月曜日の場合
-        baseday.setDate(baseday.getDate() - 3);                     // 基準日を3日前に設定
-    }
-    const now = baseday.toLocaleString();                           // 'Sat Jan 03 2026 12:12:23 GMT+0900 (日本標準時)' → '2026/1/3 12:12:23'
     const sql = 
-        "select " +
-            ` max(case when YMD < '${now}' then YMD end) as 今週月曜日 ` +
-            `,max(case when YMD < '${now}' then date_add(YMD, interval + 5 day) end) as 今週土曜日 ` +
-            `,min(case when YMD > '${now}' then YMD end) as 来週月曜日 ` +
-            `,min(case when YMD > '${now}' then date_add(YMD, interval + 5 day) end) as 来週土曜日 ` +
-        "from (" +
-            "select YMD - interval weekday(YMD) day as YMD, count(*) as 稼働日数 " +    // 月曜日を返却
-            "from s0820 " +
-            "where CALTYP='00001' " +
-                "and WKKBN = '1' " +
-                `and YMD between date_add('${now}', interval - 21 day) and date_add('${now}', interval + 21 day) ` +
-            "group by YMD - interval weekday(YMD) day" + /* 月曜日で Group By すると非稼働週が抜ける ※2025/5/5月曜日が非稼働日の場合に注意 */
-        ") z"
-    ;
+        "select ZKTSTDT as 前回確定開始日, ZKTEDDT as 前回確定終了日, KKTSTDT as 今回確定開始日, KKTEDDT as 今回確定終了日 from m0340 ";
     const results = await getDatabase(sql);
     // 日付オブジェクトを配列に格納
     const dates = [
-        results[0].今週月曜日,
-        results[0].今週土曜日,
-        results[0].来週月曜日,
-        results[0].来週土曜日,
+        results[0].前回確定開始日,
+        results[0].前回確定終了日,
+        results[0].今回確定開始日,
+        results[0].今回確定終了日,
     ];
     return dates;
 }

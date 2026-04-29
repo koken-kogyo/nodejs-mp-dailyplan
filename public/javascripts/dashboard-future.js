@@ -120,12 +120,12 @@ function drawChart1(labels, ktnkbn, thisweekworks, thisweekdandori, nextweekwork
                 const value = chart.data.datasets[datasetIndex].data[index];
 
                 //alert(`クリックされた項目: ${label}, 値: ${value}`);
-                if (label == "SW" || label == "SS" || label == "XT") {      // MCGCDとMCCDが同一行程なので直接chart3へ
-                    getDashboardFutureQTY(label, label);
-                } else if (label == "SK") {                                 // MCCDがSK2 しかないので直接chart3へ
-                    getDashboardFutureQTY("SK", "SK2");
-                } else if (label == "MC3") {                                // MCCDがS500しかないので直接chart3へ
-                    getDashboardFutureQTY("ON", "S500");
+                if (label == "SW" || label == "SS" || label == "XT" || label == "LF") {
+                    getDashboardFutureQTY(label, label);                    // MCGCDとMCCDが同一行程なので直接chart3へ
+                } else if (label == "SK") {
+                    getDashboardFutureQTY("SK", "SK2");                     // MCCDがSK2 しかないので直接chart3へ
+                } else if (label == "MC3") {
+                    getDashboardFutureQTY("ON", "S500");                    // MCCDがS500しかないので直接chart3へ
                 } else {
                     getDashboardFutureGCD(label);                           // 設備選択chart2へ
                 }
