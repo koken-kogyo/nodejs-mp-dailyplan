@@ -2,6 +2,16 @@
     ポップアップウィンドウ（実績入力）
 */
 
+// 背景そのものをクリックした時だけ閉じる
+document.addEventListener("DOMContentLoaded", () => {
+    const jpopwin = document.getElementById("jiqtyPopupWindow");
+    jpopwin.addEventListener("click", (e) => {
+        if (e.target === e.currentTarget) {
+            jpopwin.style.display = "none";
+        }
+    });
+});
+
 /* ポップアップ関連 ここから */
 const inputBox = document.getElementById("inputJIQTY");
 const startObj = document.getElementById("jiqtyStart");

@@ -2,6 +2,15 @@
     ポップアップウィンドウ（仕掛かり在庫）
 */
 
+// 背景そのものをクリックした時だけ閉じる
+document.addEventListener("DOMContentLoaded", () => {
+    const zpopwin = document.getElementById("zaiqtyPopupWindow");
+    zpopwin.addEventListener("click", (e) => {
+        if (e.target === e.currentTarget) {
+            zpopwin.style.display = "none";
+        }
+    });
+});
 
 const inputZaiko = document.getElementById("inputZAIQTY");
 const zaiModifyObj = document.getElementById("zaiqtyModify");

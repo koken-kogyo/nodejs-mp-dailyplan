@@ -2,6 +2,16 @@
     ポップアップウィンドウ（i-Reporter）
 */
 
+// 背景そのものをクリックした時だけ閉じる
+document.addEventListener("DOMContentLoaded", () => {
+    const ipopwin = document.getElementById("irepoPopupWindow");
+    ipopwin.addEventListener("click", (e) => {
+        if (e.target === e.currentTarget) {
+            ipopwin.style.display = "none";
+        }
+    });
+});
+
 // i-Reporter 選択ポップアップ画面の起動（手配内示共通）
 async function iReporter(tblno, row) {
     // 呼び出し元の基本情報取得
