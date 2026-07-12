@@ -1317,6 +1317,9 @@ exports.irepoRegist_2 = async (userid, mcglabel, dandori, hmcd, procqty, jiqty) 
         // https://pc090n:53030/ireporegist2/SW/11014/06673-00068:178:178:
         // https://pc090n:53030/ireporegist2/SW/11014/06673-00068:268:268:
         // https://pc090n:53030/ireporegist2/SW/11014/06673-00068-K:88:88:
+        // https://nabev2:53030/ireporegist2/sw/11014/6C200-93223:80:80: 2026.07.12
+        // https://nabev2:53030/ireporegist2/mc/11014/6C200-93223:80:80: 2026.07.12
+        // https://nabev2:53030/ireporegist2/g/11014/6C200-93223:80:80: 2026.07.12
         const commonOrders = await selectCommonOrders_2(conn, hmcd, mcgcd, mccd);
         let resultOrder = [];
         if (commonOrders[0].length == 0) {
@@ -1674,6 +1677,8 @@ const finishOrderHMCD_2 = async (conn, hmcd, mcgcd, mccd, jiqty, dandori) => {
                 countdownQty -= needQty;
             }
         } else {
+            /*
+            2026.07.12 着手中に更新する処理を廃止（後工程段取り用に余分を作るが自分の消込用ではない）（在庫テーブルと実績テーブルは正しい数値で更新）
             // jiqtyに足して更新 countdownQty=0
             let newjiqty = jiQty + countdownQty;
             const update = await conn.execute(
@@ -1693,6 +1698,8 @@ const finishOrderHMCD_2 = async (conn, hmcd, mcgcd, mccd, jiqty, dandori) => {
                 }
                 countdownQty = 0;
             }
+            */
+                countdownQty = 0;
         }
         if (countdownQty <= 0) break;
     }
@@ -1727,6 +1734,8 @@ const finishOrderHMCD_2 = async (conn, hmcd, mcgcd, mccd, jiqty, dandori) => {
                     countdownQty -= needQty;
                 }
             } else {
+                /*
+                2026.07.12 着手中に更新する処理を廃止（後工程段取り用に余分を作るが自分の消込用ではない）（在庫テーブルと実績テーブルは正しい数値で更新）
                 // jiqtyに足して更新 countdownQty=0
                 let newjiqty = jiQty + countdownQty;
                 const update = await conn.execute(
@@ -1742,6 +1751,8 @@ const finishOrderHMCD_2 = async (conn, hmcd, mcgcd, mccd, jiqty, dandori) => {
                     }
                     countdownQty = 0;
                 }
+                */
+                    countdownQty = 0;
             }
             if (countdownQty <= 0) break;
         }
