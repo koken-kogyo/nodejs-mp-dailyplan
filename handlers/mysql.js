@@ -267,8 +267,8 @@ const getKD8450Orders = async (mcgcd, mccds, ymds) => {
     const okure = await conn.query(okureSql, [ymds[0], ymds[0]]);
 
     // 切削オーダーに共通部品情報報を取得して付加
-    let mcgcdrep = mcgcd.replace("ON","MC").replace("3BP","MC");
-    const km8435 = await conn.query("select HMCD, HMCDS from km8435 where MCGCD=?", [mcgcdrep]);
+    // let mcgcdrep = mcgcd.replace("ON","MC").replace("3BP","MC"); 2026.07.13 廃止 (TD320-33422-2 ON共通 MC個別)
+    const km8435 = await conn.query("select HMCD, HMCDS from km8435 where MCGCD=?", [mcgcd]);
 
     const mc = [];
     for (let mccd of mccds) {
@@ -386,8 +386,8 @@ const getKD8440Plans = async (mcgcd, mccds, ymds) => {
                        ("00" + (targetday.getMonth()+1)).slice(-2) + "000000";
 
     // 切削オーダーに共通部品情報報を取得して付加
-    let mcgcdrep = mcgcd.replace("ON","MC").replace("3BP","MC");
-    const km8435 = await conn.query("select HMCD, HMCDS from km8435 where MCGCD=?", [mcgcdrep]);
+    // let mcgcdrep = mcgcd.replace("ON","MC").replace("3BP","MC"); 2026.07.13 廃止 (TD320-33422-2 ON共通 MC個別)
+    const km8435 = await conn.query("select HMCD, HMCDS from km8435 where MCGCD=?", [mcgcd]);
 
     // グループの設備一覧を取得
     const orderby = await getMCOrderby(mcgcd);
