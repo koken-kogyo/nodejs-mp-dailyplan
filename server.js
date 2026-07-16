@@ -329,6 +329,9 @@ app.get("/ireporegist/sw/:id/:args", async function (req, res, next) {
 // https://pc090n:53030/ireporegist2/MC/21343/V1311-62551-2:17:20:
 // https://pc090n:53030/ireporegist2/sw/11014/05719-52741-1:62:60:
 // https://pc090n:53030/ireporegist2/sw/11014/TD170-56144-3:82:80:
+// https://pc090n:53030/ireporegist2/SW/11014/R1441-63121-2:13:13: 7/16手配3 7/29内示14 SW-SW > TN-4 > MC-3F > EX-BT2
+// https://pc090n:53030/ireporegist2/TTN/11014/R1441-63121-2:13:10: 7/16手配3 7/29内示14 SW-SW > TN-4 > MC-3F > EX-BT2
+// https://pc090n:53030/ireporegist2/MC/11014/R1441-63121-2:10:10: 7/16手配3 7/29内示14 SW-SW > TN-4 > MC-3F > EX-BT2
 app.get("/ireporegist2/:mcglabel/:dandori/:args", async function (req, res, next) {
     try {
         const userid = req.session.userid ?? 'DEBUG';
@@ -358,9 +361,33 @@ app.get("/ireporegist2/:mcglabel/:dandori/:args", async function (req, res, next
                 logger.error(`[/ireporegist2/${req.params.mcglabel}/${dandori}/${args}]`);
                 return res.render("error.ejs", {err: msg});
             }
+            
+            // コード票マスタ、切削帳票定義マスタから帳票定義ID、品番CIDを検索
+            const km8430 = await mysqlHandler.getReportDefID(hmcd, mcglabel, "%");
+            const defid = km8430[0].DEFID;
+            const clusterno = km8430[0].HMCDCID;
+            if (defid == -1) {
+                const logger = log4js.getLogger("e");
+                logger.error("帳票定義IDが見つけられませんでした．");
+                logger.error(`[/ireporegist2/${req.params.mcglabel}/${dandori}/${args}]`);
+            }
+
+            // IREPOSVの入力帳票IDを検索
+            let repid = 0;
+            if (mcglabel == "SW") {
+                // 　SWと共通部品の場合
+                const viewreport = await pgHandler.getCompleteReportID(defid, hmcd, clusterno);
+                repid = viewreport.rows[0].repid;
+            } else {
+                const viewreport = await pgHandler.getCompleteReportIDSingle(defid);
+                repid = viewreport.rows[0].repid;
+            }
+            if (repid == 0) {
+                logger.error("入力帳票IDが見つけられませんでした．");
+            }
 
             // チェックシートからの実績登録処理
-            const results = await mysqlHandler.irepoRegist_2(userid, mcglabel, dandori, hmcd, procqty, jiqty);
+            const results = await mysqlHandler.irepoRegist_2(userid, mcglabel, dandori, hmcd, procqty, jiqty, repid);
             if (results) {
                 // 登録完了画面にリダイレクトして終了（アドレスバーに登録用URLを残さない措置）
                 res.redirect(`/mp/confirm`);
@@ -736,7 +763,7 @@ app.get("/mp/end/:odrno/:jiqty", async function (req, res, next) {
 
 // 包括的エラーハンドリング
 app.use((err, req, res, next) => {
-    console.log("包括的エラーハンドリング")
+    console.log(`[${new Date().toISOString()}] 包括的エラーハンドリング`)
     console.error(err);
     res.status(500).send(`サーバーの動作が失敗しました．:${err.code} `);
 });

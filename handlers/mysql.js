@@ -712,12 +712,12 @@ const getReportDefID = async (hmcd, mcgcd, mccd) => {
     const sql =
         "select max(DEFID) as DEFID from (" +
             "select case " +
-                `when KT1MCGCD='${mcgcd}' and KT1MCCD='${mccd}' then KT1IREPO ` +
-                `when KT2MCGCD='${mcgcd}' and KT2MCCD='${mccd}' then KT2IREPO ` +
-                `when KT3MCGCD='${mcgcd}' and KT3MCCD='${mccd}' then KT3IREPO ` +
-                `when KT4MCGCD='${mcgcd}' and KT4MCCD='${mccd}' then KT4IREPO ` + 
-                `when KT5MCGCD='${mcgcd}' and KT5MCCD='${mccd}' then KT5IREPO ` + 
-                `when KT6MCGCD='${mcgcd}' and KT6MCCD='${mccd}' then KT6IREPO ` + 
+                `when KT1MCGCD='${mcgcd}' and KT1MCCD like '${mccd}' then KT1IREPO ` +
+                `when KT2MCGCD='${mcgcd}' and KT2MCCD like '${mccd}' then KT2IREPO ` +
+                `when KT3MCGCD='${mcgcd}' and KT3MCCD like '${mccd}' then KT3IREPO ` +
+                `when KT4MCGCD='${mcgcd}' and KT4MCCD like '${mccd}' then KT4IREPO ` + 
+                `when KT5MCGCD='${mcgcd}' and KT5MCCD like '${mccd}' then KT5IREPO ` + 
+                `when KT6MCGCD='${mcgcd}' and KT6MCCD like '${mccd}' then KT6IREPO ` + 
                 "else -1 end as DEFID " +
             `from km8430 where hmcd='${hmcd}' ` +
             "union select -1 as DEFID " +
@@ -727,6 +727,7 @@ const getReportDefID = async (hmcd, mcgcd, mccd) => {
     if (defid == -1) {
         km8430[0].HMCDCID = -1;
     } else {
+        // 切削帳票定義マスタから品番クラスターIDを取得
         const km8440 = await getDatabase(`select HMCDCID from km8440 where DEFID=${defid}`);
         if (km8440.length == 0) {
             km8430[0].HMCDCID = -1;
@@ -1279,7 +1280,7 @@ exports.getDashboardFuturePopup = async (mcgcd, mccd, eddt) => {
 }
 
 // チェックシートから実績登録（コネクション継続版）
-exports.irepoRegist_2 = async (userid, mcglabel, dandori, hmcd, procqty, jiqty) => {
+exports.irepoRegist_2 = async (userid, mcglabel, dandori, hmcd, procqty, jiqty, repid) => {
     // データーベースへの接続とトランザクションの開始
     const conn = await pool.getConnection();
     await conn.beginTransaction();
@@ -1297,6 +1298,7 @@ exports.irepoRegist_2 = async (userid, mcglabel, dandori, hmcd, procqty, jiqty) 
         // https://nabev2:53030/ireporegist2/SW/11014/RP801-63142-2:105:105:
         // https://nabev2:53030/ireporegist2/SW/11014/RP801-63142-2:165:165:
         // https://nabev2:53030/ireporegist2/SW/11014/RP801-63142-2:350:350:
+        // 2026.07.15 パラメータに repid 追加
 
         // １．更新対象の設備コードを取得（コード票品番）
         const thisequip = await getThisEquipment_2(conn, hmcd, mcglabel);
@@ -1325,7 +1327,7 @@ exports.irepoRegist_2 = async (userid, mcglabel, dandori, hmcd, procqty, jiqty) 
         if (commonOrders[0].length == 0) {
 
             // ４．手配もしくは内示実績の更新
-            const result = await finishOrderHMCD_2(conn, hmcd, mcgcd, mccd, jiqty, dandori);
+            const result = await finishOrderHMCD_2(conn, hmcd, mcgcd, mccd, jiqty, repid, dandori);
             //if (resultOrder) console.log("手配実績更新件数：" + resultOrder.length + "件");
             if (result) resultOrder.push(...result);
         } else {
@@ -1335,14 +1337,14 @@ exports.irepoRegist_2 = async (userid, mcglabel, dandori, hmcd, procqty, jiqty) 
             for await (row of commonOrders[0]) {
                 let rowQty = Number(row.ODRQTY) - Number(row.JIQTY);
                 let newQty = (countdownQty >= rowQty) ? rowQty : countdownQty;
-                const result = await finishOrderHMCD_2(conn, row.HMCD, mcgcd, mccd, newQty, dandori);
+                const result = await finishOrderHMCD_2(conn, row.HMCD, mcgcd, mccd, newQty, repid, dandori);
                 //if (resultOrder) console.log("手配実績更新件数：" + resultOrder.length + "件");
                 if (result) resultOrder.push(...result);
                 countdownQty -= newQty;
                 if (countdownQty <= 0) break;
             }
             if (countdownQty > 0) {
-                const result = await finishOrderHMCD_2(conn, hmcd, mcgcd, mccd, countdownQty, dandori);
+                const result = await finishOrderHMCD_2(conn, hmcd, mcgcd, mccd, countdownQty, repid, dandori);
                 //if (remainOrder) console.log("手配実績更新件数：" + remainOrder.length + "件");
                 if (result) resultOrder.push(...result);
             }
@@ -1688,13 +1690,14 @@ const updateKD8460_2 = async (conn, hmcd, mcgcd, mccd, jiqty, operator, mode) =>
 };
 
 // 手配実績更新（品目指定）（コネクション継続版）
-const finishOrderHMCD_2 = async (conn, hmcd, mcgcd, mccd, jiqty, dandori) => {
+const finishOrderHMCD_2 = async (conn, hmcd, mcgcd, mccd, jiqty, repid, dandori) => {
     let countdownQty = jiqty;
     const kd8450 = await conn.query("select ODRNO, LOTSEQ, EDDT, ODRQTY, JIQTY from kd8450 " + 
         "where HMCD=? and EDDT>(now()-interval 1 month) and MCGCD=? and MCCD=? and ODRSTS<>'4' and ODRSTS<>'9' " + 
         "order by EDDT, ODRNO, LOTSEQ"
         , [hmcd, mcgcd, mccd]);
     let result= null;
+    const repidValue = (repid > 0) ? repid : null;
     // 切削オーダーファイルをループして実績数の消込
     for await (row of kd8450[0]) {
         let odrQty = Number(row.ODRQTY);
@@ -1703,9 +1706,9 @@ const finishOrderHMCD_2 = async (conn, hmcd, mcgcd, mccd, jiqty, dandori) => {
         if (countdownQty >= needQty) {
             // odrqtyで更新 countdownQty--
             const update8450 = await conn.execute(
-                "update kd8450 set JIQTY=ODRQTY, ODRSTS='4', WKEDDT=current_timestamp, MPUPDTID=? " +
+                "update kd8450 set JIQTY=ODRQTY, ODRSTS='4', REPID=?, WKEDDT=current_timestamp, MPUPDTID=? " +
                 "where ODRNO=? and LOTSEQ=? and MCGCD=? and MCCD=?"
-                , [dandori, row.ODRNO, row.LOTSEQ, mcgcd, mccd]
+                , [repidValue, dandori, row.ODRNO, row.LOTSEQ, mcgcd, mccd]
             );
             if (update8450[0].changedRows != 0) {
                 // 子受注が全て完了していたら親受注も完了に更新
@@ -1774,9 +1777,9 @@ const finishOrderHMCD_2 = async (conn, hmcd, mcgcd, mccd, jiqty, dandori) => {
             if (countdownQty >= needQty) {
                 // odrqtyで更新 countdownQty--
                 const update = await conn.execute(
-                    "update kd8440 set JIQTY=ODRQTY, ODRSTS='4', UPDTID=? " +
+                    "update kd8440 set JIQTY=ODRQTY, ODRSTS='4', REPID=?, UPDTID=? " +
                     "where PLNNO=?"
-                    , [dandori, row.PLNNO]
+                    , [repidValue, dandori, row.PLNNO]
                 );
                 if (update[0].changedRows != 0) {
                     if (!result) {

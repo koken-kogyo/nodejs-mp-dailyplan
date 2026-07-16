@@ -13,6 +13,7 @@ const getDatabase = async (sql, param) => {
 };
 
 // 最新の編集中の帳票IDを取得（編集中がない場合は0）
+// （１帳票１品番の場合）
 const getHoldReportIDSingle = async (defid) => {
     const result = await isViewReport(defid);
     if (result == false) {
@@ -27,6 +28,7 @@ const getHoldReportIDSingle = async (defid) => {
 exports.getHoldReportIDSingle = getHoldReportIDSingle;
 
 // 最新の編集中の帳票IDを取得（編集中がない場合は0）（defid:大元の帳票定義ID, clusterno:検索対象の品番クラスターNO）
+// （１帳票で複数品番共通で使用している場合）（SW等）
 const getHoldReportID = async (defid, hmcd, clusterno) => {
     const result = await isViewReport(defid);
     if (result == false) {
@@ -39,6 +41,36 @@ const getHoldReportID = async (defid, hmcd, clusterno) => {
     }
 };
 exports.getHoldReportID = getHoldReportID;
+
+// 最新の入力完了の帳票IDを取得（編集中がない場合は0）
+// （１帳票１品番の場合）
+const getCompleteReportIDSingle = async (defid) => {
+    const result = await isViewReport(defid);
+    if (result == false) {
+        return getDatabase("select 0 as repid");
+    } else {
+        const sql = "select COALESCE(max(rep_top_id),0) as repid " + 
+            `from view_report_${defid} ` + 
+            `where edit_refer_status=4`;
+        return getDatabase(sql);
+    }
+};
+exports.getCompleteReportIDSingle = getCompleteReportIDSingle;
+
+// 最新の入力完了の帳票IDを取得（編集中がない場合は0）（defid:大元の帳票定義ID, clusterno:検索対象の品番クラスターNO）
+// （１帳票で複数品番共通で使用している場合）（SW等）
+const getCompleteReportID = async (defid, hmcd, clusterno) => {
+    const result = await isViewReport(defid);
+    if (result == false) {
+        return getDatabase("select 0 as repid");
+    } else {
+        const sql = "select COALESCE(max(rep_top_id),0) as repid " + 
+        `from view_report_${defid} ` + 
+        `where cluster_1_${clusterno}_t='${hmcd}' and edit_refer_status=4`;
+        return getDatabase(sql);
+    }
+};
+exports.getCompleteReportID = getCompleteReportID;
 
 // そもそもテーブルが存在しているかチェック（帳票定義を本番にしていないとViewが作られない）
 const isViewReport = async (defid) => {
