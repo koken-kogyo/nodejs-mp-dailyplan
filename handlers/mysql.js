@@ -739,6 +739,67 @@ const getReportDefID = async (hmcd, mcgcd, mccd) => {
 };
 exports.getReportDefID = getReportDefID;
 
+// 工程進捗状況を取得
+// 　１．品番＋設備G＋設備コードから実績計上対象の手配番号を取得
+// 　２．手配番号より工程経路の進捗状況を取得
+const getProgressReport = async (hmcd, mcgcd, mccd) => {
+    const sql = `
+        -- unpivotで縦持ちテーブルに変換
+        with unpivot as 
+        (
+            select HMCD, 1 as MPSEQ, KT1MCGCD as MCGCD, KT1MCCD as MCCD from km8430 where hmcd='${hmcd}'
+            union all
+            select HMCD, 2 as MPSEQ, KT2MCGCD as MCGCD, KT2MCCD as MCCD from km8430 where hmcd='${hmcd}' and KT2MCGCD is not null
+            union all
+            select HMCD, 3 as MPSEQ, KT3MCGCD as MCGCD, KT3MCCD as MCCD from km8430 where hmcd='${hmcd}' and KT3MCGCD is not null
+            union all
+            select HMCD, 4 as MPSEQ, KT4MCGCD as MCGCD, KT4MCCD as MCCD from km8430 where hmcd='${hmcd}' and KT4MCGCD is not null
+            union all
+            select HMCD, 5 as MPSEQ, KT5MCGCD as MCGCD, KT5MCCD as MCCD from km8430 where hmcd='${hmcd}' and KT5MCGCD is not null
+            union all
+            select HMCD, 6 as MPSEQ, KT6MCGCD as MCGCD, KT6MCCD as MCCD from km8430 where hmcd='${hmcd}' and KT6MCGCD is not null
+        ),
+        -- 前工程の考え方を独自ルールに変換
+        target as 
+        (
+            select HMCD, MPSEQ, MCGCD, MCCD from unpivot where MCGCD <> 'EX' and MCGCD <> 'MD' and MCGCD <> 'D'
+        ),
+        -- 独自ルールに基づいた行番号を付与
+        premst as (
+            select HMCD, MPSEQ, ROW_NUMBER() over (partition by HMCD order by MPSEQ) - 1 as PRESEQ, MCGCD, MCCD from target
+        ),
+        -- 在庫情報、前工程情報、前工程在庫情報を付与
+        zaimst as (
+            select a.*, az.ZAIQTY, b.MCGCD as MAEGCD, b.MCCD as MAECD, bz.ZAIQTY as MAEQTY
+            from premst a
+                left join kd8460 az on az.HMCD=a.HMCD and az.MCGCD=a.MCGCD and az.MCCD=a.MCCD 
+                left join premst b on b.MPSEQ=a.PRESEQ 
+                left join kd8460 bz on bz.HMCD=b.HMCD and bz.MCGCD=b.MCGCD and bz.MCCD=b.MCCD 
+        ),
+        -- マスタ完成
+        mst as (
+            select u.HMCD, u.MPSEQ,
+            case
+                when u.MCCD regexp '^[0-9]+$' then concat(u.MCGCD, '-', u.MCCD)
+                else u.MCCD
+            end as KTCD
+            , ZAIQTY, MAEGCD, MAECD, MAEQTY from unpivot u left join zaimst z on z.MPSEQ=u.MPSEQ
+        )
+        -- 手配データ検索
+        select a.ODRNO, a.MPSEQ, a.MCGCD, a.MCCD, m.KTCD, m.ZAIQTY, m.MAEQTY, a.ODRSTS, a.REPID, a.WKEDDT
+        from kd8450 a inner join mst m on m.MPSEQ=a.MPSEQ 
+        where odrno = 
+        (
+            select min(odrno) from kd8450 where hmcd='${hmcd}'
+            and eddt>= date_add(now(), interval - 14 day)
+            and mcgcd='${mcgcd}' and mccd='${mccd}' and odrsts<>'4' and odrsts<>'9'
+        )
+    `;
+    const result = await getDatabase(sql);
+    return result;
+};
+exports.getProgressReport = getProgressReport;
+
 // 品番,設備,手配日付から、注文番号[ODRNO],手配状態[ODRSTS],実績数[JIQTY],未来の実績数[FUTUREQTY],過去の実績残数[ZANQTY]を取得
 const getOdrno = async (hmcd, mcgcd, mccd, eddt, stdt) => {
     const sql = 

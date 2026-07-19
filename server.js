@@ -536,6 +536,18 @@ app.get("/mysqlsv/getDefid/:args", async (req, res, next) => {
     res.status(200).json(km8430[0]);
 });
 
+// API 工程進捗状況を取得
+// 　１．品番と設備Gと設備コードから実績計上対象の手配番号を取得
+// 　２．手配番号より工程経路の進捗状況を取得
+app.get("/mysqlsv/getProgressReport/:args", async function (req, res, next) {
+    const args = req.params.args;
+    const hmcd = args.split(":")[0];
+    const mcgcd = args.split(":")[1];
+    const mccd = args.split(":")[2];
+    const result = await mysqlHandler.getProgressReport(hmcd, mcgcd, mccd);
+    res.status(200).json(result);
+});
+
 // API ダッシュボード（当日取得）
 app.get("/mysqlsv/dashboard/today", async function (req, res, next) {
     try {

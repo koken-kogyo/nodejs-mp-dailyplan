@@ -12,6 +12,14 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 });
 
+let lastTap = 0; // ダブルタップ対応
+
+// イベントリスナーのつけ外し用に関数化
+function btnNewReport_Click() {
+    location.href = `jp.co.cimtops.ireporter.createreport:defid=${document.getElementById("ipopDEFID").value}`;
+    document.getElementById("irepoPopupWindow").style.display = "none";
+}
+
 // i-Reporter 選択ポップアップ画面の起動（手配内示共通）
 async function iReporter(tblno, row) {
     // 呼び出し元の基本情報取得
@@ -27,34 +35,107 @@ async function iReporter(tblno, row) {
         alert("IREPOSVの稼働が確認できませんでした．");
         return;
     }
+
     // iRepo情報の取得API
     const irepoinfo = await this.getDefid(hmcd, mcgcd, mccd);
     if (!irepoinfo) return;
-    // 直接呼出し工程（値やフラグを渡してあげないといけない）
+
     if (mcgcd == "SW") {
+        // カスタムURLで直接呼び出す（値やフラグを渡してあげないといけない）
         const repid = await getHoldid(irepoinfo.DEFID, hmcd, irepoinfo.HMCDCID);
         iRepoCustomURL(tblno, row, mcgcd, hmcd, irepoinfo.DEFID, irepoinfo.HMCDCID, repid)
 
-    // ポップアップで選択工程
     } else {
-        const table = document.getElementById("irepoPopupTable");
-        // ポップアップウィンドウに値をセット
+        // ポップアップウィンドウの設定
         document.getElementById("ipopHMCD").innerText = hmcd;
-        // 一覧を一旦削除
+
+
+
+        // ※工程経路と前工程完了状態を取得
+        const progressTableObj = document.getElementById("progressTable");
+        progressTableObj.style.display = "table";
+        for (let i = 0; i < 6; i++) {
+            progressTableObj.rows[1].cells[i].innerHTML = "";
+            progressTableObj.rows[2].cells[i].innerHTML = "";
+            progressTableObj.rows[1].cells[i].className = "";
+            progressTableObj.rows[2].cells[i].className = "";
+        }
+        // 進捗状況の取得
+        const progressReport = await this.getprogressReport(hmcd, mcgcd, mccd);
+        // 結果反映
+        let checksheetflg = true;
+        let progressflg = (progressReport.length > 1)
+        if (progressflg) {
+            let currentflg = false;
+            for (let i = 0; i < progressReport.length; i++) {
+                const d = progressReport[i];
+                let j = d.MPSEQ - 1;
+                progressTableObj.rows[1].cells[j].innerText = d.KTCD;
+                // 色＆アイコン処理
+                if (!currentflg && d.MCGCD != "EX" && d.MCGCD != "MD" && d.MCGCD != "D") {
+                    // 実績日付
+                    let datestr = "";
+                    if (d.ODRSTS=="4" && d.WKEDDT != null) {
+                        const jidt = new Date(d.WKEDDT.replace(" ", "T"));
+                        datestr =  `${jidt.getMonth() + 1}/${jidt.getDate()}` + " ";
+                    }
+                    // 在庫情報
+                    let zaiqtystr = "";
+                    if (d.ZAIQTY != null && d.ZAIQTY != 0) {
+                        zaiqtystr = `(${d.ZAIQTY})` + " ";
+                    }
+                    progressTableObj.rows[1].cells[j].className = (d.ODRSTS=="4") ? "check" : "times";
+                    progressTableObj.rows[2].cells[j].className = (d.ODRSTS=="4") ? "check" : "times";
+                    progressTableObj.rows[2].cells[j].innerHTML = (d.ODRSTS=="4") ? 
+                        `${datestr}${zaiqtystr}<i class="fas fa-check"></i>` : 
+                        '<i class="fas fa-times"></i>';
+                    if (d.MCGCD == mcgcd && d.MCCD == mccd) {
+                        progressTableObj.rows[1].cells[j].className = "current";
+                        progressTableObj.rows[2].cells[j].className = "current";
+                        progressTableObj.rows[2].cells[j].innerHTML = '<i class="fas fa-exclamation"></i>';
+                        currentflg = true;          // 自分の工程で色付け終了
+                    } else if (d.ODRSTS != "4") {
+                        checksheetflg = false;      // 工程ジャンプ＝チェックシート起動不可
+                    }
+                }
+            };
+            progressTableObj.rows[2].cells[progressReport.length - 1].innerHTML = '<i class="fas fa-flag-checkered"></i>'; // 最終工程にチェッカーフラグを立てる
+        }
+        const progressMessageObj = document.getElementById("progressMessage");
+        progressMessageObj.style.display = "none";
+        if (progressReport.length == 0) {
+            progressTableObj.style.display = "none";
+            progressMessageObj.innerText = "　確定注文データがない場合、前工程チェック出来ません。ご注意ください．";
+            progressMessageObj.style.display = "block";
+        } else if (progressflg == false) {
+            progressTableObj.style.display = "none";
+        } else if (checksheetflg == false) {
+            progressMessageObj.innerText = "　工程ジャンプの可能性があります確認してください．";
+            progressMessageObj.style.display = "block";
+        }
+
+
+        // チェックシート一覧の設定
+        const table = document.getElementById("irepoPopupTable");
+        // 各種クリア
         do {
             if (table.rows.length > 2) {table.
                 deleteRow(-1);}
         } while (table.rows.length > 2);
-        // 一覧の取得
+        const reportMessageObj = document.getElementById("reportMessage");
+
+        // チェックシート一覧を取得
         const viewreport = await this.getViewReport(irepoinfo.DEFID);
+
+        // 結果反映
         if (!viewreport) {
             const msg = `帳票定義ID:${irepoinfo.DEFID} が本番環境に移行されていません．`;
-            document.getElementById("oldReport").innerText = msg;
+            document.getElementById("reportMessage").innerText = msg;
         } else if (viewreport.rowCount == 0) {
             const msg = `過去に入力した帳票は存在しません．`;
-            document.getElementById("oldReport").innerText = msg;
+            document.getElementById("reportMessage").innerText = msg;
         } else {
-            document.getElementById("oldReport").innerText = 
+            document.getElementById("reportMessage").innerText = 
                 "チェックシート一覧（最新の10件を表示、タップして過去履歴の呼び出し）";
             // APIで取得したデータをテーブ行に追加
             viewreport.rows.forEach(function (d) {
@@ -71,21 +152,59 @@ async function iReporter(tblno, row) {
                 });
             });
         };
-        // 新規帳票起動イベント設定
+
+        // 新規帳票起動イベントリスナー設定
         document.getElementById("ipopDEFID").value = irepoinfo.DEFID;
         const btnNewReport = document.getElementById("newReport");
-        btnNewReport.addEventListener("click", () => {
-            location.href = `jp.co.cimtops.ireporter.createreport:defid=${document.getElementById("ipopDEFID").value}`;
-            document.getElementById("irepoPopupWindow").style.display = "none";
-        }, { once: true });
-        btnNewReport.addEventListener("keydown", function(event) {
-            if (event.key == "Enter") btnNewReport.click();
-            if (event.keyCode == 27) document.getElementById("irepoPopupWindow").style.display = "none";
-        }, { once: true });
+        if (checksheetflg) {
+            btnNewReport.classList.remove("disable");
+            btnNewReport.addEventListener("click", btnNewReport_Click);
+            btnNewReport.addEventListener("keydown", function(event) {
+                if (event.key == "Enter") btnNewReport.click();
+                if (event.keyCode == 27) document.getElementById("irepoPopupWindow").style.display = "none";
+            }, { once: true });
+        } else {
+            /*
+                まずは９品番で運用
+                チェックシートが運用出来るようになったら条件を削除する
+            */
+            const targetHMCD = [
+                "RD809-92331-2","RD809-92332-3","RB238-63122-1B",
+                "RD809-51343-1","V0531-62152-1","3C081-82711-2-K",
+                "RA221-62131-2","RA269-62131-2","91A76-30121"
+            ];
+            if (targetHMCD.includes(hmcd)) {
+                btnNewReport.classList.add("disable");
+                btnNewReport.removeEventListener("click", btnNewReport_Click);
+            }
+            /*
+                ここから救済措置
+            */
+            const emergencyObj = document.getElementById("ipopEmergency");
+            // ダブルクリックでボタン復活
+            emergencyObj.addEventListener("dblclick", () => {
+                btnNewReport.classList.remove("disable");
+                btnNewReport.addEventListener("click", btnNewReport_Click);
+                btnNewReport.focus();
+            });
+            // ダブルタップでボタン復活
+            emergencyObj.addEventListener("touchend", function (e) {
+                const currentTime = new Date().getTime();
+                const tapLength = currentTime - lastTap;
+                if (tapLength < 300 && tapLength > 0) {
+                    btnNewReport.classList.remove("disable");
+                    btnNewReport.addEventListener("click", btnNewReport_Click);
+                    btnNewReport.focus();
+                }
+                lastTap = currentTime;
+            });
+        }
+        
         // 閉じるイベントリスナー設定
         document.getElementById("irepoClose").addEventListener("click", () => {
             document.getElementById("irepoPopupWindow").style.display = "none";
         });
+
         // ポップアップウィンドウを表示
         document.getElementById("irepoPopupWindow").style.display = "flex";
         btnNewReport.focus(); // TD要素にフォーカスをセットするにはtabindex属性が必要です。
@@ -159,6 +278,23 @@ async function getDefid(hmcd, mcgcd, mccd) {
             alert("起動する帳票IDがマスター登録されていません．");
             return null;
         }
+        return data;
+    } catch (err) {
+        alert(err);
+        return null;
+    }
+}
+
+// 工程進捗状況を取得
+// 　１．品番と設備Gと設備コードから実績計上対象の手配番号を取得
+// 　２．手配番号より工程経路の進捗状況を取得
+async function getprogressReport(hmcd, mcgcd, mccd) {
+    try {
+        const res = await fetch(`/mysqlsv/getprogressReport/${hmcd}:${mcgcd}:${mccd}:`);
+        if (!res.ok) {
+            return null;        
+        }
+        const data = await res.json();
         return data;
     } catch (err) {
         alert(err);

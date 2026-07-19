@@ -144,6 +144,19 @@ a {
     text-align: left;
     padding-left: 3px;
 }
+.popwin-modalbody .check {
+    background: rgba(160, 250, 160, 0.8);
+}
+.popwin-modalbody .current {
+    background: rgba(250, 250, 150, 0.8);
+}
+.popwin-modalbody .times {
+    animation: blinkAnimeTimes 1.0s infinite alternate;
+}
+@keyframes blinkAnimeTimes {
+    0%{ color : rgba(0, 0, 0, 0.9); background:rgba(255, 255, 255, 0.9)   }
+  100%{ color : rgba(255, 255, 0, 0.8);   background:rgba(255, 62, 62, 0.8) }
+}
 .popHMCD {
     font-size: x-large;
     font-weight: 800;
@@ -273,14 +286,19 @@ a {
     color:rgba(80, 80, 155, 0.8);
     background: rgba(234, 146, 75, 0.5);
 }
-#oldReport {
+#irepoPopup .disable {
+    cursor: default;
+    color: rgb(180, 180, 180);
+    background: rgba(140, 140, 140, 0.8);
+}
+#reportMessage {
     border: 0px;
     background: white;
     font-size: large;
     height: 1.5rem;
 }
 #irepoPopupTable tr {
-    height: 3rem;
+    height: 2.5rem;
 }
 #irepoPopupTable tr:hover td {
     cursor: pointer;
@@ -288,10 +306,17 @@ a {
     background-color: rgb(5, 171, 226);
 }
 #irepoPopupTitle {
-    margin: 30px 10px 10px 10px;
+    margin: 20px 10px 10px 10px;
 }
 #irepoPopupTable {
     margin: 10px;
+}
+#progressTable {
+    margin-inline: 10px;
+}
+#progressTable th {
+    font-size: medium;
+    height: 2.0rem;
 }
 /* ポップアップ画面は非表示にしてからスタート */
 #zaiqtyPopupWindow {
@@ -340,8 +365,8 @@ a {
     animation: blinkAnimeCheck 2.0s ease-in-out 3;
 }
 @keyframes blinkAnimeCheck {
-    0%{ color : rgba(190, 38, 38, 0.8);   background:rgba(225, 238, 253, 0.3) }
-  100%{ color : rgba(25, 38, 53, 0.8); background:rgba(225, 238, 253, 0.9)   }
+    0%{ color : rgba(190, 38, 38, 0.8); background:rgba(225, 238, 253, 0.3) }
+  100%{ color : rgba(25, 38, 53, 0.8); background:rgba(225, 238, 253, 0.9) }
 }
 
 #details .allow {
@@ -545,9 +570,9 @@ a {
     margin: 0 auto;
 }
 .alert {
-    color: #a94442;
-    background-color: #f2dede;
-    border-color: #ebccd1;
+    color: #a94442 !important;;
+    background-color: #f2dede !important;
+    border-color: #ebccd1 !important;;
     margin: 0px 0px 12px 0px;
     font-weight: bold;
     list-style: none; /* 本来ここではないが */

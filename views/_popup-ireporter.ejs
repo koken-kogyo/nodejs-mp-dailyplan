@@ -8,17 +8,39 @@
             </div>
             <table id="irepoPopupTitle">
                 <tr>
-                    <th height="60px" width="60px">品番</th>
+                    <th id="ipopEmergency" height="50px" width="60px">品番</th>
                     <td id="ipopHMCD" class="popHMCD lef" width="300px">-</td>
                     <td tabindex="0" id="newReport" colspan="3">新規チェックシート記入</td>
                 </tr>
             </table>
-            <table id="irepoPopupTable">
+            <table id="progressTable">
                 <tr>
-                    <th id="oldReport" colspan="5" class="lef">Javascript可変メッセージ</th>
+                    <th>工程①</th><th>工程②</th><th>工程③</th><th>工程④</th><th>工程⑤</th><th>工程⑥</th>
                 </tr>
                 <tr>
-                    <th width="30px">ID</th>
+                    <td class="check">SW</td>
+                    <td class="check">TN-6</td>
+                    <td class="current">S500</td>
+                    <td class="times">MT1</td>
+                    <td>MT2</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td class="check"><i class="fas fa-check"></i></td>
+                    <td class="check"></td>
+                    <td class="current"><i class="fas fa-exclamation"></i></td>
+                    <td class="times"><i class="fas fa-times"></i></td>
+                    <td><i class="fas fa-flag-checkered"></i></td>
+                    <td></td>
+                </tr>
+            </table>
+            <div id="progressMessage" class="alert lef">ワーニングメッセージ</div>
+            <table id="irepoPopupTable">
+                <tr>
+                    <th id="reportMessage" colspan="5" class="lef">Javascript可変メッセージ</th>
+                </tr>
+                <tr>
+                    <th height="36px" width="30px">ID</th>
                     <th width="200px">帳票名称</th>
                     <th width="50px">状態</th>
                     <th width="70px">登録日</th>
