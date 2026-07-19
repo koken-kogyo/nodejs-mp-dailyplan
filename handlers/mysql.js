@@ -12,13 +12,13 @@ const connectionString = {
     , password: decPasswd
     , dateStrings: 'date' /*または'true'*/
 };
-exports.database = connectionString.database;
+exports.host = mysqlConfig.HOST;
+exports.database = mysqlConfig.DATABASE;
 
 // コネクションプールの取得
 const pool = mysql.createPool(connectionString);
 const connect = pool.getConnection()
 exports.connect = connect;
-
 
 // Database から データを取得する
 const getDatabase = async (sql, param) => {

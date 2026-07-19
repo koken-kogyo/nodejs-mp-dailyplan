@@ -332,6 +332,7 @@ app.get("/ireporegist/sw/:id/:args", async function (req, res, next) {
 // https://pc090n:53030/ireporegist2/SW/11014/R1441-63121-2:13:13: 7/16手配3 7/29内示14 SW-SW > TN-4 > MC-3F > EX-BT2
 // https://pc090n:53030/ireporegist2/TTN/11014/R1441-63121-2:13:10: 7/16手配3 7/29内示14 SW-SW > TN-4 > MC-3F > EX-BT2
 // https://pc090n:53030/ireporegist2/MC/11014/R1441-63121-2:10:10: 7/16手配3 7/29内示14 SW-SW > TN-4 > MC-3F > EX-BT2
+// https://nabev2:53030/ireporegist2/sw/11014/R1441-63121-2:10:10: 7/16手配3 7/29内示14 SW-SW > TN-4 > MC-3F > EX-BT2
 app.get("/ireporegist2/:mcglabel/:dandori/:args", async function (req, res, next) {
     try {
         const userid = req.session.userid ?? 'DEBUG';
@@ -374,7 +375,9 @@ app.get("/ireporegist2/:mcglabel/:dandori/:args", async function (req, res, next
 
             // IREPOSVの入力帳票IDを検索
             let repid = 0;
-            if (mcglabel == "SW") {
+            if (mysqlHandler.host == "NABEV2") {
+                repid = 15021972;
+            } else if (mcglabel == "SW") {
                 // 　SWと共通部品の場合
                 const viewreport = await pgHandler.getCompleteReportID(defid, hmcd, clusterno);
                 repid = viewreport.rows[0].repid;
@@ -403,6 +406,10 @@ app.get("/ireporegist2/:mcglabel/:dandori/:args", async function (req, res, next
         next(err);
     }
 });
+
+
+
+/* MySQL API関連 */
 
 // API 実績登録（手配指定の手配完成予定日以降を更新）
 app.get("/mysqlsv/jissekiRegist/:args", async function (req, res, next) {
@@ -456,12 +463,7 @@ app.get("/mysqlsv/modifyOrder/:args", async function (req, res, next) {
     }
 });
 
-// 登録後の確認画面
-app.get("/mp/confirm", async (req, res, next) => {
-    res.render("confirm.ejs");
-});
-
-// 品番,設備,手配日付から、注文番号[ODRNO],手配状態[ODRSTS],実績数[JIQTY],未来の実績数[FUTUREQTY],過去の実績残数[ZANQTY]を取得するAPI
+// API 品番,設備,手配日付から、注文番号[ODRNO],手配状態[ODRSTS],実績数[JIQTY],未来の実績数[FUTUREQTY],過去の実績残数[ZANQTY]を取得するAPI
 app.get("/mysqlsv/getOdrno/:args", async (req, res, next) => {
     const args = req.params.args;
     const hmcd = args.split(":")[0];
@@ -472,7 +474,8 @@ app.get("/mysqlsv/getOdrno/:args", async (req, res, next) => {
     const kd8450 = await mysqlHandler.getOdrno(hmcd, mcgcd, mccd, eddt, stdt);
     res.status(200).json(kd8450);
 });
-// 品番,設備,手配日付から、注文番号[PLNNO],手配状態[ODRSTS],実績数[JIQTY],未来の実績数[FUTUREQTY],過去の実績残数[ZANQTY]を取得するAPI
+
+// API 品番,設備,手配日付から、注文番号[PLNNO],手配状態[ODRSTS],実績数[JIQTY],未来の実績数[FUTUREQTY],過去の実績残数[ZANQTY]を取得するAPI
 app.get("/mysqlsv/getPlnno/:args", async (req, res, next) => {
     const args = req.params.args;
     const hmcd = args.split(":")[0];
@@ -519,6 +522,20 @@ app.get("/mysqlsv/modifyZaiko/:args", async function (req, res, next) {
     }
 });
 
+// API コード票マスタから帳票定義ID、品番のクラスター番号を取得
+// i-Repoマニュアル：データー連携テーブル機能を参照の事
+// 保留がない場合は0、保留がある場合は最新の帳票定義IDを取得
+// テストスタブ
+// curl http://pc090n:53030/mysqlsv/getDefid/RD431-51322-1:TN:1:
+app.get("/mysqlsv/getDefid/:args", async (req, res, next) => {
+    const args = req.params.args;
+    const hmcd = args.split(":")[0];
+    const mcgcd = args.split(":")[1];
+    const mccd = args.split(":")[2];
+    const km8430 = await mysqlHandler.getReportDefID(hmcd, mcgcd, mccd);
+    res.status(200).json(km8430[0]);
+});
+
 // API ダッシュボード（当日取得）
 app.get("/mysqlsv/dashboard/today", async function (req, res, next) {
     try {
@@ -549,6 +566,7 @@ app.get("/mysqlsv/dashboard/future", async function (req, res, next) {
         next(err);
     }
 });
+
 // API ダッシュボード（注文データ工程グループ情報の取得）
 app.get("/mysqlsv/dashboard/future/:MCGCD", async function (req, res, next) {
     try {
@@ -560,6 +578,7 @@ app.get("/mysqlsv/dashboard/future/:MCGCD", async function (req, res, next) {
         next(err);
     }
 });
+
 // API ダッシュボード（注文データ設備情報の取得）
 app.get("/mysqlsv/dashboard/future/:MCGCD/:MCCD", async function (req, res, next) {
     try {
@@ -572,6 +591,7 @@ app.get("/mysqlsv/dashboard/future/:MCGCD/:MCCD", async function (req, res, next
         next(err);
     }
 });
+
 // API ダッシュボード（注文データ設備情報詳細情報の取得）
 app.get("/mysqlsv/dashboard/future/popup/:MCGCD/:MCCD/:EDDT", async function (req, res, next) {
     try {
@@ -584,23 +604,84 @@ app.get("/mysqlsv/dashboard/future/popup/:MCGCD/:MCCD/:EDDT", async function (re
         next(err);
     }
 });
-// API コード票マスタから帳票定義ID、品番のクラスター番号を取得
-// i-Repoマニュアル：データー連携テーブル機能を参照の事
-// 保留がない場合は0、保留がある場合は最新の帳票定義IDを取得
-// テストスタブ
-// curl http://pc090n:53030/mysqlsv/getDefid/RD431-51322-1:TN:1:
-app.get("/mysqlsv/getDefid/:args", async (req, res, next) => {
-    const args = req.params.args;
-    const hmcd = args.split(":")[0];
-    const mcgcd = args.split(":")[1];
-    const mccd = args.split(":")[2];
-    const km8430 = await mysqlHandler.getReportDefID(hmcd, mcgcd, mccd);
-    res.status(200).json(km8430[0]);
+
+// 日別計画表 (mp-daily-planning)（未使用）
+app.get("/mp/dailyplan/:planday", async (req, res, next) => {
+    req.session.nextaddr = "/mp/plan/" + req.params.planday;
+    if (!loginCheck(req, res)) return;
+    const mcgcd = req.session.mcgcd;
+    const planday = req.params.planday;
+    req.session.planday = planday;
+    Promise.all([mysqlHandler.getMCGCDs(), mysqlHandler.getMCCDs(mcgcd), mysqlHandler.getYMDPlans(), mysqlHandler.getKM8430(mcgcd)])
+    .then( async ([mcgcdmenu, mccds, ymds, km8430]) => {
+        const d0410 = await mysqlHandler.getKD8440Plans(mcgcd, mccds, planday, km8430);
+        res.render("daily-plan.ejs", {req, mcgcdmenu, ymds, d0410});
+    }).catch((err) => {
+        next(err);
+    });
 });
 
+// 段取り開始（未使用）
+app.get("/mp/dandori/:odrno", async function (req, res, next) {
+    if (!loginCheck(req, res)) return;
+    const userid = req.session.userid;
+    const mcgcd = req.session.mcgcd;
+    const planday = req.session.planday;
+    const str = req.params.odrno;
+    const odrno = str.split(":")[0];
+    const mccd = str.split(":")[1];
+    try {
+        await mysqlHandler.dandori(userid, odrno, planday, mcgcd, mccd);
+        res.redirect("/mp/plan/" + planday + "#" + mccd);
+    } catch (err) {
+        next(err);
+    }
+});
+
+// 作業開始（未使用）
+app.get("/mp/start/:odrno", async function (req, res, next) {
+    if (!loginCheck(req, res)) return;
+    const userid = req.session.userid;
+    const mcgcd = req.session.mcgcd;
+    const planday = req.session.planday;
+    const str = req.params.odrno;
+    const odrno = str.split(":")[0];
+    const mccd = str.split(":")[1];
+    try {
+        await mysqlHandler.workstart(userid, odrno, planday, mcgcd, mccd);
+        res.redirect("/mp/plan/" + planday + "#" + mccd);
+    } catch (err) {
+        next(err);
+    }
+});
+
+// 作業終了（未使用）
+app.get("/mp/end/:odrno/:jiqty", async function (req, res, next) {
+    if (!loginCheck(req, res)) return;
+    const userid = req.session.userid;
+    const mcgcd = req.session.mcgcd;
+    const planday = req.session.planday;
+    const str = req.params.odrno;
+    const odrno = str.split(":")[0];
+    const mccd = str.split(":")[1];
+    const jiqty = Number(req.params.jiqty);
+    try {
+        await mysqlHandler.workend(jiqty, userid, odrno, planday, mcgcd, mccd);
+        res.redirect("/mp/plan/" + planday + "#" + mccd);
+    } catch (err) {
+        next(err);
+    }
+});
+
+/* MySQL関連ここまで */
+
+
+
+/* IREPOSV関連ここから */
 
 // API IREPOSVの稼働確認（fetchのレスポンスを確認）
 app.get("/ireposv/isireposv", async (req, res, next) => {
+    if (mysqlHandler.host == "NABEV2") {res.status(200).end(); return;}
     const IREPOSV_TIMEOUT = 5000; // タイムアウト時間（ミリ秒）
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), IREPOSV_TIMEOUT);
@@ -636,6 +717,7 @@ app.get("/ireposv/isireposv", async (req, res, next) => {
 // テストスタブ
 // curl http://pc090n:53030/ireposv/getHoldid/1509:RD479-63171-1:16:
 app.get("/ireposv/getHoldid/:args", async (req, res, next) => {
+    if (mysqlHandler.host == "NABEV2") {res.status(200).json(0); return;}
     const args = req.params.args;
     if (args.split(":").length == 1) {
         const defid = args.split(":")[0];
@@ -650,32 +732,18 @@ app.get("/ireposv/getHoldid/:args", async (req, res, next) => {
         res.status(200).json(viewreport.rows[0].repid);
     }
 });
+
 // 帳票一覧取得API
 app.get("/ireposv/getViewReport/:defid", async (req, res, next) => {
+    if (mysqlHandler.host == "NABEV2") {res.status(200).json(null); return;}
     const defid = req.params.defid;
     const viewreport = await pgHandler.getViewReport(defid);
     res.status(200).json(viewreport);
 });
 
-app.get("/error/:msg", async (req, res, next) => {
-    res.render("error.ejs", {err : req.params.msg});
-});
+/* IREPOSV関連ここまで */
 
-app.get("/settings", async (req, res, next) => {
-    res.render("settings.ejs", {req});
-});
 
-// PostgreSQL Test
-app.get("/pg", async (req, res, next) => {
-//    if (!loginCheck(req, res)) return;
-    try {
-        const mcgcdmenu = await pgHandler.getRepID1509();
-        console.log("mcgcdmenu:" + mcgcdmenu.rowCount);
-        res.end();
-    } catch (err) {
-        next(err);
-    }
-});
 
 // Send Mail Test
 app.get("/sendmail", async (req, res, next) => {
@@ -693,72 +761,31 @@ app.get("/odbc", async (req, res, next) => {
     return;
 });
 
-// 日別計画表 (mp-daily-planning)
-app.get("/mp/dailyplan/:planday", async (req, res, next) => {
-    req.session.nextaddr = "/mp/plan/" + req.params.planday;
-    if (!loginCheck(req, res)) return;
-    const mcgcd = req.session.mcgcd;
-    const planday = req.params.planday;
-    req.session.planday = planday;
-    Promise.all([mysqlHandler.getMCGCDs(), mysqlHandler.getMCCDs(mcgcd), mysqlHandler.getYMDPlans(), mysqlHandler.getKM8430(mcgcd)])
-    .then( async ([mcgcdmenu, mccds, ymds, km8430]) => {
-        const d0410 = await mysqlHandler.getKD8440Plans(mcgcd, mccds, planday, km8430);
-        res.render("daily-plan.ejs", {req, mcgcdmenu, ymds, d0410});
-    }).catch((err) => {
-        next(err);
-    });
-});
-
-// 段取り開始
-app.get("/mp/dandori/:odrno", async function (req, res, next) {
-    if (!loginCheck(req, res)) return;
-    const userid = req.session.userid;
-    const mcgcd = req.session.mcgcd;
-    const planday = req.session.planday;
-    const str = req.params.odrno;
-    const odrno = str.split(":")[0];
-    const mccd = str.split(":")[1];
+// PostgreSQL Test
+app.get("/pg", async (req, res, next) => {
+//    if (!loginCheck(req, res)) return;
     try {
-        await mysqlHandler.dandori(userid, odrno, planday, mcgcd, mccd);
-        res.redirect("/mp/plan/" + planday + "#" + mccd);
+        const mcgcdmenu = await pgHandler.getRepID1509();
+        console.log("mcgcdmenu:" + mcgcdmenu.rowCount);
+        res.end();
     } catch (err) {
         next(err);
     }
 });
 
-// 作業開始
-app.get("/mp/start/:odrno", async function (req, res, next) {
-    if (!loginCheck(req, res)) return;
-    const userid = req.session.userid;
-    const mcgcd = req.session.mcgcd;
-    const planday = req.session.planday;
-    const str = req.params.odrno;
-    const odrno = str.split(":")[0];
-    const mccd = str.split(":")[1];
-    try {
-        await mysqlHandler.workstart(userid, odrno, planday, mcgcd, mccd);
-        res.redirect("/mp/plan/" + planday + "#" + mccd);
-    } catch (err) {
-        next(err);
-    }
+// エラーメッセージ画面
+app.get("/error/:msg", async (req, res, next) => {
+    res.render("error.ejs", {err : req.params.msg});
 });
 
-// 作業終了
-app.get("/mp/end/:odrno/:jiqty", async function (req, res, next) {
-    if (!loginCheck(req, res)) return;
-    const userid = req.session.userid;
-    const mcgcd = req.session.mcgcd;
-    const planday = req.session.planday;
-    const str = req.params.odrno;
-    const odrno = str.split(":")[0];
-    const mccd = str.split(":")[1];
-    const jiqty = Number(req.params.jiqty);
-    try {
-        await mysqlHandler.workend(jiqty, userid, odrno, planday, mcgcd, mccd);
-        res.redirect("/mp/plan/" + planday + "#" + mccd);
-    } catch (err) {
-        next(err);
-    }
+// 設定画面
+app.get("/settings", async (req, res, next) => {
+    res.render("settings.ejs", {req});
+});
+
+// 登録後の確認画面
+app.get("/mp/confirm", async (req, res, next) => {
+    res.render("confirm.ejs");
 });
 
 // 包括的エラーハンドリング
