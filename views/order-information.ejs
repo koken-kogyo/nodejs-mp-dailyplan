@@ -8,12 +8,12 @@
     <!-- CSS -->
     <link rel="stylesheet" href="/static/css/style-basic.css">
     <link rel="stylesheet" href="/static/css/style-mppages.css">
-    <link rel="stylesheet" href="/static/css/style-jsQR.css"/>
+    <!-- link rel="stylesheet" href="/static/css/style-jsQR.css"/ -->
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.1/css/all.css" >
     <!-- JavaScript -->
     <script src="/static/javascripts/_myfunctions.js"></script>
-    <script src="/static/javascripts/jsQR.js" defer></script>
-    <script src="/static/javascripts/jsQR-main.js" defer></script>
+    <!-- script src="/static/javascripts/jsQR.js" defer></script -->
+    <!-- script src="/static/javascripts/jsQR-main.js" defer></script -->
 </head>
 
 <!--body>
@@ -245,7 +245,22 @@ QRコード読取
                         <td class="tdrow"><%= (d.CT == 0) ? "" : d.CT + "s"; %></td>
                         <% let zanqty = Number(d.DAZ)+Number(d.D0Z)+Number(d.D1Z)+Number(d.D2Z)+Number(d.D3Z)+Number(d.D4Z)+Number(d.D5Z)+Number(d.D6Z)+Number(d.D7Z)+Number(d.D8Z)+Number(d.D9Z); %>
                         <td class="tdrow"><%= zanqty; %></td>
-                        <td class="tdrow"><%= (d.ZAIQTY == 0) ? "" : Number(d.ZAIQTY).toLocaleString(); %></td>
+                        <!-- 仕掛り在庫情報（前工程在庫含む２行で表現） -->
+                        <td class="tdrow">
+                            <% if (d.MAEZAIQTY != 0) { %>
+                                前:<%= Number(d.MAEZAIQTY).toLocaleString() %><br>
+                            <% } %>
+                            <% if (d.MAEZAIQTY != 0 && d.ZAIQTY != 0) { %>
+                                自:<%= Number(d.ZAIQTY).toLocaleString() %>
+                            <% } %>
+                            <% if (d.MAEZAIQTY == 0 && d.ZAIQTY != 0) { %>
+                                <%= Number(d.ZAIQTY).toLocaleString() %>
+                            <% } %>
+                            <% if (d.MAEZAIQTY == 0 && d.ZAIQTY == 0) { %>
+                                &nbsp;
+                            <% } %>
+                        </td>
+                        <!-- タナコン在庫情報 -->
                         <td class="tdrow"><%= (d.STORE == 0) ? "" : Number(d.STORE).toLocaleString(); %></td>
                         <td class="tdrow"><%= d.MATERIALLEN %></td>
                         <td class="tdrow"><%= (d.DEFID == 0) ? "" : d.DEFID %></td>
@@ -410,14 +425,10 @@ QRコード読取
                             }
                         }
                         // ３．２ 仕掛在庫訂正ポップアップイベントリスナー設定
-                        let waitqty = Number(tblobj.rows[i].cells[endcol - 3].innerText.replace(",",""));
-                        if (waitqty == 0) {
-                            tblobj.rows[i].cells[endcol - 3].innerHTML = `<a href="javascript:zaiqtyPopup(${tblno},${i})" class="td-zai-a"></a>`;
-                            tblobj.rows[i].cells[endcol - 3].style.cursor = "pointer";
-                        } else {
-                            tblobj.rows[i].cells[endcol - 3].innerHTML = `<a href="javascript:zaiqtyPopup(${tblno},${i})" class="td-zai-a">` + waitqty + "</a>" ;
-                            tblobj.rows[i].cells[endcol - 3].style.cursor = "pointer";
-                        }
+                        const zaiqtystr = tblobj.rows[i].cells[endcol - 3].innerText;
+                        tblobj.rows[i].cells[endcol - 3].innerHTML = 
+                            `<a href="javascript:zaiqtyPopup(${tblno},${i})" class="td-zai-a">${zaiqtystr}</a>`;
+                        tblobj.rows[i].cells[endcol - 3].style.cursor = "pointer";
                         // ４．鋼材使用長さの集計結果を反映
                         if (usedlenttl > 0) {
                             var str = "材料：" + tblobj.rows[i].cells[2].innerHTML;

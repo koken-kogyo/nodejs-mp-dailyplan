@@ -176,6 +176,13 @@ async function iReporter(tblno, row) {
             if (targetHMCD.includes(hmcd)) {
                 btnNewReport.classList.add("disable");
                 btnNewReport.removeEventListener("click", btnNewReport_Click);
+            } else {
+                btnNewReport.classList.remove("disable");
+                btnNewReport.addEventListener("click", btnNewReport_Click);
+                btnNewReport.addEventListener("keydown", function(event) {
+                    if (event.key == "Enter") btnNewReport.click();
+                    if (event.keyCode == 27) document.getElementById("irepoPopupWindow").style.display = "none";
+                }, { once: true });
             }
             /*
                 ここから救済措置

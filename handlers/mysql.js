@@ -330,13 +330,44 @@ const getKD8450Orders = async (mcgcd, mccds, ymds) => {
         const km8430 = await getKM8430Defids_2(conn, mcgcd, mccd.MCCD);
 
         // 切削オーダーに品番毎の在庫情報を取得して付加
-        let kd8460 = await conn.query(
-            "select HMCD, " + 
-            "sum(case when MCGCD=? and MCCD=? then ZAIQTY else 0 end) as 'ZAIQTY', " +
-            "sum(case when MCGCD='STORE' then ZAIQTY else 0 end) as 'STORE' " +
-            "from kd8460 group by HMCD"
-            , [mcgcd, mccd.MCCD]
-        );
+        let kd8460 = await conn.query(`
+        -- unpivotで縦持ちテーブルに変換
+        with unpivot as 
+        (
+            select HMCD, 1 as MPSEQ, KT1MCGCD as MCGCD, KT1MCCD as MCCD from km8430 where KTKEY like concat('%', '${mcgcd}', '-', '${mccd.MCCD}', '%')
+            union all
+            select HMCD, 2 as MPSEQ, KT2MCGCD as MCGCD, KT2MCCD as MCCD from km8430 where KTKEY like concat('%', '${mcgcd}', '-', '${mccd.MCCD}', '%') and KT2MCGCD is not null
+            union all
+            select HMCD, 3 as MPSEQ, KT3MCGCD as MCGCD, KT3MCCD as MCCD from km8430 where KTKEY like concat('%', '${mcgcd}', '-', '${mccd.MCCD}', '%') and KT3MCGCD is not null
+            union all
+            select HMCD, 4 as MPSEQ, KT4MCGCD as MCGCD, KT4MCCD as MCCD from km8430 where KTKEY like concat('%', '${mcgcd}', '-', '${mccd.MCCD}', '%') and KT4MCGCD is not null
+            union all
+            select HMCD, 5 as MPSEQ, KT5MCGCD as MCGCD, KT5MCCD as MCCD from km8430 where KTKEY like concat('%', '${mcgcd}', '-', '${mccd.MCCD}', '%') and KT5MCGCD is not null
+            union all
+            select HMCD, 6 as MPSEQ, KT6MCGCD as MCGCD, KT6MCCD as MCCD from km8430 where KTKEY like concat('%', '${mcgcd}', '-', '${mccd.MCCD}', '%') and KT6MCGCD is not null
+        ),
+        -- 前工程の考え方を独自ルールに変換
+        target as 
+        (
+            select HMCD, MPSEQ, MCGCD, MCCD from unpivot where MCGCD <> 'EX' and MCGCD <> 'MD' and MCGCD <> 'D'
+        ),
+        -- 独自ルールに基づいた行番号を付与
+        premst as (
+            select HMCD, MPSEQ, ROW_NUMBER() over (partition by HMCD order by MPSEQ) - 1 as PRESEQ, MCGCD, MCCD from target
+        ),
+        -- 在庫情報、前工程情報、前工程在庫情報を付与
+        zaimst as (
+            select a.HMCD, ifnull(az.ZAIQTY,0) as ZAIQTY, ifnull(bz.ZAIQTY,0) as MAEZAIQTY
+            from premst a
+                left join kd8460 az on az.HMCD=a.HMCD and az.MCGCD=a.MCGCD and az.MCCD=a.MCCD 
+                left join premst b on b.MPSEQ=a.PRESEQ and b.HMCD=a.HMCD
+                left join kd8460 bz on bz.HMCD=b.HMCD and bz.MCGCD=b.MCGCD and bz.MCCD=b.MCCD 
+            where a.MCGCD='${mcgcd}' and a.MCCD='${mccd.MCCD}'
+        )
+        select * from zaimst
+        `);
+
+        // 取得した各データ群を手配データにセット
         for await (row of kd8450[0]) {
             let idx = 0;
             // IREPO帳票IDとCTを付与
@@ -352,9 +383,11 @@ const getKD8450Orders = async (mcgcd, mccds, ymds) => {
             idx = kd8460[0].findIndex(t => t.HMCD === row.HMCD);
             if (idx < 0) {
                 row.ZAIQTY = 0;
+                row.MAEZAIQTY = 0;
                 row.STORE = 0;
             } else {
-                row.ZAIQTY = kd8460[0][idx].ZAIQTY ?? 0;
+                row.ZAIQTY = kd8460[0][idx].ZAIQTY;
+                row.MAEZAIQTY = kd8460[0][idx].MAEZAIQTY;
                 row.STORE = 0; // kd8460[idx].STORE === null ? 0 : kd8460[idx].STORE; タナコンサーバーから直接取得するよう変更
             }
             // 共通部品情報を付与

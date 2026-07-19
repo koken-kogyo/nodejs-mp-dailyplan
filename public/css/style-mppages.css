@@ -453,8 +453,8 @@ a {
 /* 仕掛かり在庫リンク */
 #details .td-zai-a {
     display: block;
-    padding: 10px 0;
     color: cadetblue;
+    font-size: small;
 }
 /* 明細が空のとき用 */
 #details .th-qty {

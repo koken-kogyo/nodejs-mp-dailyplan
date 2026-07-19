@@ -36,8 +36,14 @@ function zaiqtyPopup(tblno, row) {
     const mccd = document.getElementById(`mccd${tblno}`).value;
     const hmcd = tblobj.rows[row].cells[0].innerText;
     const endcol = tblobj.rows[1].cells.length - 1;
-    let zaiqty = tblobj.rows[row].cells[endcol - 3].innerText;
-    if (zaiqty == "") zaiqty = "0";
+    // 仕掛り在庫情報を変換
+    let zaiqty = 0;
+    let zaiqtystr = tblobj.rows[row].cells[endcol - 3].innerText;
+    if (!isNaN(zaiqtystr) && zaiqtystr.trim() !== "") {
+        zaiqty = Number(zaiqtystr);
+    } else if (zaiqtystr.includes("自:")) {
+        zaiqty = zaiqtystr.split("自:")[1];
+    }
     // ポップアップウィンドウに値をセット
     document.getElementById("popHMCD").innerText = hmcd;
     document.getElementById("popZAIQTY").innerText = zaiqty;
