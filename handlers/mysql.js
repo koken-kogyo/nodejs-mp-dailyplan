@@ -1483,8 +1483,8 @@ exports.apiRegist_2 = async (odrno, hmcd, mcgcd, mccd, jiqty, mode, userid) => {
         // https://pc090n:53030/ireporegist2/SW/11014/06673-00068:178:178:
         // https://pc090n:53030/ireporegist2/SW/11014/06673-00068:268:268:
 
-        // １．更新対象の設備コードを取得（コード票品番）
-        const thisequip = await getThisEquipmentFromAPI_2(conn, hmcd, mcgcd);
+        // １．更新対象の工程順序番号を取得（コード票品番）
+        const thisequip = await getThisEquipmentFromAPI_2(conn, hmcd, mcgcd, mccd);
 
         // ２．実績テーブルに登録
         const resultRecord = await insertRecordProcess_2(conn, userid, hmcd, mcgcd, mccd, userid, jiqty, jiqty);
@@ -1556,7 +1556,7 @@ exports.apiModify_2 = async (odrno, hmcd, mcgcd, mccd, preqty, modqty, mode, use
         const jiqty = Number(modqty) - Number(preqty);
 
         // １．更新対象の設備コードを取得（コード票品番）
-        const thisequip = await getThisEquipmentFromAPI_2(conn, hmcd, mcgcd);
+        const thisequip = await getThisEquipmentFromAPI_2(conn, hmcd, mcgcd, mccd);
 
         // ２．実績テーブルに登録
         const resultRecord = await insertRecordProcess_2(conn, userid, hmcd, mcgcd, mccd, userid, jiqty, jiqty);
@@ -1651,57 +1651,23 @@ const getThisEquipment_2 = async (conn, hmcd, mcglabel) => {
     return result1[0][0];
 }
 
-// 設備コードを取得（apiregist2）（コネクション継続版）
-const getThisEquipmentFromAPI_2 = async (conn, hmcd, mcgcd) => {
+// 工程順序を取得（apiregist2）（コネクション継続版）
+const getThisEquipmentFromAPI_2 = async (conn, hmcd, mcgcd, mccd) => {
     // １．コード票から取得
-    const sql1 = 
+    const sql = 
         "select " +
         "case " +
-	        `when a.KT1MCGCD='${mcgcd}' then 1 ` +
-	        `when a.KT2MCGCD='${mcgcd}' then 2 ` +
-	        `when a.KT3MCGCD='${mcgcd}' then 3 ` +
-	        `when a.KT4MCGCD='${mcgcd}' then 4 ` +
-	        `when a.KT5MCGCD='${mcgcd}' then 5 ` +
-	        `when a.KT6MCGCD='${mcgcd}' then 6 ` +
-            "end as KTSEQ, " +
-        "case " +
-	        `when a.KT1MCGCD='${mcgcd}' then a.KT1MCGCD ` +
-	        `when a.KT2MCGCD='${mcgcd}' then a.KT2MCGCD ` +
-	        `when a.KT3MCGCD='${mcgcd}' then a.KT3MCGCD ` +
-	        `when a.KT4MCGCD='${mcgcd}' then a.KT4MCGCD ` +
-	        `when a.KT5MCGCD='${mcgcd}' then a.KT5MCGCD ` +
-	        `when a.KT6MCGCD='${mcgcd}' then a.KT6MCGCD ` +
-            "end as MCGCD, " +
-        "case " +
-	        `when a.KT1MCGCD='${mcgcd}' then a.KT1MCCD ` +
-	        `when a.KT2MCGCD='${mcgcd}' then a.KT2MCCD ` +
-	        `when a.KT3MCGCD='${mcgcd}' then a.KT3MCCD ` +
-	        `when a.KT4MCGCD='${mcgcd}' then a.KT4MCCD ` +
-	        `when a.KT5MCGCD='${mcgcd}' then a.KT5MCCD ` +
-	        `when a.KT6MCGCD='${mcgcd}' then a.KT6MCCD ` +
-            "end as MCCD, " +
-	    "ifnull(b.HMCD,'手配検索対象外') as ANSWER " +
-        "from km8430 a left join km8430 b on a.HMCD=b.HMCD " +
-            "and (b.KTKEY like '%G-%G-%' or b.KTKEY like '%MC-%MC-%' or b.KTKEY like '%D-D%D-D%') " +
+	        `when a.KT1MCGCD='${mcgcd}' and a.KT1MCCD='${mccd}' then 1 ` +
+	        `when a.KT2MCGCD='${mcgcd}' and a.KT2MCCD='${mccd}' then 2 ` +
+	        `when a.KT3MCGCD='${mcgcd}' and a.KT3MCCD='${mccd}' then 3 ` +
+	        `when a.KT4MCGCD='${mcgcd}' and a.KT4MCCD='${mccd}' then 4 ` +
+	        `when a.KT5MCGCD='${mcgcd}' and a.KT5MCCD='${mccd}' then 5 ` +
+	        `when a.KT6MCGCD='${mcgcd}' and a.KT6MCCD='${mccd}' then 6 ` +
+            "end as KTSEQ " +
+        "from km8430 a " +
         "where a.hmcd=?";
-    const result1 = await conn.query(sql1, [hmcd]);
-    if (result1[0][0].ANSWER == '手配検索対象外') {
-        return result1[0][0];
-    }
-    // ２．コード票に同じ工程が複数ある場合は未完了の手配から対象の設備コードを検索(194555-48240:MS-1>MC>EX-MT1>MC-3BP>EX-BT1)
-    const sql2 = 
-        "select MPSEQ as KTSEQ, MCGCD, MCCD, '手配検索対象' as ANSWER from kd8450 where " +
-            `HMCD=? ` +
-            `and replace(replace(MCGCD,'3BP','MC'), 'ON','MC')=? ` +
-            "and EDDT > now() - interval 1 month " +
-            "and ODRSTS not in ('4','9') " +
-            "order by EDDT, MPSEQ, LOTSEQ";
-    const result2 = await conn.query(sql2, [hmcd, mcglabel]);
-    if (result2[0].length > 0) {
-        return result2[0][0];
-    }
-    // ３．対象の手配も無い場合は１．のデフォルト値を使用
-    return result1[0][0];
+    const result = await conn.query(sql, [hmcd]);
+    return result[0][0];
 }
 
 // 前工程の設備コードを取得（コネクション継続版）
