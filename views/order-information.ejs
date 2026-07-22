@@ -608,6 +608,8 @@ QRコード読取
                 `&workspace=${encodeURI("図面検索")}&condition=${encodeURI("全図面検索")}&item=0%3Aoperator%3AexactlyMatch`;
             const apemparam2 = 
                 `&item=0%3Avalue%3A${hmcd}&item=7%3Aoperator%3Aboolean&item=7%3Avalue%3Atrue`;
+            // クリップボードに品番をコピー
+            navigator.clipboard.writeText(hmcd);
             // 図面表示またはダウンロード
             window.open(`${apemurl}${modetext}${apemparam1}${apemparam2}`, "_blank");
         }
