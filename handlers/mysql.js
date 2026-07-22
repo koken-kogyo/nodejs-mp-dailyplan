@@ -330,7 +330,7 @@ const getKD8450Orders = async (mcgcd, mccds, ymds) => {
         const km8430 = await getKM8430Defids_2(conn, mcgcd, mccd.MCCD);
 
         // 切削オーダーに品番毎の在庫情報を取得して付加
-        let kd8460 = await conn.query(`
+        const kd8460sql = `
         -- unpivotで縦持ちテーブルに変換
         with unpivot as 
         (
@@ -365,7 +365,8 @@ const getKD8450Orders = async (mcgcd, mccds, ymds) => {
             where a.MCGCD='${mcgcd}' and a.MCCD='${mccd.MCCD}'
         )
         select * from zaimst
-        `);
+        `;
+        let kd8460 = await conn.query(kd8460sql);
 
         // 取得した各データ群を手配データにセット
         for await (row of kd8450[0]) {
@@ -740,21 +741,11 @@ const getKT = function (str) {
     return kts[0] === kts[1] ? kts[0] : str;
 };
 
-// コード票マスタから帳票IDを取得
-const getReportDefID = async (hmcd, mcgcd, mccd) => {
+// コード票マスタから帳票IDと品番クラスターIDを取得
+const getReportDefID = async (hmcd, ktseq) => {
     const sql =
-        "select max(DEFID) as DEFID from (" +
-            "select case " +
-                `when KT1MCGCD='${mcgcd}' and KT1MCCD like '${mccd}' then KT1IREPO ` +
-                `when KT2MCGCD='${mcgcd}' and KT2MCCD like '${mccd}' then KT2IREPO ` +
-                `when KT3MCGCD='${mcgcd}' and KT3MCCD like '${mccd}' then KT3IREPO ` +
-                `when KT4MCGCD='${mcgcd}' and KT4MCCD like '${mccd}' then KT4IREPO ` + 
-                `when KT5MCGCD='${mcgcd}' and KT5MCCD like '${mccd}' then KT5IREPO ` + 
-                `when KT6MCGCD='${mcgcd}' and KT6MCCD like '${mccd}' then KT6IREPO ` + 
-                "else -1 end as DEFID " +
-            `from km8430 where hmcd='${hmcd}' ` +
-            "union select -1 as DEFID " +
-        ") a";
+        `select ifnull(nullif(KT${ktseq}IREPO, ''), -1) as DEFID ` +
+        `from km8430 where hmcd='${hmcd}' `;
     const km8430 = await getDatabase(sql);
     const defid = km8430[0].DEFID;
     if (defid == -1) {
@@ -1043,6 +1034,63 @@ exports.isKD8460 = async (hmcd, mcgcd, mccd) => {
     const res = await getDatabase(sql, [hmcd, mcgcd, mccd]);
     return (Number(res[0].cnt) == 0) ? -1 : Number(res[0].ZAIQTY);
 }
+
+// ireporegist2の設備ラベルから設備コードと工程番号を取得
+// 　MC工程は括弧内の設備コードで検索「MC(MC)MC(CL)MC(S500)」
+// 　その他工程は設備Gコードで検索「label=MCGCD」
+const getThisEquipment = async (hmcd, mcglabel) => {
+    const mcgcd = mcglabel.includes("(") ? "%" : mcglabel.toUpperCase();
+    const mccd = mcglabel.includes("(") ? mcglabel.split("(")[1].split(")")[0].toUpperCase() : "%";
+    const sql = 
+        "select " +
+        "case " +
+	        `when KT1MCGCD like '${mcgcd}' and KT1MCCD like '${mccd}' then 1 ` +
+	        `when KT2MCGCD like '${mcgcd}' and KT2MCCD like '${mccd}' then 2 ` +
+	        `when KT3MCGCD like '${mcgcd}' and KT3MCCD like '${mccd}' then 3 ` +
+	        `when KT4MCGCD like '${mcgcd}' and KT4MCCD like '${mccd}' then 4 ` +
+	        `when KT5MCGCD like '${mcgcd}' and KT5MCCD like '${mccd}' then 5 ` +
+	        `when KT6MCGCD like '${mcgcd}' and KT6MCCD like '${mccd}' then 6 ` +
+            "end as KTSEQ, " +
+        "case " +
+	        `when KT1MCGCD like '${mcgcd}' and KT1MCCD like '${mccd}' then KT1MCGCD ` +
+	        `when KT2MCGCD like '${mcgcd}' and KT2MCCD like '${mccd}' then KT2MCGCD ` +
+	        `when KT3MCGCD like '${mcgcd}' and KT3MCCD like '${mccd}' then KT3MCGCD ` +
+	        `when KT4MCGCD like '${mcgcd}' and KT4MCCD like '${mccd}' then KT4MCGCD ` +
+	        `when KT5MCGCD like '${mcgcd}' and KT5MCCD like '${mccd}' then KT5MCGCD ` +
+	        `when KT6MCGCD like '${mcgcd}' and KT6MCCD like '${mccd}' then KT6MCGCD ` +
+            "end as MCGCD, " +
+        "case " +
+	        `when KT1MCGCD like '${mcgcd}' and KT1MCCD like '${mccd}' then KT1MCCD ` +
+	        `when KT2MCGCD like '${mcgcd}' and KT2MCCD like '${mccd}' then KT2MCCD ` +
+	        `when KT3MCGCD like '${mcgcd}' and KT3MCCD like '${mccd}' then KT3MCCD ` +
+	        `when KT4MCGCD like '${mcgcd}' and KT4MCCD like '${mccd}' then KT4MCCD ` +
+	        `when KT5MCGCD like '${mcgcd}' and KT5MCCD like '${mccd}' then KT5MCCD ` +
+	        `when KT6MCGCD like '${mcgcd}' and KT6MCCD like '${mccd}' then KT6MCCD ` +
+            "end as MCCD " +
+        "from km8430 where HMCD=?";
+    const result = await getDatabase(sql, [hmcd]);
+    return result[0];
+}
+exports.getThisEquipment = getThisEquipment;
+
+// 工程順序を取得（apiregist2）
+const getThisKTSEQ = async (hmcd, mcgcd, mccd) => {
+    const sql = 
+        "select " +
+        "case " +
+	        `when KT1MCGCD='${mcgcd}' and KT1MCCD='${mccd}' then 1 ` +
+	        `when KT2MCGCD='${mcgcd}' and KT2MCCD='${mccd}' then 2 ` +
+	        `when KT3MCGCD='${mcgcd}' and KT3MCCD='${mccd}' then 3 ` +
+	        `when KT4MCGCD='${mcgcd}' and KT4MCCD='${mccd}' then 4 ` +
+	        `when KT5MCGCD='${mcgcd}' and KT5MCCD='${mccd}' then 5 ` +
+	        `when KT6MCGCD='${mcgcd}' and KT6MCCD='${mccd}' then 6 ` +
+            "else 0 " +
+            "end as KTSEQ " +
+        "from km8430 where HMCD=?";
+    const result = await getDatabase(sql, [hmcd]);
+    return result[0].KTSEQ;
+}
+exports.getThisKTSEQ = getThisKTSEQ;
 
 // 在庫更新
 // https://pc090n:53030/ireporegist/sw/10841/RD479-63171-1:6:plan: -> ZAI=0
@@ -1374,30 +1422,17 @@ exports.getDashboardFuturePopup = async (mcgcd, mccd, eddt) => {
 }
 
 // チェックシートから実績登録（コネクション継続版）
-exports.irepoRegist_2 = async (userid, mcglabel, dandori, hmcd, procqty, jiqty, repid) => {
+// 2026.07.15 データベースkd8440,kd8450 と パラメータに repid を追加
+exports.irepoRegist_2 = async (userid, thisequip, dandori, hmcd, procqty, jiqty, repid) => {
     // データーベースへの接続とトランザクションの開始
     const conn = await pool.getConnection();
     await conn.beginTransaction();
 
     try {
-        // https://pc090n:53030/ireporegist2/MC/21343/V1311-62551-2:17:20:
-        // https://pc090n:53030/ireporegist2/MC/21343/4033281:20:17:        MC -> MC-3F (MCが2工程)
-        // https://pc090n:53030/ireporegist2/MS/11251/187A13-56530:44:44:   MS -> MS-1
-        // https://pc090n:53030/ireporegist2/SW/10841/4441983:120:120:      SW -> NC-5 -> MC-3F
-        // https://pc090n:53030/ireporegist2/NC/10807/4441983:120:120:      SW -> NC-5 -> MC-3F
-        // https://pc090n:53030/ireporegist2/MC/10925/4441983:60:60:        SW -> NC-5 -> MC-3F
-        // https://pc090n:53030/ireporegist2/SW/10841/RP801-63142-2:500:500:
-        // https://nabev2:53030/ireporegist2/SS/11014/129486-59140K:350:350:
-        // https://nabev2:53030/ireporegist2/SW/11014/RP801-63142-2:70:70:
-        // https://nabev2:53030/ireporegist2/SW/11014/RP801-63142-2:105:105:
-        // https://nabev2:53030/ireporegist2/SW/11014/RP801-63142-2:165:165:
-        // https://nabev2:53030/ireporegist2/SW/11014/RP801-63142-2:350:350:
-        // 2026.07.15 パラメータに repid 追加
-
         // １．更新対象の設備コードを取得（コード票品番）
-        const thisequip = await getThisEquipment_2(conn, hmcd, mcglabel);
         const mcgcd = thisequip.MCGCD;
         const mccd = thisequip.MCCD;
+        const ktseq = thisequip.KTSEQ;
 
         // ２．実績テーブルに登録
         const resultRecord = await insertRecordProcess_2(conn, userid, hmcd, mcgcd, mccd, dandori, procqty, jiqty);
@@ -1407,15 +1442,19 @@ exports.irepoRegist_2 = async (userid, mcglabel, dandori, hmcd, procqty, jiqty, 
         const resultZaiko = await updateKD8460_2(conn, hmcd, mcgcd, mccd, jiqty, dandori, "IN");
 
         // ３．５．共通部品処理（手配と内示をマージして取得）
-        // https://pc090n:53030/ireporegist2/SW/11014/RD451-64073-3:315:315:
-        // https://pc090n:53030/ireporegist2/SW/11014/RD451-64073-3:630:630:
-        // https://pc090n:53030/ireporegist2/SW/11014/06673-00068:100:100:
-        // https://pc090n:53030/ireporegist2/SW/11014/06673-00068:178:178:
-        // https://pc090n:53030/ireporegist2/SW/11014/06673-00068:268:268:
-        // https://pc090n:53030/ireporegist2/SW/11014/06673-00068-K:88:88:
-        // https://nabev2:53030/ireporegist2/sw/11014/6C200-93223:80:80: 2026.07.12
-        // https://nabev2:53030/ireporegist2/mc/11014/6C200-93223:80:80: 2026.07.12
-        // https://nabev2:53030/ireporegist2/g/11014/6C200-93223:80:80: 2026.07.12
+        // テストケース一覧
+        // 　基本的な共通部品パターン (SW-SW:NC-8:)（SWは括弧付きで飛んで来れない）
+        // https://nabev2:53030/ireporegist2/SW/11014/06673-00068:160:160:
+        // https://nabev2:53030/ireporegist2/SW/11014/06673-00068-K:88:88:
+
+        // 　小僧
+        // https://nabev2:53030/ireporegist2/SS/11014/129486-59140K:350:350:
+
+        // 　共通部品が多すぎるパターン (TN-6:3BP-3BP:EX-MT2:)
+        // https://nabev2:53030/ireporegist2/TN/11014/3C081-82711-2(-K)(3C256)(3C861)(3R900)(5T140):550:550:
+        // https://nabev2:53030/ireporegist2/MC(3BP)/11014/3C081-82711-2(-K):500:500:
+        // https://nabev2:53030/ireporegist2/MC(3BP)/11014/3R900-82691-2:30:30:
+        // https://nabev2:53030/ireporegist2/MC(3BP)/11014/3C861-82711-4:20:20:
         const commonOrders = await selectCommonOrders_2(conn, hmcd, mcgcd, mccd);
         let resultOrder = [];
         if (commonOrders[0].length == 0) {
@@ -1445,13 +1484,13 @@ exports.irepoRegist_2 = async (userid, mcglabel, dandori, hmcd, procqty, jiqty, 
         }
 
         // ５．前工程在庫の引き落とし
-        if (thisequip.KTSEQ > 1) {
+        if (ktseq > 1) {
             // ５．１．前工程の設備コードを取得
             const prevequip = await getPrevEquipment_2(conn, hmcd, mcgcd, mccd);
             //console.log("前工程" + prevequip.MCGCD + "-" + prevequip.MCCD);
 
             // ５．２．前工程の仕掛り在庫－
-            await updateKD8460_2(conn, hmcd, prevequip.MCGCD, prevequip.MCCD, jiqty, dandori, "OUT");
+            await updateKD8460_2(conn, hmcd, prevequip.MCGCD, prevequip.MCCD, procqty, dandori, "OUT");
         }
         
         //await conn?.rollback(); // DEBUG時
@@ -1468,23 +1507,16 @@ exports.irepoRegist_2 = async (userid, mcglabel, dandori, hmcd, procqty, jiqty, 
 }
 
 // ポップアップ画面から実績登録（コネクション継続版）
-exports.apiRegist_2 = async (odrno, hmcd, mcgcd, mccd, jiqty, mode, userid) => {
+exports.apiRegist_2 = async (odrno, hmcd, thisequip, jiqty, mode, userid) => {
     // データーベースへの接続とトランザクションの開始
     const conn = await pool.getConnection();
     await conn.beginTransaction();
 
     try {
-        // https://pc090n:53030/ireporegist2/MC/21343/V1311-62551-2:17:20:
-        // https://pc090n:53030/ireporegist2/MC/21343/4033281:20:17:        MC -> MC-3F (MCが2工程)
-        // https://pc090n:53030/ireporegist2/MS/11251/187A13-56530:44:44:   MS -> MS-1
-        // https://pc090n:53030/ireporegist2/SW/10841/4441983:120:120:      SW -> NC-5 -> MC-3F
-        // https://pc090n:53030/ireporegist2/NC/10807/4441983:120:120:      SW -> NC-5 -> MC-3F
-        // https://pc090n:53030/ireporegist2/MC/10925/4441983:60:60:        SW -> NC-5 -> MC-3F
-        // https://pc090n:53030/ireporegist2/SW/11014/06673-00068:178:178:
-        // https://pc090n:53030/ireporegist2/SW/11014/06673-00068:268:268:
-
-        // １．更新対象の工程順序番号を取得（コード票品番）
-        const thisequip = await getThisEquipmentFromAPI_2(conn, hmcd, mcgcd, mccd);
+        // １．更新対象の設備コードを取得（コード票品番）
+        const mcgcd = thisequip.MCGCD;
+        const mccd = thisequip.MCCD;
+        const ktseq = thisequip.KTSEQ;
 
         // ２．実績テーブルに登録
         const resultRecord = await insertRecordProcess_2(conn, userid, hmcd, mcgcd, mccd, userid, jiqty, jiqty);
@@ -1493,7 +1525,7 @@ exports.apiRegist_2 = async (odrno, hmcd, mcgcd, mccd, jiqty, mode, userid) => {
         // ３．仕掛り在庫に加算
         const resultZaiko = await updateKD8460_2(conn, hmcd, mcgcd, mccd, jiqty, userid, "IN");
 
-        // https://pc090n:53030/ireporegist2/SW/11014/RD451-64073-3:630:630:
+        // ３．５．共通部品処理（手配と内示をマージして取得）
         const commonOrders = await selectCommonOrdersODRNO_2(conn, odrno, hmcd, mcgcd, mccd, mode);
         let resultOrder = [];
         if (commonOrders[0].length == 0) {
@@ -1505,8 +1537,6 @@ exports.apiRegist_2 = async (odrno, hmcd, mcgcd, mccd, jiqty, mode, userid) => {
         } else {
 
             // ４．５．共通部品オーダーで回して古い手配日から順に実績更新
-            // https://pc090n:53030/ireporegist2/SW/11014/06673-00068:178:178:
-            // https://pc090n:53030/ireporegist2/SW/11014/06673-00068:268:268:
             let countdownQty = jiqty;
             for await (row of commonOrders[0]) {
                 let rowQty = Number(row.ODRQTY) - Number(row.JIQTY);
@@ -1525,7 +1555,7 @@ exports.apiRegist_2 = async (odrno, hmcd, mcgcd, mccd, jiqty, mode, userid) => {
         }
 
         // ５．前工程在庫の引き落とし
-        if (thisequip.KTSEQ > 1) {
+        if (ktseq > 1) {
             // ５．１．前工程の設備コードを取得
             const prevequip = await getPrevEquipment_2(conn, hmcd, mcgcd, mccd);
             //console.log("前工程" + prevequip.MCGCD + "-" + prevequip.MCCD);
@@ -1548,7 +1578,7 @@ exports.apiRegist_2 = async (odrno, hmcd, mcgcd, mccd, jiqty, mode, userid) => {
 }
 
 // ポップアップから実績訂正（コネクション継続版）
-exports.apiModify_2 = async (odrno, hmcd, mcgcd, mccd, preqty, modqty, mode, userid) => {
+exports.apiModify_2 = async (odrno, hmcd, thisequip, preqty, modqty, mode, userid) => {
     // データーベースへの接続とトランザクションの開始
     const conn = await pool.getConnection();
     await conn.beginTransaction();
@@ -1556,7 +1586,9 @@ exports.apiModify_2 = async (odrno, hmcd, mcgcd, mccd, preqty, modqty, mode, use
         const jiqty = Number(modqty) - Number(preqty);
 
         // １．更新対象の設備コードを取得（コード票品番）
-        const thisequip = await getThisEquipmentFromAPI_2(conn, hmcd, mcgcd, mccd);
+        const mcgcd = thisequip.MCGCD;
+        const mccd = thisequip.MCCD;
+        const ktseq = thisequip.KTSEQ;
 
         // ２．実績テーブルに登録
         const resultRecord = await insertRecordProcess_2(conn, userid, hmcd, mcgcd, mccd, userid, jiqty, jiqty);
@@ -1576,7 +1608,7 @@ exports.apiModify_2 = async (odrno, hmcd, mcgcd, mccd, preqty, modqty, mode, use
         }
 
         // ５．前工程在庫の引き落とし
-        if (thisequip.KTSEQ > 1) {
+        if (ktseq > 1) {
             // ５．１．前工程の設備コードを取得
             const prevequip = await getPrevEquipment_2(conn, hmcd, mcgcd, mccd);
             //console.log("前工程" + prevequip.MCGCD + "-" + prevequip.MCCD);
@@ -1598,81 +1630,9 @@ exports.apiModify_2 = async (odrno, hmcd, mcgcd, mccd, preqty, modqty, mode, use
     }
 }
 
-// 設備コードを取得（ireporegist2）（コネクション継続版）
-const getThisEquipment_2 = async (conn, hmcd, mcglabel) => {
-    // １．コード票から取得（MC工程はMC,3BP,ON工程を使用しているので注意）（irepoのMC工程は左記のように細かく分割されていない）
-    const sql1 = 
-        "select " +
-        "case " +
-	        `when replace(replace(a.KT1MCGCD,'3BP','MC'), 'ON','MC')='${mcglabel}' then 1 ` +
-	        `when replace(replace(a.KT2MCGCD,'3BP','MC'), 'ON','MC')='${mcglabel}' then 2 ` +
-	        `when replace(replace(a.KT3MCGCD,'3BP','MC'), 'ON','MC')='${mcglabel}' then 3 ` +
-	        `when replace(replace(a.KT4MCGCD,'3BP','MC'), 'ON','MC')='${mcglabel}' then 4 ` +
-	        `when replace(replace(a.KT5MCGCD,'3BP','MC'), 'ON','MC')='${mcglabel}' then 5 ` +
-	        `when replace(replace(a.KT6MCGCD,'3BP','MC'), 'ON','MC')='${mcglabel}' then 6 ` +
-            "end as KTSEQ, " +
-        "case " +
-	        `when replace(replace(a.KT1MCGCD,'3BP','MC'), 'ON','MC')='${mcglabel}' then a.KT1MCGCD ` +
-	        `when replace(replace(a.KT2MCGCD,'3BP','MC'), 'ON','MC')='${mcglabel}' then a.KT2MCGCD ` +
-	        `when replace(replace(a.KT3MCGCD,'3BP','MC'), 'ON','MC')='${mcglabel}' then a.KT3MCGCD ` +
-	        `when replace(replace(a.KT4MCGCD,'3BP','MC'), 'ON','MC')='${mcglabel}' then a.KT4MCGCD ` +
-	        `when replace(replace(a.KT5MCGCD,'3BP','MC'), 'ON','MC')='${mcglabel}' then a.KT5MCGCD ` +
-	        `when replace(replace(a.KT6MCGCD,'3BP','MC'), 'ON','MC')='${mcglabel}' then a.KT6MCGCD ` +
-            "end as MCGCD, " +
-        "case " +
-	        `when replace(replace(a.KT1MCGCD,'3BP','MC'), 'ON','MC')='${mcglabel}' then a.KT1MCCD ` +
-	        `when replace(replace(a.KT2MCGCD,'3BP','MC'), 'ON','MC')='${mcglabel}' then a.KT2MCCD ` +
-	        `when replace(replace(a.KT3MCGCD,'3BP','MC'), 'ON','MC')='${mcglabel}' then a.KT3MCCD ` +
-	        `when replace(replace(a.KT4MCGCD,'3BP','MC'), 'ON','MC')='${mcglabel}' then a.KT4MCCD ` +
-	        `when replace(replace(a.KT5MCGCD,'3BP','MC'), 'ON','MC')='${mcglabel}' then a.KT5MCCD ` +
-	        `when replace(replace(a.KT6MCGCD,'3BP','MC'), 'ON','MC')='${mcglabel}' then a.KT6MCCD ` +
-            "end as MCCD, " +
-	    "ifnull(b.HMCD,'手配検索対象外') as ANSWER " +
-        "from km8430 a left join km8430 b on a.HMCD=b.HMCD " +
-            "and (b.KTKEY like '%G-%G-%' or b.KTKEY like '%MC-%MC-%' or b.KTKEY like '%D-D%D-D%') " +
-        "where a.hmcd=?";
-    const result1 = await conn.query(sql1, [hmcd]);
-    if (result1[0][0].ANSWER == '手配検索対象外') {
-        return result1[0][0];
-    }
-    // ２．コード票に同じ工程が複数ある場合は未完了の手配から対象の設備コードを検索(194555-48240:MS-1>MC>EX-MT1>MC-3BP>EX-BT1)
-    const sql2 = 
-        "select MPSEQ as KTSEQ, MCGCD, MCCD, '手配検索対象' as ANSWER from kd8450 where " +
-            `HMCD=? ` +
-            `and replace(replace(MCGCD,'3BP','MC'), 'ON','MC')=? ` +
-            "and EDDT > now() - interval 1 month " +
-            "and ODRSTS not in ('4','9') " +
-            "order by EDDT, MPSEQ, LOTSEQ";
-    const result2 = await conn.query(sql2, [hmcd, mcglabel]);
-    if (result2[0].length > 0) {
-        return result2[0][0];
-    }
-    // ３．対象の手配も無い場合は１．のデフォルト値を使用
-    return result1[0][0];
-}
-
-// 工程順序を取得（apiregist2）（コネクション継続版）
-const getThisEquipmentFromAPI_2 = async (conn, hmcd, mcgcd, mccd) => {
-    // １．コード票から取得
-    const sql = 
-        "select " +
-        "case " +
-	        `when a.KT1MCGCD='${mcgcd}' and a.KT1MCCD='${mccd}' then 1 ` +
-	        `when a.KT2MCGCD='${mcgcd}' and a.KT2MCCD='${mccd}' then 2 ` +
-	        `when a.KT3MCGCD='${mcgcd}' and a.KT3MCCD='${mccd}' then 3 ` +
-	        `when a.KT4MCGCD='${mcgcd}' and a.KT4MCCD='${mccd}' then 4 ` +
-	        `when a.KT5MCGCD='${mcgcd}' and a.KT5MCCD='${mccd}' then 5 ` +
-	        `when a.KT6MCGCD='${mcgcd}' and a.KT6MCCD='${mccd}' then 6 ` +
-            "end as KTSEQ " +
-        "from km8430 a " +
-        "where a.hmcd=?";
-    const result = await conn.query(sql, [hmcd]);
-    return result[0][0];
-}
-
 // 前工程の設備コードを取得（コネクション継続版）
 const getPrevEquipment_2 = async (conn, hmcd, mcgcd, mccd) => {
-    // １．コード票からUNPIVOT取得（MC工程のMC,3BP,ON工程は変換されている事が前提）
+    // １．コード票からUNPIVOT取得
     const sql1 = 
         "with unpivot as " +
         "( " +
@@ -1689,7 +1649,7 @@ const getPrevEquipment_2 = async (conn, hmcd, mcgcd, mccd) => {
             `select 6 as KTSEQ, KT6MCGCD as MCGCD, KT6MCCD as MCCD from km8430 where HMCD='${hmcd}' ` +
         ") " +
         "select KTSEQ, MCGCD, MCCD from unpivot a " +
-        "where a.MCGCD <> 'EX' " +
+        "where a.MCGCD <> 'EX' and a.MCGCD <> 'MD' and a.MCGCD <> 'D' " +
         "and a.KTSEQ <  " +
         "( " +
             "select case when ktseq = 1 then 2 else ktseq end as KTSEQ from unpivot " +

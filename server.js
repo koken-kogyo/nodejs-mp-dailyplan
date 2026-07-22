@@ -326,21 +326,40 @@ app.get("/ireporegist/sw/:id/:args", async function (req, res, next) {
 });
 
 // チェックシートから実績登録
+// テストケース一覧
+// 　出庫数の方が多い異常パターン
 // https://pc090n:53030/ireporegist2/MC/21343/V1311-62551-2:17:20:
-// https://pc090n:53030/ireporegist2/sw/11014/05719-52741-1:62:60:
-// https://pc090n:53030/ireporegist2/sw/11014/TD170-56144-3:82:80:
-// https://pc090n:53030/ireporegist2/SW/11014/R1441-63121-2:13:13: 7/16手配3 7/29内示14 SW-SW > TN-4 > MC-3F > EX-BT2
-// https://pc090n:53030/ireporegist2/TTN/11014/R1441-63121-2:13:10: 7/16手配3 7/29内示14 SW-SW > TN-4 > MC-3F > EX-BT2
-// https://pc090n:53030/ireporegist2/MC/11014/R1441-63121-2:10:10: 7/16手配3 7/29内示14 SW-SW > TN-4 > MC-3F > EX-BT2
-// https://nabev2:53030/ireporegist2/sw/11014/R1441-63121-2:10:10: 7/16手配3 7/29内示14 SW-SW > TN-4 > MC-3F > EX-BT2
+
+// 　MC工程が2つ続くパターン (SW-SW:MC-CL:MC-MC:EX-BT1:)
+// https://nabev2:53030/ireporegist2/SW/11014/0571J-42460-3:15:15:
+// https://nabev2:53030/ireporegist2/MC(CL)/11014/0571J-42460-3:15:15:
+// https://nabev2:53030/ireporegist2/MC(MC)/11014/0571J-42460-3:15:15:
+
+// 　MC系が2工程＆前工程が1つ飛ばしのパターン (MS-1:3BP-3BP:EX-MT1:ON-S500:EX-BT1:)
+// https://nabev2:53030/ireporegist2/MS/11251/187A13-56530:44:44:
+// https://nabev2:53030/ireporegist2/MC(3BP)/11251/187A13-56530:44:44:
+// https://nabev2:53030/ireporegist2/MC(S500)/11251/187A13-56530:44:44:
+
+// 　途中工程で23個廃棄したパターン (SW-SW:TN-4:MC-3F:EX-BT2:)
+// https://nabev2:53030/ireporegist2/SW/11014/R1441-63121-2:33:33:
+// https://nabev2:53030/ireporegist2/TN/11014/R1441-63121-2:33:10: (23個廃棄)
+// https://nabev2:53030/ireporegist2/MC(3F)/11014/R1441-63121-2:10:10:
+
+// 　川本（日本語）＆工程名が小文字パターン (SW-川本:NC-7:MC-3F:EX-MT1:)
+// https://nabev2:53030/ireporegist2/sw/11014/V0711-63171-1:20:20:
+
+// 　2026.07.12 在庫と実績数はそのままに、手配と内示は着手中ステータスに更新しない
+// https://nabev2:53030/ireporegist2/sw/11014/6C200-93223:80:80:
+// https://nabev2:53030/ireporegist2/mc/11014/6C200-93223:80:80:
+// https://nabev2:53030/ireporegist2/g/11014/6C200-93223:80:80:
 app.get("/ireporegist2/:mcglabel/:dandori/:args", async function (req, res, next) {
     try {
         const userid = req.session.userid ?? 'DEBUG';
-        const mcglabel = req.params.mcglabel.toUpperCase();
+        const mcglabel = req.params.mcglabel;
         const dandori = req.params.dandori;
         const args = req.params.args;
         const hmcd = args.split(":")[0];
-        const procqty = Number(args.split(":")[1]); // 加工数
+        const procqty = Number(args.split(":")[1]); // 加工数 (＝前工程の引き落とし数)
         let jiqty = 0;
         if (!args.split(":")[2]) {
             jiqty = procqty;                        // 実績数がnullまたは空文字の場合は実績数＝加工数
@@ -350,57 +369,67 @@ app.get("/ireporegist2/:mcglabel/:dandori/:args", async function (req, res, next
 
         //　i-Reporter登録内容をデバッグログに記録
         const logger = log4js.getLogger();
-        logger.debug(`/ireporegist2/${req.params.mcglabel}/${dandori}/${args}`);
+        logger.debug(`/ireporegist2/${mcglabel}/${dandori}/${args}`);
         
-        // 事前チェック
-        Promise.all([mysqlHandler.isKM8430HMCD(hmcd), mysqlHandler.isKM8430HMCD(hmcd, mcglabel)])
-        .then( async ([isHMCD, isMCGCD]) => {
-            if (!isHMCD || !isMCGCD) {
-                const msg = `コード票マスタに存在しません[${hmcd}:${mcglabel}]処理を中断します．`;
-                const logger = log4js.getLogger("e");
-                logger.error(msg);
-                logger.error(`[/ireporegist2/${req.params.mcglabel}/${dandori}/${args}]`);
-                return res.render("error.ejs", {err: msg});
-            }
-            
-            // コード票マスタ、切削帳票定義マスタから帳票定義ID、品番CIDを検索
-            const km8430 = await mysqlHandler.getReportDefID(hmcd, mcglabel, "%");
-            const defid = km8430[0].DEFID;
-            const clusterno = km8430[0].HMCDCID;
-            if (defid == -1) {
-                const logger = log4js.getLogger("e");
-                logger.error("帳票定義IDが見つけられませんでした．");
-                logger.error(`[/ireporegist2/${req.params.mcglabel}/${dandori}/${args}]`);
-            }
+        // 共通部品（括弧付きの品番）を代表品番（先頭品番）にトリム
+        const trimhmcd = hmcd.includes("(") ? hmcd.split("(")[0] : hmcd;
 
-            // IREPOSVの入力帳票IDを検索
-            let repid = 0;
-            if (mysqlHandler.host == "NABEV2") {
-                repid = 15021972;
-            } else if (mcglabel == "SW") {
-                // 　SWと共通部品の場合
-                const viewreport = await pgHandler.getCompleteReportID(defid, hmcd, clusterno);
-                repid = viewreport.rows[0].repid;
-            } else {
-                const viewreport = await pgHandler.getCompleteReportIDSingle(defid);
-                repid = viewreport.rows[0].repid;
-            }
-            if (repid == 0) {
-                logger.error("入力帳票IDが見つけられませんでした．");
-            }
+        // 品番チェック
+        const isHMCD = await mysqlHandler.isKM8430HMCD(trimhmcd)
+        if (!isHMCD) {
+            const msg = `コード票マスタに存在しません[${hmcd}]処理を中断します．`;
+            const logger = log4js.getLogger("e");
+            logger.error(msg);
+            logger.error(`[/ireporegist2/${mcglabel}/${dandori}/${args}]`);
+            return res.render("error.ejs", {err: msg});
+        }
 
-            // チェックシートからの実績登録処理
-            const results = await mysqlHandler.irepoRegist_2(userid, mcglabel, dandori, hmcd, procqty, jiqty, repid);
-            if (results) {
-                // 登録完了画面にリダイレクトして終了（アドレスバーに登録用URLを残さない措置）
-                res.redirect(`/mp/confirm`);
-            } else {
-                res.redirect(`/error/手配の消込はありませんでした．仕掛在庫と実績を計上しました．`);
-            }
+        // 更新対象の設備コードを取得（コード票品番）
+        const thisequip = await mysqlHandler.getThisEquipment(trimhmcd, mcglabel);
+        if (!thisequip) {
+            const msg = `設備コードが見つかりません[${hmcd}:${mcglabel}]処理を中断します．`;
+            const logger = log4js.getLogger("e");
+            logger.error(msg);
+            logger.error(`[/ireporegist2/${mcglabel}/${dandori}/${args}]`);
+            return res.render("error.ejs", {err: msg});
+        }
+        const mcgcd = thisequip.MCGCD;
+        const mccd = thisequip.MCCD;
+        const ktseq = thisequip.KTSEQ;
 
-        }).catch((err) => {
-            next(err);
-        });
+        // コード票マスタ、切削帳票定義マスタから帳票定義ID、品番CIDを検索
+        const km8430 = await mysqlHandler.getReportDefID(trimhmcd, ktseq);
+        const defid = km8430[0].DEFID;
+        const clusterno = km8430[0].HMCDCID;
+        if (defid == -1) {
+            const logger = log4js.getLogger("e");
+            logger.error(`[/ireporegist2/${req.params.mcglabel}/${dandori}/${args}] 帳票定義IDが未登録です．`); // エラーログに出力し後で解析（処理は継続）
+        }
+
+        // IREPOSVの入力帳票IDを検索
+        let repid = 0;
+        if (mysqlHandler.host == "NABEV2") {
+            repid = 15021972;
+        } else if (mcglabel == "SW") {
+            const viewreport = await pgHandler.getCompleteReportID(defid, trimhmcd, clusterno);
+            repid = viewreport.rows[0].repid;
+        } else {
+            const viewreport = await pgHandler.getCompleteReportIDSingle(defid);
+            repid = viewreport.rows[0].repid;
+        }
+        if (repid == 0) {
+            logger.error(`入力帳票IDが見つけられませんでした．(定義ID:${defid})`); // こちらは通常ログに異常出力
+        }
+
+        // チェックシートからの実績登録処理
+        // 　実績登録、自工程在庫＋、共通部品振り分け、実績登録（手配と内示）、前工程在庫－
+        const results = await mysqlHandler.irepoRegist_2(userid, thisequip, dandori, trimhmcd, procqty, jiqty, repid);
+        if (results) {
+            // 登録完了画面にリダイレクトして終了（アドレスバーに登録用URLを残さない措置）
+            res.redirect(`/mp/confirm`);
+        } else {
+            res.redirect(`/error/手配の消込はありませんでした．仕掛在庫と実績を計上しました．`);
+        }
     }
     catch (err) {
         next(err);
@@ -427,8 +456,16 @@ app.get("/mysqlsv/jissekiRegist/:args", async function (req, res, next) {
     logger.debug(`/mysqlsv/jissekiRegist/${args}`);
 
     try {
+        // 更新対象の工程順序を取得（コード票品番）
+        const ktseq = await mysqlHandler.getThisKTSEQ(hmcd, mcgcd, mccd);
+        const thisequip = {
+            MCGCD: mcgcd,
+            MCCD: mccd,
+            KTSEQ: ktseq
+        };
+
         // ポップアップウィンドウからの実績登録（手配内示共通）
-        const updateresult = await mysqlHandler.apiRegist_2(odrno, hmcd, mcgcd, mccd, jiqty, mode, userid);
+        const updateresult = await mysqlHandler.apiRegist_2(odrno, hmcd, thisequip, jiqty, mode, userid);
         res.status(200).json(updateresult);
     } catch (err) {
         next(err);
@@ -452,7 +489,15 @@ app.get("/mysqlsv/modifyOrder/:args", async function (req, res, next) {
     logger.debug(`/mysqlsv/modifyOrder/${args}`);
 
     try {
-        const updateresult = await mysqlHandler.apiModify_2(odrno, hmcd, mcgcd, mccd, preqty, modqty, mode, userid);
+        // 更新対象の工程順序を取得（コード票品番）
+        const ktseq = await mysqlHandler.getThisKTSEQ(hmcd, mcgcd, mccd);
+        const thisequip = {
+            MCGCD: mcgcd,
+            MCCD: mccd,
+            KTSEQ: ktseq
+        };
+        
+        const updateresult = await mysqlHandler.apiModify_2(odrno, hmcd, thisequip, preqty, modqty, mode, userid);
         if (updateresult) {
             res.status(200).json(updateresult);
         } else {
@@ -532,7 +577,8 @@ app.get("/mysqlsv/getDefid/:args", async (req, res, next) => {
     const hmcd = args.split(":")[0];
     const mcgcd = args.split(":")[1];
     const mccd = args.split(":")[2];
-    const km8430 = await mysqlHandler.getReportDefID(hmcd, mcgcd, mccd);
+    const ktseq = await mysqlHandler.getThisKTSEQ(hmcd, mcgcd, mccd);
+    const km8430 = await mysqlHandler.getReportDefID(hmcd, ktseq);
     res.status(200).json(km8430[0]);
 });
 
