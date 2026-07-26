@@ -84,29 +84,54 @@ const isViewReport = async (defid) => {
 }
 
 // SW作業日報兼チェックシートの取得（帳票定義ID:1509）（※ejsに受け渡す項目名は小文字にする事）
+// SW川本作業日報(帳票定義ID:3265) も付け足して取得
 const getRepID1509 = async (planday) => {
-    const sql = "select " + 
-        "rep_top_id,rep_top_name" + 
-        ",edit_refer_status" + 
-        ",sys_regist_time,sys_update_time" + 
-        ",cluster_1_0_t スキャン品番 " + 
-        ",cluster_1_1_t 初回品試作品 " + 
-        ",cluster_1_2_t 段取者id " + 
-        ",to_char(cluster_1_3_d, 'MM/DD') 初回手配日 " + 
-        ",cluster_1_4_t 材料サイズ " + 
-        ",to_char(round(cluster_1_5_n, 2), 'FM99999.00') 切断長 " + 
-        ",case cluster_1_6_t when 'true' then 'OK' else 'NG' end 入力確認 " + 
-        ",to_char(round(cluster_1_7_n, 2), 'FM99999.00') 着工 " + 
-        ",to_char(round(cluster_1_8_n, 2), 'FM99999.00') 完工 " + 
-        ",trunc(cluster_1_11_n) 実績数 " + 
-        ",trunc(cluster_1_12_n) 廃棄数 " + 
-        ",cluster_1_13_t 備考 " + 
-        ",cluster_1_16_t 品番 " + 
-        ",cluster_1_19_t モード " + 
-        "from view_report_1509 " + 
-        "where sys_regist_time between " + 
-        `cast('${planday}' as date ) and cast('${planday}' as date ) + cast('1 days' as INTERVAL) `
-        "order by sys_regist_time";
+    const sql = `
+        select 
+        rep_top_id,rep_top_name 
+        ,edit_refer_status 
+        ,sys_regist_time,sys_update_time 
+        ,cluster_1_0_t スキャン品番 
+        ,cluster_1_1_t 初回品試作品 
+        ,cluster_1_2_t 段取者id 
+        ,to_char(cluster_1_3_d, 'MM/DD') 初回手配日 
+        ,cluster_1_4_t 材料サイズ 
+        ,to_char(round(cluster_1_5_n, 2), 'FM99999.00') 切断長 
+        ,case cluster_1_6_t when 'true' then 'OK' else 'NG' end 入力確認 
+        ,to_char(round(cluster_1_7_n, 2), 'FM99999.00') 着工 
+        ,to_char(round(cluster_1_8_n, 2), 'FM99999.00') 完工 
+        ,trunc(cluster_1_11_n) 実績数 
+        ,trunc(cluster_1_12_n) 廃棄数 
+        ,cluster_1_13_t 備考 
+        ,cluster_1_16_t 品番 
+        ,cluster_1_19_t モード 
+        from view_report_1509 
+        where sys_regist_time between 
+        cast('${planday}' as date ) and cast('${planday}' as date ) + cast('1 days' as INTERVAL)
+        union all
+        select 
+        rep_top_id,rep_top_name 
+        ,edit_refer_status 
+        ,sys_regist_time,sys_update_time 
+        ,cluster_1_0_t スキャン品番 
+        ,cluster_1_1_t 初回品試作品 
+        ,cluster_1_2_t 段取者id 
+        ,to_char(cluster_1_3_d, 'MM/DD') 初回手配日 
+        ,cluster_1_4_t 材料サイズ 
+        ,to_char(round(cluster_1_5_n, 2), 'FM99999.00') 切断長 
+        ,case cluster_1_6_t when 'true' then 'OK' else 'NG' end 入力確認 
+        ,to_char(round(cluster_1_7_n, 2), 'FM99999.00') 着工 
+        ,to_char(round(cluster_1_8_n, 2), 'FM99999.00') 完工 
+        ,trunc(cluster_1_11_n) 実績数 
+        ,trunc(cluster_1_12_n) 廃棄数 
+        ,cluster_1_13_t 備考 
+        ,cluster_1_16_t 品番 
+        ,cluster_1_19_t モード 
+        from view_report_3265 
+        where sys_regist_time between 
+        cast('${planday}' as date ) and cast('${planday}' as date ) + cast('1 days' as INTERVAL)
+        order by sys_regist_time
+    `;
     return getDatabase(sql);
 };
 exports.getRepID1509 = getRepID1509;
