@@ -328,14 +328,14 @@ app.get("/ireporegist/sw/:id/:args", async function (req, res, next) {
 // チェックシートから実績登録
 // テストケース一覧
 // 　出庫数の方が多い異常パターン
-// https://pc090n:53030/ireporegist2/MC/21343/V1311-62551-2:17:20:
+// https://nabev2:53030/ireporegist2/MC(3BI)/21343/V1311-62551-2:17:20:
 
 // 　MC工程が2つ続くパターン (SW-SW:MC-CL:MC-MC:EX-BT1:)
 // https://nabev2:53030/ireporegist2/SW/11014/0571J-42460-3:15:15:
 // https://nabev2:53030/ireporegist2/MC(CL)/11014/0571J-42460-3:15:15:
 // https://nabev2:53030/ireporegist2/MC(MC)/11014/0571J-42460-3:15:15:
 
-// 　MC系が2工程＆前工程が1つ飛ばしのパターン (MS-1:3BP-3BP:EX-MT1:ON-S500:EX-BT1:)
+// 　MC工程が2つで工程1つ飛ばしのパターン (MS-1:3BP-3BP:EX-MT1:ON-S500:EX-BT1:)
 // https://nabev2:53030/ireporegist2/MS/11251/187A13-56530:44:44:
 // https://nabev2:53030/ireporegist2/MC(3BP)/11251/187A13-56530:44:44:
 // https://nabev2:53030/ireporegist2/MC(S500)/11251/187A13-56530:44:44:
@@ -345,7 +345,7 @@ app.get("/ireporegist/sw/:id/:args", async function (req, res, next) {
 // https://nabev2:53030/ireporegist2/TN/11014/R1441-63121-2:33:10: (23個廃棄)
 // https://nabev2:53030/ireporegist2/MC(3F)/11014/R1441-63121-2:10:10:
 
-// 　川本（日本語）＆工程名が小文字パターン (SW-川本:NC-7:MC-3F:EX-MT1:)
+// 　川本（日本語）＆工程グループ名称が小文字のパターン (SW-川本:NC-7:MC-3F:EX-MT1:)
 // https://nabev2:53030/ireporegist2/sw/11014/V0711-63171-1:20:20:
 
 // 　2026.07.12 在庫と実績数はそのままに、手配と内示は着手中ステータスに更新しない

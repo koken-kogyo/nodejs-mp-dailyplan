@@ -266,12 +266,9 @@ const getKD8450Orders = async (mcgcd, mccds, ymds) => {
         ") a where a.LINENO=10";
     const okure = await conn.query(okureSql, [ymds[0], ymds[0]]);
 
-    // 切削オーダーに共通部品情報報を取得して付加
-    // let mcgcdrep = mcgcd.replace("ON","MC").replace("3BP","MC"); 2026.07.13 廃止 (TD320-33422-2 ON共通 MC個別)
-    const km8435 = await conn.query("select HMCD, HMCDS from km8435 where MCGCD=?", [mcgcd]);
-
     const mc = [];
-    for (let mccd of mccds) {
+    for (let mccdobj of mccds) {
+        let mccd = mccdobj.MCCD;
         let sql = "select a.HMCD,b.HMNM,b.MATESIZE,b.LENGTH" +
         ",max(ifnull(b.MATERIALLEN,0)) as 'MATERIALLEN'" + 
         `,sum(case when EDDT<'${ymds[0]}' and ODRSTS in ('1','2','3') then ODRQTY else null end) as 'DA'` +
@@ -324,27 +321,27 @@ const getKD8450Orders = async (mcgcd, mccds, ymds) => {
         " sum(case when EDDT=? and ODRSTS != '9' then ODRQTY else null end) > 0 or" +
         " sum(case when EDDT=? and ODRSTS != '9' then ODRQTY else null end) > 0 " + orderby;
         let kd8450 = await conn.query(sql,
-            [okure[0][0].YMD , ymds[9], mcgcd, mccd.MCCD, ymds[0], ...ymds]);
+            [okure[0][0].YMD , ymds[9], mcgcd, mccd, ymds[0], ...ymds]);
 
-        // 各設備が係わる帳票定義IDデータを取得
-        const km8430 = await getKM8430Defids_2(conn, mcgcd, mccd.MCCD);
+        // 帳票定義IDデータを取得
+        const km8430 = await getKM8430Defids_2(conn, mcgcd, mccd);
 
-        // 切削オーダーに品番毎の在庫情報を取得して付加
+        // 在庫情報を取得（前工程も）
         const kd8460sql = `
         -- unpivotで縦持ちテーブルに変換
         with unpivot as 
         (
-            select HMCD, 1 as MPSEQ, KT1MCGCD as MCGCD, KT1MCCD as MCCD from km8430 where KTKEY like concat('%', '${mcgcd}', '-', '${mccd.MCCD}', '%')
+            select HMCD, 1 as MPSEQ, KT1MCGCD as MCGCD, KT1MCCD as MCCD from km8430 where KTKEY like concat('%', '${mcgcd}', '-', '${mccd}', '%')
             union all
-            select HMCD, 2 as MPSEQ, KT2MCGCD as MCGCD, KT2MCCD as MCCD from km8430 where KTKEY like concat('%', '${mcgcd}', '-', '${mccd.MCCD}', '%') and KT2MCGCD is not null
+            select HMCD, 2 as MPSEQ, KT2MCGCD as MCGCD, KT2MCCD as MCCD from km8430 where KTKEY like concat('%', '${mcgcd}', '-', '${mccd}', '%') and KT2MCGCD is not null and KT2MCGCD <> ''
             union all
-            select HMCD, 3 as MPSEQ, KT3MCGCD as MCGCD, KT3MCCD as MCCD from km8430 where KTKEY like concat('%', '${mcgcd}', '-', '${mccd.MCCD}', '%') and KT3MCGCD is not null
+            select HMCD, 3 as MPSEQ, KT3MCGCD as MCGCD, KT3MCCD as MCCD from km8430 where KTKEY like concat('%', '${mcgcd}', '-', '${mccd}', '%') and KT3MCGCD is not null and KT3MCGCD <> ''
             union all
-            select HMCD, 4 as MPSEQ, KT4MCGCD as MCGCD, KT4MCCD as MCCD from km8430 where KTKEY like concat('%', '${mcgcd}', '-', '${mccd.MCCD}', '%') and KT4MCGCD is not null
+            select HMCD, 4 as MPSEQ, KT4MCGCD as MCGCD, KT4MCCD as MCCD from km8430 where KTKEY like concat('%', '${mcgcd}', '-', '${mccd}', '%') and KT4MCGCD is not null and KT4MCGCD <> ''
             union all
-            select HMCD, 5 as MPSEQ, KT5MCGCD as MCGCD, KT5MCCD as MCCD from km8430 where KTKEY like concat('%', '${mcgcd}', '-', '${mccd.MCCD}', '%') and KT5MCGCD is not null
+            select HMCD, 5 as MPSEQ, KT5MCGCD as MCGCD, KT5MCCD as MCCD from km8430 where KTKEY like concat('%', '${mcgcd}', '-', '${mccd}', '%') and KT5MCGCD is not null and KT5MCGCD <> ''
             union all
-            select HMCD, 6 as MPSEQ, KT6MCGCD as MCGCD, KT6MCCD as MCCD from km8430 where KTKEY like concat('%', '${mcgcd}', '-', '${mccd.MCCD}', '%') and KT6MCGCD is not null
+            select HMCD, 6 as MPSEQ, KT6MCGCD as MCGCD, KT6MCCD as MCCD from km8430 where KTKEY like concat('%', '${mcgcd}', '-', '${mccd}', '%') and KT6MCGCD is not null and KT6MCGCD <> ''
         ),
         -- 前工程の考え方を独自ルールに変換
         target as 
@@ -355,18 +352,27 @@ const getKD8450Orders = async (mcgcd, mccds, ymds) => {
         premst as (
             select HMCD, MPSEQ, ROW_NUMBER() over (partition by HMCD order by MPSEQ) - 1 as PRESEQ, MCGCD, MCCD from target
         ),
-        -- 在庫情報、前工程情報、前工程在庫情報を付与
+        -- 共通部品変換
+        sharemst as (
+            select a.HMCD, a.MPSEQ, a.MCGCD, a.MCCD, a.PRESEQ, ifnull(m.HMCD, a.HMCD) as TOPHMCD
+            from premst a
+                left join km8435 m on m.HMCDS=a.HMCD and m.MCGCD=a.MCGCD and m.MCCD=a.MCCD
+        ),
+        -- 在庫情報を付与（自工程、前工程）
         zaimst as (
             select a.HMCD, ifnull(az.ZAIQTY,0) as ZAIQTY, ifnull(bz.ZAIQTY,0) as MAEZAIQTY
-            from premst a
-                left join kd8460 az on az.HMCD=a.HMCD and az.MCGCD=a.MCGCD and az.MCCD=a.MCCD 
-                left join premst b on b.MPSEQ=a.PRESEQ and b.HMCD=a.HMCD
-                left join kd8460 bz on bz.HMCD=b.HMCD and bz.MCGCD=b.MCGCD and bz.MCCD=b.MCCD 
-            where a.MCGCD='${mcgcd}' and a.MCCD='${mccd.MCCD}'
+            from sharemst a
+                left join kd8460 az on az.HMCD=a.TOPHMCD and az.MCGCD=a.MCGCD and az.MCCD=a.MCCD
+                left join sharemst b on b.MPSEQ=a.PRESEQ and b.HMCD=a.HMCD
+                left join kd8460 bz on bz.HMCD=b.TOPHMCD and bz.MCGCD=b.MCGCD and bz.MCCD=b.MCCD
+            where a.MCGCD='${mcgcd}' and a.MCCD='${mccd}'
         )
         select * from zaimst
         `;
         let kd8460 = await conn.query(kd8460sql);
+
+        // 共通部品情報報を取得
+        const km8435 = await conn.query("select HMCD, HMCDS, NOTE from km8435 where MCGCD=? and MCCD=?", [mcgcd, mccd]);
 
         // 取得した各データ群を手配データにセット
         for await (row of kd8450[0]) {
@@ -392,16 +398,20 @@ const getKD8450Orders = async (mcgcd, mccds, ymds) => {
                 row.STORE = 0; // kd8460[idx].STORE === null ? 0 : kd8460[idx].STORE; タナコンサーバーから直接取得するよう変更
             }
             // 共通部品情報を付与
-            idx = km8435[0].findIndex(s => s.HMCD == row.HMCD);
-            row.COMMONPART = (idx < 0) ? "" : "k"; // cssのクラス.kで色付け
-            let tooltip = km8435[0].filter(s => s.HMCD == row.HMCD);
-            if (tooltip.length > 0) {
-                row.TOOLTIP = "共通部品：\n" + tooltip.map(r => r.HMCDS).join('\n');
+            idx = km8435[0].findIndex(s => s.HMCDS == row.HMCD);
+            if (idx >= 0) {
+                row.COMMONPART = "k"; // cssのクラス.kで色付け
+                let tooltip = km8435[0].filter(s => s.HMCD == km8435[0][idx].HMCD); // row.HMCDの代表品番から一覧を作成
+                if (tooltip.length > 0) {
+                    row.TOOLTIP = "共通部品：\n" + tooltip.map(r => r.HMCDS.padEnd(24) + r.NOTE).join('\n');
+                }
+            } else {
+                row.COMMONPART = "";
             }
         }
 
         // １設備分の情報が出来上がり
-        mc.push([mccd, kd8450[0]]);
+        mc.push([mccdobj, kd8450[0]]);
     }
     conn?.release();  // 接続を開放
     return mc;
@@ -419,16 +429,13 @@ const getKD8440Plans = async (mcgcd, mccds, ymds) => {
     const startodrno = ("00" + (targetday.getFullYear())).slice(-2) + 
                        ("00" + (targetday.getMonth()+1)).slice(-2) + "000000";
 
-    // 切削オーダーに共通部品情報報を取得して付加
-    // let mcgcdrep = mcgcd.replace("ON","MC").replace("3BP","MC"); 2026.07.13 廃止 (TD320-33422-2 ON共通 MC個別)
-    const km8435 = await conn.query("select HMCD, HMCDS from km8435 where MCGCD=?", [mcgcd]);
-
     // グループの設備一覧を取得
     const orderby = await getMCOrderby(mcgcd);
 
     // メイン処理（設備一覧でループ）
     const mc = [];
-    for await (let mccd of mccds) {
+    for await (let mccdobj of mccds) {
+        let mccd = mccdobj.MCCD;
         // 各設備の内示一覧を取得
         let sql = "select a.HMCD,b.HMNM,b.MATESIZE,b.LENGTH" +
         ",max(ifnull(b.MATERIALLEN,0)) as 'MATERIALLEN'" + 
@@ -480,20 +487,20 @@ const getKD8440Plans = async (mcgcd, mccds, ymds) => {
         " sum(case when EDDT=? and ODRSTS != '9' then ODRQTY else null end) > 0 " + orderby;
         const kd8440 = await conn.query(sql
             , [ymds[0], ymds[9]
-            , "%" + mcgcd + "-" + mccd.MCCD + ":%"
+            , "%" + mcgcd + "-" + mccd + ":%"
             , ...ymds
         ]);
         
-        // 各設備の手配残データを取得（おまけ１）
+        // 手配残データを取得（おまけ１）
         const kd8450 = await conn.query(
             "select HMCD, sum(ODRQTY) as 'ODRQTY', sum(ODRQTY-JIQTY) as 'ZANQTY', min(ODRSTS) as 'ODRSTS' " + 
             "from kd8450 " + 
             "where MCGCD=? and MCCD=? and ODRSTS in ('1','2','3') and EDDT<? and ODRNO>?" + 
             "group by HMCD"
-            , [mcgcd, mccd.MCCD, ymds[0], startodrno]
+            , [mcgcd, mccd, ymds[0], startodrno]
         );
 
-        // 在庫テーブルの仕掛り在庫情報を取得（おまけ２）
+        // 仕掛り在庫情報を取得（おまけ２）
         const kd8460mccd = await conn.query(
             "select a.HMCD, b.HMNM, b.MATESIZE, b.LENGTH" +
             ", ifnull(b.MATERIALLEN,0) as 'MATERIALLEN'" +
@@ -501,11 +508,14 @@ const getKD8440Plans = async (mcgcd, mccds, ymds) => {
             ", null as 'D5', null as 'D6', null as 'D7', null as 'D8', null as 'D9'" + 
             ", a.ZAIQTY from kd8460 a, km8430 b " + 
             "where a.HMCD=b.HMCD and MCGCD=? and MCCD=? and a.ZAIQTY<>0"
-            , [mcgcd, mccd.MCCD]
+            , [mcgcd, mccd]
         );
 
         // 帳票定義IDデータを取得（おまけ４）
-        const km8430 = await getKM8430Defids_2(conn, mcgcd, mccd.MCCD);
+        const km8430 = await getKM8430Defids_2(conn, mcgcd, mccd);
+
+        // 共通部品情報報を取得（おまけ６）
+        const km8435 = await conn.query("select HMCD, HMCDS from km8435 where MCGCD=? and MCCD=?", [mcgcd, mccd]);
 
         // 各設備の内示一覧に各種データを付与
         for await (row of kd8440[0]) {
@@ -539,11 +549,15 @@ const getKD8440Plans = async (mcgcd, mccds, ymds) => {
                 row.CT = km8430[0][idx].CT ?? 0;
             }
             // 共通部品情報を付与（おまけ６）
-            idx = km8435[0].findIndex(s => s.HMCD == row.HMCD);
-            row.COMMONPART = (idx < 0) ? "" : "k"; // cssのクラス.kで色付け
-            let tooltip = km8435[0].filter(s => s.HMCD == row.HMCD);
-            if (tooltip.length > 0) {
-                row.TOOLTIP = "共通部品：\n" + tooltip.map(r => r.HMCDS).join('\n');
+            idx = km8435[0].findIndex(s => s.HMCDS == row.HMCD);
+            if (idx >= 0) {
+                row.COMMONPART = "k"; // cssのクラス.kで色付け
+                let tooltip = km8435[0].filter(s => s.HMCD == km8435[0][idx].HMCD); // row.HMCDの代表品番から一覧を作成
+                if (tooltip.length > 0) {
+                    row.TOOLTIP = "共通部品：\n" + tooltip.map(r => r.HMCDS).join('\n');
+                }
+            } else {
+                row.COMMONPART = "";
             }
         }
 
@@ -605,7 +619,7 @@ const getKD8440Plans = async (mcgcd, mccds, ymds) => {
         // }
         
         // １設備分の情報が出来上がり
-        mc.push([mccd, kd8440[0]]);
+        mc.push([mccdobj, kd8440[0]]);
     }
     conn?.release();  // 接続を開放
     return mc;
@@ -773,44 +787,37 @@ const getProgressReport = async (hmcd, mcgcd, mccd) => {
         (
             select HMCD, 1 as MPSEQ, KT1MCGCD as MCGCD, KT1MCCD as MCCD from km8430 where hmcd='${hmcd}'
             union all
-            select HMCD, 2 as MPSEQ, KT2MCGCD as MCGCD, KT2MCCD as MCCD from km8430 where hmcd='${hmcd}' and KT2MCGCD is not null
+            select HMCD, 2 as MPSEQ, KT2MCGCD as MCGCD, KT2MCCD as MCCD from km8430 where hmcd='${hmcd}' and KT2MCGCD is not null and KT2MCGCD <> ''
             union all
-            select HMCD, 3 as MPSEQ, KT3MCGCD as MCGCD, KT3MCCD as MCCD from km8430 where hmcd='${hmcd}' and KT3MCGCD is not null
+            select HMCD, 3 as MPSEQ, KT3MCGCD as MCGCD, KT3MCCD as MCCD from km8430 where hmcd='${hmcd}' and KT3MCGCD is not null and KT3MCGCD <> ''
             union all
-            select HMCD, 4 as MPSEQ, KT4MCGCD as MCGCD, KT4MCCD as MCCD from km8430 where hmcd='${hmcd}' and KT4MCGCD is not null
+            select HMCD, 4 as MPSEQ, KT4MCGCD as MCGCD, KT4MCCD as MCCD from km8430 where hmcd='${hmcd}' and KT4MCGCD is not null and KT4MCGCD <> ''
             union all
-            select HMCD, 5 as MPSEQ, KT5MCGCD as MCGCD, KT5MCCD as MCCD from km8430 where hmcd='${hmcd}' and KT5MCGCD is not null
+            select HMCD, 5 as MPSEQ, KT5MCGCD as MCGCD, KT5MCCD as MCCD from km8430 where hmcd='${hmcd}' and KT5MCGCD is not null and KT5MCGCD <> ''
             union all
-            select HMCD, 6 as MPSEQ, KT6MCGCD as MCGCD, KT6MCCD as MCCD from km8430 where hmcd='${hmcd}' and KT6MCGCD is not null
+            select HMCD, 6 as MPSEQ, KT6MCGCD as MCGCD, KT6MCCD as MCCD from km8430 where hmcd='${hmcd}' and KT6MCGCD is not null and KT6MCGCD <> ''
         ),
-        -- 前工程の考え方を独自ルールに変換
-        target as 
-        (
-            select HMCD, MPSEQ, MCGCD, MCCD from unpivot where MCGCD <> 'EX' and MCGCD <> 'MD' and MCGCD <> 'D'
+        -- 共通部品変換（１品番の全工程）
+        sharemst as (
+            select a.HMCD, a.MPSEQ, a.MCGCD, a.MCCD, ifnull(m.HMCD, a.HMCD) as TOPHMCD
+            from unpivot a
+                left join km8435 m on m.HMCDS=a.HMCD and m.MCGCD=a.MCGCD and m.MCCD=a.MCCD
         ),
-        -- 独自ルールに基づいた行番号を付与
-        premst as (
-            select HMCD, MPSEQ, ROW_NUMBER() over (partition by HMCD order by MPSEQ) - 1 as PRESEQ, MCGCD, MCCD from target
-        ),
-        -- 在庫情報、前工程情報、前工程在庫情報を付与
+        -- 在庫情報を付与（１品番の全工程）
         zaimst as (
-            select a.*, az.ZAIQTY, b.MCGCD as MAEGCD, b.MCCD as MAECD, bz.ZAIQTY as MAEQTY
-            from premst a
-                left join kd8460 az on az.HMCD=a.HMCD and az.MCGCD=a.MCGCD and az.MCCD=a.MCCD 
-                left join premst b on b.MPSEQ=a.PRESEQ 
-                left join kd8460 bz on bz.HMCD=b.HMCD and bz.MCGCD=b.MCGCD and bz.MCCD=b.MCCD 
+            select a.HMCD, a.MPSEQ, ifnull(az.ZAIQTY,0) as ZAIQTY
+            from sharemst a
+                left join kd8460 az on az.HMCD=a.TOPHMCD and az.MCGCD=a.MCGCD and az.MCCD=a.MCCD
         ),
-        -- マスタ完成
+        -- マスタ完成（１品番の全工程）（設備コードが数値のみの場合は設備Ｇコードを付与）
         mst as (
-            select u.HMCD, u.MPSEQ,
-            case
-                when u.MCCD regexp '^[0-9]+$' then concat(u.MCGCD, '-', u.MCCD)
-                else u.MCCD
-            end as KTCD
-            , ZAIQTY, MAEGCD, MAECD, MAEQTY from unpivot u left join zaimst z on z.MPSEQ=u.MPSEQ
+            select u.HMCD, u.MPSEQ, z.ZAIQTY
+            , case when u.MCCD regexp '^[0-9]+$' then concat(u.MCGCD, '-', u.MCCD) else u.MCCD end as KTCD
+            from unpivot u
+                left join zaimst z on z.MPSEQ=u.MPSEQ
         )
         -- 手配データ検索
-        select a.ODRNO, a.MPSEQ, a.MCGCD, a.MCCD, m.KTCD, m.ZAIQTY, m.MAEQTY, a.ODRSTS, a.REPID, a.WKEDDT
+        select a.ODRNO, a.MPSEQ, a.MCGCD, a.MCCD, m.KTCD, m.ZAIQTY, a.ODRSTS, a.REPID, a.WKEDDT
         from kd8450 a inner join mst m on m.MPSEQ=a.MPSEQ 
         where odrno = 
         (
@@ -1037,9 +1044,10 @@ exports.isKD8460 = async (hmcd, mcgcd, mccd) => {
 
 // ireporegist2の設備ラベルから設備コードと工程番号を取得
 // 　MC工程は括弧内の設備コードで検索「MC(MC)MC(CL)MC(S500)」
+// 　TN工程で括弧付きの場合はダイレクト検索「TN(2) -> TN(1)」(RD809-92332-3)
 // 　その他工程は設備Gコードで検索「label=MCGCD」
 const getThisEquipment = async (hmcd, mcglabel) => {
-    const mcgcd = mcglabel.includes("(") ? "%" : mcglabel.toUpperCase();
+    const mcgcd = mcglabel.includes("MC(") ? "%" : mcglabel.includes("TN(") ? "TN" : mcglabel.toUpperCase();
     const mccd = mcglabel.includes("(") ? mcglabel.split("(")[1].split(")")[0].toUpperCase() : "%";
     const sql = 
         "select " +
@@ -1443,18 +1451,23 @@ exports.irepoRegist_2 = async (userid, thisequip, dandori, hmcd, procqty, jiqty,
 
         // ３．５．共通部品処理（手配と内示をマージして取得）
         // テストケース一覧
-        // 　基本的な共通部品パターン (SW-SW:NC-8:)（SWは括弧付きで飛んで来れない）
-        // https://nabev2:53030/ireporegist2/SW/11014/06673-00068:160:160:
-        // https://nabev2:53030/ireporegist2/SW/11014/06673-00068-K:88:88:
+        // 　基本的な共通部品パターン (SW-SW:NC-7:)
+        // https://nabev2:53030/ireporegist2/SW/11014/4188133:150:150:
+        // https://nabev2:53030/ireporegist2/NC/11014/4188133-K:150:150:
 
         // 　小僧
         // https://nabev2:53030/ireporegist2/SS/11014/129486-59140K:350:350:
 
         // 　共通部品が多すぎるパターン (TN-6:3BP-3BP:EX-MT2:)
-        // https://nabev2:53030/ireporegist2/TN/11014/3C081-82711-2(-K)(3C256)(3C861)(3R900)(5T140):550:550:
-        // https://nabev2:53030/ireporegist2/MC(3BP)/11014/3C081-82711-2(-K):500:500:
+        // https://nabev2:53030/ireporegist2/TN(6)/11014/3C081-82711-2(-K)(3C256)(3C861)(3R900)(5T140):550:550:
+        // https://nabev2:53030/ireporegist2/MC(3BP)/11014/3C081-82711-2(-K):300:300:
         // https://nabev2:53030/ireporegist2/MC(3BP)/11014/3R900-82691-2:30:30:
         // https://nabev2:53030/ireporegist2/MC(3BP)/11014/3C861-82711-4:20:20:
+
+        // 　TN工程が2つのパターン (SW-SW:TN-2:TN-1:EX-BT2:)
+        // https://nabev2:53030/ireporegist2/SW/11014/RD809-92331-2:150:150:
+        // https://nabev2:53030/ireporegist2/TN(2)/11014/RD809-92331-2:120:120:
+        // https://nabev2:53030/ireporegist2/TN(1)/11014/RD809-92332-3:60:60:        
         const commonOrders = await selectCommonOrders_2(conn, hmcd, mcgcd, mccd);
         let resultOrder = [];
         if (commonOrders[0].length == 0) {
@@ -1673,7 +1686,12 @@ const insertRecordProcess_2 = async (conn, userid, hmcd, mcgcd, mccd, dandori, p
 }
 
 // 在庫更新（コネクション継続版）
-const updateKD8460_2 = async (conn, hmcd, mcgcd, mccd, jiqty, operator, mode) => {
+const updateKD8460_2 = async (conn, orghmcd, mcgcd, mccd, jiqty, operator, mode) => {
+
+    // 共通部品処理（共通部品マスタに存在する場合は代表品番に対して在庫の入出庫を行う）
+    const shareParts = await conn.query("select HMCD as HMCD from km8435 where MCGCD=? and MCCD=? and hmcds=?", [mcgcd, mccd, orghmcd]);
+    const hmcd = (shareParts[0].length > 0) ? shareParts[0][0].HMCD : orghmcd;
+
     // 対象設備の在庫レコードが存在するかチェック
     const sql = "select count(*) as cnt, sum(ZAIQTY) as ZAIQTY from kd8460 where HMCD=? and MCGCD=? and MCCD=?";
     const res = await conn.query(sql, [hmcd, mcgcd, mccd]);
@@ -2169,20 +2187,27 @@ const modifyOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
 // 共通部品オーダーの取得（品目指定）（手配と内示をマージして取得）
 const selectCommonOrders_2 = async (conn, hmcd, mcgcd, mccd) => {
     const planYMDs = await getYMDPlans(); // 内示開始日付を取得
-    const sql =
-        "select a.EDDT, a.HMCD, a.ODRQTY, a.JIQTY, a.ODRNO as ODRNO, 'ORDER' as MODE from kd8450 a, km8435 b " +
-        "where a.EDDT>(now()-interval 1 month) and a.ODRSTS not in ('4','9') and " +
-        "a.HMCD=b.HMCDS and b.HMCD=? and a.MCGCD=? and a.MCCD=? " +
-        "union " +
-        "select c.EDDT, c.HMCD, c.ODRQTY, c.JIQTY, c.PLNNO as ODRNO, 'PLAN' as MODE from kd8440 c, km8435 d " +
-        "where c.EDDT<=? and c.ODRSTS not in ('4','9') and " +
-        "c.HMCD=d.HMCDS and d.HMCD=? and " +
-        "exists (select*from km8430 where hmcd=? and kt1mcgcd=? and kt1mccd=?) " +
-        "order by EDDT asc, HMCD asc";
+    const sql = `
+        with commonparts as 
+        (
+            select a.HMCDS from km8435 a where a.MCGCD=? and a.MCCD=? and a.HMCD = 
+                (select HMCD from km8435 where MCGCD=a.MCGCD and MCCD=a.MCCD and HMCDS=?)
+        )
+        -- select * from commonparts
+        select a.EDDT, a.HMCD, a.ODRQTY, a.JIQTY, a.ODRNO as ODRNO, 'ORDER' as MODE from kd8450 a, commonparts m 
+        where a.EDDT>(now()-interval 1 month) and a.ODRSTS not in ('4','9') and 
+        a.MCGCD=? and a.MCCD=? and a.HMCD=m.HMCDS
+        union 
+        select c.EDDT, c.HMCD, c.ODRQTY, c.JIQTY, c.PLNNO as ODRNO, 'PLAN' as MODE from kd8440 c, commonparts m 
+        where c.EDDT<=? and c.ODRSTS not in ('4','9') and 
+        c.HMCD=m.HMCDS and 
+        exists (select 1 from km8430 where HMCD = c.HMCD and KT1MCGCD=? and KT1MCCD=?)
+        order by EDDT asc, HMCD asc
+        `;
     const commonOrders = await conn.query(sql, [
-        hmcd, mcgcd, mccd,
-        planYMDs[9], hmcd,
-        hmcd, mcgcd, mccd
+        mcgcd, mccd, hmcd,
+        mcgcd, mccd,
+        planYMDs[9], mcgcd, mccd
     ]);
     return commonOrders;
 }
@@ -2199,21 +2224,28 @@ const selectCommonOrdersODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, mode) =
     }
     const result = await conn.query(sql, [odrno]);
     // 開始日以降の未完オーダーを抽出
-    sql =
-        "select a.EDDT, a.HMCD, a.ODRQTY, a.JIQTY, a.ODRNO as ODRNO, 'ORDER' as MODE from kd8450 a, km8435 b " +
-        "where a.EDDT>(now()-interval 1 month) and a.ODRSTS not in ('4','9') and " +
-        "a.HMCD=b.HMCDS and b.HMCD=? and a.MCGCD=? and a.MCCD=? " +
-        "union " +
-        "select c.EDDT, c.HMCD, c.ODRQTY, c.JIQTY, c.PLNNO as ODRNO, 'PLAN' as MODE from kd8440 c, km8435 d " +
-        "where c.EDDT<=? and c.ODRSTS not in ('4','9') and " +
-        "c.HMCD=d.HMCDS and d.HMCD=? and " +
-        "exists (select*from km8430 where hmcd=? and kt1mcgcd=? and kt1mccd=?) " +
-        "having EDDT>=? " +
-        "order by EDDT asc, HMCD asc";
+    sql = `
+        with commonparts as 
+        (
+            select a.HMCDS from km8435 a where a.MCGCD=? and a.MCCD=? and a.HMCD = 
+                (select HMCD from km8435 where MCGCD=a.MCGCD and MCCD=a.MCCD and HMCDS=?)
+        )
+        -- select * from commonparts
+        select a.EDDT, a.HMCD, a.ODRQTY, a.JIQTY, a.ODRNO as ODRNO, 'ORDER' as MODE from kd8450 a, commonparts m
+        where a.EDDT>(now()-interval 1 month) and a.ODRSTS not in ('4','9') and
+        a.MCGCD=? and a.MCCD=? and a.HMCD=m.HMCDS
+        union
+        select c.EDDT, c.HMCD, c.ODRQTY, c.JIQTY, c.PLNNO as ODRNO, 'PLAN' as MODE from kd8440 c, commonparts m
+        where c.EDDT<=? and c.ODRSTS not in ('4','9') and
+        c.HMCD=m.HMCDS and
+        exists (select 1 from km8430 where HMCD = c.HMCD and KT1MCGCD=? and KT1MCCD=?)
+        having EDDT>=?
+        order by EDDT asc, HMCD asc
+        `;
     const commonOrders = await conn.query(sql, [
-        hmcd, mcgcd, mccd,
-        planYMDs[9], hmcd,
-        hmcd, mcgcd, mccd,
+        mcgcd, mccd, hmcd,
+        mcgcd, mccd,
+        planYMDs[9], mcgcd, mccd,
         result[0][0].EDDT
     ]);
     return commonOrders;
