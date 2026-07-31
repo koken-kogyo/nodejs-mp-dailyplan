@@ -119,7 +119,7 @@ const getRepID1509 = async (planday) => {
         ,to_char(cluster_1_3_d, 'MM/DD') 初回手配日 
         ,cluster_1_4_t 材料サイズ 
         ,to_char(round(cluster_1_5_n, 2), 'FM99999.00') 切断長 
-        ,case cluster_1_6_t when 'true' then 'OK' else 'NG' end 入力確認 
+        ,case cluster_1_21_t when 'true' then 'OK' else 'NG' end 入力確認 
         ,to_char(round(cluster_1_7_n, 2), 'FM99999.00') 着工 
         ,to_char(round(cluster_1_8_n, 2), 'FM99999.00') 完工 
         ,trunc(cluster_1_11_n) 実績数 
