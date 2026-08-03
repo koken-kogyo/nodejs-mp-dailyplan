@@ -125,7 +125,7 @@ const getRepID1509 = async (planday) => {
         ,trunc(cluster_1_11_n) 実績数 
         ,trunc(cluster_1_12_n) 廃棄数 
         ,cluster_1_13_t 備考 
-        ,cluster_1_16_t 品番 
+        ,cluster_1_16_t || ' (川)' 品番 
         ,cluster_1_19_t モード 
         from view_report_3265 
         where sys_regist_time between 
