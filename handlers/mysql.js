@@ -1045,9 +1045,10 @@ exports.isKD8460 = async (hmcd, mcgcd, mccd) => {
 // ireporegist2の設備ラベルから設備コードと工程番号を取得
 // 　MC工程は括弧内の設備コードで検索「MC(MC)MC(CL)MC(S500)」
 // 　TN工程で括弧付きの場合はダイレクト検索「TN(2) -> TN(1)」(RD809-92332-3)
-// 　その他工程は設備Gコードで検索「label=MCGCD」
+// 　G 工程で括弧付きの場合はダイレクト検索「G(G) -> G(G2)」(129A01-39600-2)
+// 　その他工程は設備Gコードで検索「mcglabel=MCGCD」
 const getThisEquipment = async (hmcd, mcglabel) => {
-    const mcgcd = mcglabel.includes("MC(") ? "%" : mcglabel.includes("TN(") ? "TN" : mcglabel.toUpperCase();
+    const mcgcd = mcglabel.includes("MC(") ? "%" : mcglabel.includes("TN(") ? "TN" : mcglabel.includes("G(") ? "G" : mcglabel.toUpperCase();
     const mccd = mcglabel.includes("(") ? mcglabel.split("(")[1].split(")")[0].toUpperCase() : "%";
     const sql = 
         "select " +
