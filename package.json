@@ -8,24 +8,24 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "body-parser": "^2.2.2",
+    "body-parser": "^2.3.0",
     "chart.js": "^4.5.1",
     "chartjs-adapter-date-fns": "^3.0.0",
     "chartjs-plugin-datalabels": "^2.2.0",
     "cookie-parser": "^1.4.7",
-    "csv-parse": "^6.2.1",
-    "csv-stringify": "^6.7.0",
-    "ejs": "^5.0.2",
+    "csv-parse": "^7.0.2",
+    "csv-stringify": "^6.8.3",
+    "ejs": "^6.0.1",
     "express": "^5.2.1",
     "express-session": "^1.19.0",
-    "iconv-lite": "^0.7.2",
+    "iconv-lite": "^0.7.3",
     "log4js": "^6.9.1",
-    "mysql2": "^3.22.2",
+    "mysql2": "^3.23.3",
     "net": "^1.0.2",
-    "nodemailer": "^8.0.5",
+    "nodemailer": "^9.0.5",
     "odbc": "^2.5.0",
-    "oracledb": "^6.10.0",
-    "pg": "^8.20.0",
+    "oracledb": "^7.0.1",
+    "pg": "^8.23.0",
     "serve-favicon": "^2.5.1"
   }
 }
