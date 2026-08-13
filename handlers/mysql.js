@@ -1745,14 +1745,14 @@ const finishOrderHMCD_2 = async (conn, hmcd, mcgcd, mccd, jiqty, repid, dandori)
         if (countdownQty >= needQty) {
             // odrqtyで更新 countdownQty--
             const update8450 = await conn.execute(
-                "update kd8450 set JIQTY=ODRQTY, ODRSTS='4', REPID=?, WKEDDT=current_timestamp, MPUPDTID=? " +
+                "update kd8450 set JIQTY=ODRQTY, ODRSTS='4', REPID=?, WKEDDT=current_timestamp, MPUPDTID=?, MPUPDTDT=now() " +
                 "where ODRNO=? and LOTSEQ=? and MCGCD=? and MCCD=?"
                 , [repidValue, dandori, row.ODRNO, row.LOTSEQ, mcgcd, mccd]
             );
             if (update8450[0].changedRows != 0) {
                 // 子受注が全て完了していたら親受注も完了に更新
                 const update8430 = await conn.execute(
-                    "update kd8430 set JIQTY=ODRQTY, ODRSTS='4', MPUPDTID=? where ODRNO=? and " +
+                    "update kd8430 set JIQTY=ODRQTY, ODRSTS='4', MPUPDTID=?, MPUPDTDT=now() where ODRNO=? and " +
                     "(select sum(ODRSTS='4') from kd8450 where ODRNO=? and MCGCD<>'EX') = " +
                     "(select count(*) FROM kd8450 where ODRNO=? and MCGCD<>'EX')"
                     , [dandori, ...Array(3).fill(row.ODRNO)]
@@ -1760,7 +1760,7 @@ const finishOrderHMCD_2 = async (conn, hmcd, mcgcd, mccd, jiqty, repid, dandori)
                 // 上記以外は3:着手に更新
                 if (update8430[0].changedRows == 0) {
                     await conn.execute(
-                    "update kd8430 set JIQTY=0, ODRSTS='3', MPUPDTID=? where ODRNO=?"
+                    "update kd8430 set JIQTY=0, ODRSTS='3', MPUPDTID=?, MPUPDTDT=now() where ODRNO=?"
                     , [dandori, row.ODRNO]);
                 }
                 // クライアントに返却
@@ -1816,7 +1816,7 @@ const finishOrderHMCD_2 = async (conn, hmcd, mcgcd, mccd, jiqty, repid, dandori)
             if (countdownQty >= needQty) {
                 // odrqtyで更新 countdownQty--
                 const update = await conn.execute(
-                    "update kd8440 set JIQTY=ODRQTY, ODRSTS='4', REPID=?, UPDTID=? " +
+                    "update kd8440 set JIQTY=ODRQTY, ODRSTS='4', REPID=?, JIDT=current_timestamp, UPDTID=?, UPDTDT=now() " +
                     "where PLNNO=?"
                     , [repidValue, dandori, row.PLNNO]
                 );
@@ -1878,7 +1878,7 @@ const finishOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
             if (countdownQty >= needQty) {
                 // odrqtyで更新 countdownQty--
                 const update = await conn.execute(
-                    "update kd8450 set JIQTY=ODRQTY, ODRSTS='4', WKEDDT=current_timestamp, MPUPDTID=? " +
+                    "update kd8450 set JIQTY=ODRQTY, ODRSTS='4', WKEDDT=current_timestamp, MPUPDTID=?, MPUPDTDT=now() " +
                     "where ODRNO=? and LOTSEQ=? and MCGCD=? and MCCD=?"
                     , [userid, row.ODRNO, row.LOTSEQ, mcgcd, mccd]
                 );
@@ -1894,7 +1894,7 @@ const finishOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
                 if (update[0].changedRows != 0) {
                     // 子受注が全て4:完了していたら親受注も4:完了に更新
                     const update8430 = await conn.execute(
-                        "update kd8430 set JIQTY=ODRQTY, ODRSTS='4', MPUPDTID=? where ODRNO=? and " +
+                        "update kd8430 set JIQTY=ODRQTY, ODRSTS='4', MPUPDTID=?, MPUPDTDT=now() where ODRNO=? and " +
                         "(select sum(ODRSTS='4') from kd8450 where ODRNO=? and MCGCD<>'EX') = " +
                         "(select count(*) FROM kd8450 where ODRNO=? and MCGCD<>'EX')"
                         , [userid, ...Array(3).fill(row.ODRNO)]
@@ -1902,7 +1902,7 @@ const finishOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
                     // 上記以外は3:着手に更新
                     if (update8430[0].changedRows == 0) {
                         await conn.execute(
-                        "update kd8430 set JIQTY=0, ODRSTS='3', MPUPDTID=? where ODRNO=?"
+                        "update kd8430 set JIQTY=0, ODRSTS='3', MPUPDTID=?, MPUPDTDT=now() where ODRNO=?"
                         , [userid, row.ODRNO]);
                     }
                     // クライアントに返却
@@ -1921,14 +1921,14 @@ const finishOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
                 // jiqtyに足して更新 countdownQty=0
                 let newjiqty = jiQty + countdownQty;
                 const update = await conn.execute(
-                    "update kd8450 set JIQTY=?, ODRSTS='3', WKEDDT=current_timestamp, MPUPDTID=? " +
+                    "update kd8450 set JIQTY=?, ODRSTS='3', MPUPDTID=?, MPUPDTDT=now() " +
                     "where ODRNO=? and LOTSEQ=? and MCGCD=? and MCCD=?"
                     , [newjiqty, userid, row.ODRNO, row.LOTSEQ, mcgcd, mccd]
                 );
                 if (update[0].changedRows != 0) {
                     // 親受注も3:着手に更新
                     await conn.execute(
-                    "update kd8430 set JIQTY=0, ODRSTS='3', MPUPDTID=? where ODRNO=?"
+                    "update kd8430 set JIQTY=0, ODRSTS='3', MPUPDTID=?, MPUPDTDT=now() where ODRNO=?"
                     , [userid, row.ODRNO]);
                     if (!result) {
                         result = [
@@ -1969,7 +1969,7 @@ const finishOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
             if (countdownQty >= needQty) {
                 // odrqtyで更新 countdownQty--
                 const update = await conn.execute(
-                    "update kd8440 set JIQTY=ODRQTY, ODRSTS='4', UPDTID=? " +
+                    "update kd8440 set JIQTY=ODRQTY, ODRSTS='4', JIDT=current_timestamp, UPDTID=?, UPDTDT=now() " +
                     "where PLNNO=?"
                     , [userid, row.PLNNO]
                 );
@@ -1998,7 +1998,7 @@ const finishOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
                 // jiqtyに足して更新 countdownQty=0
                 let newjiqty = jiQty + countdownQty;
                 const update = await conn.execute(
-                    "update kd8440 set JIQTY=?, ODRSTS='3', UPDTID=? " +
+                    "update kd8440 set JIQTY=?, ODRSTS='3', UPDTID=?, UPDTDT=now() " +
                     "where PLNNO=?"
                     , [newjiqty, userid, row.PLNNO]
                 );
@@ -2044,7 +2044,7 @@ const modifyOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
                 if (countdownQty >= jiQty) {
                     // 0で更新 countdownQty=0
                     const update = await conn.execute(
-                        "update kd8440 set JIQTY=0, ODRSTS='2', UPDTID=? " +
+                        "update kd8440 set JIQTY=0, ODRSTS='2', JIDT=null, UPDTID=?, UPDTDT=now() " +
                         "where PLNNO=?"
                         , [userid, row.PLNNO]
                     );
@@ -2072,7 +2072,7 @@ const modifyOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
                     // jiqtyから引いて更新 countdownQty--
                     let newjiqty = jiQty - countdownQty;
                     const update = await conn.execute(
-                        "update kd8440 set JIQTY=?, ODRSTS='3', UPDTID=? " +
+                        "update kd8440 set JIQTY=?, ODRSTS='3', JIDT=null, UPDTID=?, UPDTDT=now() " +
                         "where PLNNO=?"
                         , [newjiqty, userid, row.PLNNO]
                     );
@@ -2109,7 +2109,7 @@ const modifyOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
             if (countdownQty >= jiQty) { // 手配数よりマイナスする実績数が同じもしくは多い場合
 
                 const update8450 = await conn.execute(
-                    "update kd8450 set JIQTY=0, ODRSTS='2', WKSTDT=null, WKEDDT=null, MPUPDTID=? " +
+                    "update kd8450 set JIQTY=0, ODRSTS='2', WKSTDT=null, WKEDDT=null, MPUPDTID=?, MPUPDTDT=now() " +
                     "where ODRNO=? and LOTSEQ=? and MCGCD=? and MCCD=?"
                     , [userid, row.ODRNO, row.LOTSEQ, mcgcd, mccd]
                 );
@@ -2128,7 +2128,7 @@ const modifyOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
                 if (update8450[0].changedRows != 0) {
                     // 子受注が全て2:確定の場合親受注も2:確定に更新
                     const update8430 = await conn.execute(
-                        "update kd8430 set JIQTY=0, ODRSTS='2', MPUPDTID=? where ODRNO=? and " +
+                        "update kd8430 set JIQTY=0, ODRSTS='2', MPUPDTID=?, MPUPDTDT=now() where ODRNO=? and " +
                         "(select sum(ODRSTS='2') from kd8450 where ODRNO=? and MCGCD<>'EX') = " +
                         "(select count(*) FROM kd8450 where ODRNO=? and MCGCD<>'EX')"
                         , [userid, ...Array(3).fill(row.ODRNO)]
@@ -2136,7 +2136,7 @@ const modifyOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
                     // 上記以外は3:着手に更新
                     if (update8430[0].changedRows == 0) {
                         await conn.execute(
-                        "update kd8430 set JIQTY=0, ODRSTS='3', MPUPDTID=? where ODRNO=?"
+                        "update kd8430 set JIQTY=0, ODRSTS='3', MPUPDTID=?, MPUPDTDT=now() where ODRNO=?"
                         , [userid, row.ODRNO]);
                     }
                     if (!result) {
@@ -2151,14 +2151,14 @@ const modifyOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
                 let newjiqty = jiQty - countdownQty;
                 let newsts = (countdownQty == 0) ? "2" : "3";
                 const update8450 = await conn.execute(
-                    "update kd8450 set JIQTY=?, ODRSTS=?, WKEDDT=null, MPUPDTID=? " +
+                    "update kd8450 set JIQTY=?, ODRSTS=?, WKEDDT=null, MPUPDTID=?, MPUPDTDT=now() " +
                     "where ODRNO=? and LOTSEQ=? and MCGCD=? and MCCD=?"
                     , [newjiqty, newsts, userid, row.ODRNO, row.LOTSEQ, mcgcd, mccd]
                 );
                 if (update8450[0].changedRows != 0) {
                     // 子受注が全て2:確定の場合親受注も2:確定に更新
                     const update8430 = await conn.execute(
-                        "update kd8430 set JIQTY=0, ODRSTS='2', MPUPDTID=? where ODRNO=? and " +
+                        "update kd8430 set JIQTY=0, ODRSTS='2', MPUPDTID=?, MPUPDTDT=now() where ODRNO=? and " +
                         "(select sum(ODRSTS='2') from kd8450 where ODRNO=? and MCGCD<>'EX') = " +
                         "(select count(*) FROM kd8450 where ODRNO=? and MCGCD<>'EX')"
                         , [userid, ...Array(3).fill(row.ODRNO)]
@@ -2166,7 +2166,7 @@ const modifyOrderODRNO_2 = async (conn, odrno, hmcd, mcgcd, mccd, jiqty, mode, u
                     // 上記以外は3:着手に更新
                     if (update8430[0].changedRows == 0) {
                         await conn.execute(
-                        "update kd8430 set JIQTY=0, ODRSTS='3', MPUPDTID=? where ODRNO=?"
+                        "update kd8430 set JIQTY=0, ODRSTS='3', MPUPDTID=?, MPUPDTDT=now() where ODRNO=?"
                         , [userid, row.ODRNO]);
                     }
                     if (!result) {
