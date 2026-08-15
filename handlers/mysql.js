@@ -780,6 +780,7 @@ exports.getReportDefID = getReportDefID;
 // 工程進捗状況を取得
 // 　１．品番＋設備G＋設備コードから実績計上対象の手配番号を取得
 // 　２．手配番号より工程経路の進捗状況を取得
+//   本来、得意先名称の取得はここではないが・・・
 const getProgressReport = async (hmcd, mcgcd, mccd) => {
     const sql = `
         -- unpivotで縦持ちテーブルに変換
@@ -811,13 +812,15 @@ const getProgressReport = async (hmcd, mcgcd, mccd) => {
         ),
         -- マスタ完成（１品番の全工程）（設備コードが数値のみの場合は設備Ｇコードを付与）
         mst as (
-            select u.HMCD, u.MPSEQ, z.ZAIQTY
+            select u.HMCD, u.MPSEQ, z.ZAIQTY, m20.TKCD, m20.TKRNM
             , case when u.MCCD regexp '^[0-9]+$' then concat(u.MCGCD, '-', u.MCCD) else u.MCCD end as KTCD
             from unpivot u
                 left join zaimst z on z.MPSEQ=u.MPSEQ
+                inner join m0500 m50 on m50.HMCD=u.HMCD
+                inner join m0200 m20 on m20.TKCD=m50.TKCD
         )
         -- 手配データ検索
-        select a.ODRNO, a.MPSEQ, a.MCGCD, a.MCCD, m.KTCD, m.ZAIQTY, a.ODRSTS, a.REPID, a.WKEDDT
+        select a.ODRNO, a.MPSEQ, a.MCGCD, a.MCCD, m.KTCD, m.ZAIQTY, a.ODRSTS, a.REPID, a.WKEDDT, m.TKCD, m.TKRNM
         from kd8450 a inner join mst m on m.MPSEQ=a.MPSEQ 
         where odrno = 
         (

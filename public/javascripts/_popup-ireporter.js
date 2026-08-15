@@ -62,6 +62,11 @@ async function iReporter(tblno, row) {
         }
         // 進捗状況の取得
         const progressReport = await this.getprogressReport(hmcd, mcgcd, mccd);
+
+        // 代表得意先名称（本来ここではないが・・・）
+        const tkcd = (progressReport.length > 0) ? progressReport[0].TKCD : "";
+        document.getElementById("ipopTKRNM").innerText = (progressReport.length > 0) ? progressReport[0].TKRNM : "";
+        
         // 結果反映
         let checksheetflg = true;
         let progressflg = (progressReport.length > 1)
@@ -156,7 +161,13 @@ async function iReporter(tblno, row) {
         // 新規帳票起動イベントリスナー設定
         document.getElementById("ipopDEFID").value = irepoinfo.DEFID;
         const btnNewReport = document.getElementById("newReport");
-        if (checksheetflg) {
+        /*
+            クボタ関連のみ工程ジャンプ防止機能
+        */
+        const targetTKCD = [
+            "C0101","C0102","C0103","C0104","C0105","C0109","C0110"
+        ];
+        if (checksheetflg || !targetTKCD.includes(tkcd)) {
             btnNewReport.classList.remove("disable");
             btnNewReport.addEventListener("click", btnNewReport_Click);
             btnNewReport.addEventListener("keydown", function(event) {
@@ -164,32 +175,15 @@ async function iReporter(tblno, row) {
                 if (event.keyCode == 27) document.getElementById("irepoPopupWindow").style.display = "none";
             }, { once: true });
         } else {
-            /*
-                まずは９品番で運用
-                チェックシートが運用出来るようになったら条件を削除する
-            */
-            const targetHMCD = [
-                "RD809-92331-2","RD809-92332-3","RB238-63122-1B",
-                "RD809-51343-1","V0531-62152-1","3C081-82711-2-K",
-                "RA221-62131-2","RA269-62131-2","91A76-30121"
-            ];
-            if (targetHMCD.includes(hmcd)) {
-                btnNewReport.classList.add("disable");
-                btnNewReport.removeEventListener("click", btnNewReport_Click);
-            } else {
-                btnNewReport.classList.remove("disable");
-                btnNewReport.addEventListener("click", btnNewReport_Click);
-                btnNewReport.addEventListener("keydown", function(event) {
-                    if (event.key == "Enter") btnNewReport.click();
-                    if (event.keyCode == 27) document.getElementById("irepoPopupWindow").style.display = "none";
-                }, { once: true });
-            }
+            btnNewReport.classList.add("disable");
+            btnNewReport.removeEventListener("click", btnNewReport_Click);
             /*
                 ここから救済措置
             */
             const emergencyObj = document.getElementById("ipopEmergency");
             // ダブルクリックでボタン復活
             emergencyObj.addEventListener("dblclick", () => {
+                emergencyObj.blur();
                 btnNewReport.classList.remove("disable");
                 btnNewReport.addEventListener("click", btnNewReport_Click);
                 btnNewReport.focus();
@@ -199,6 +193,7 @@ async function iReporter(tblno, row) {
                 const currentTime = new Date().getTime();
                 const tapLength = currentTime - lastTap;
                 if (tapLength < 300 && tapLength > 0) {
+                    emergencyObj.blur();
                     btnNewReport.classList.remove("disable");
                     btnNewReport.addEventListener("click", btnNewReport_Click);
                     btnNewReport.focus();
