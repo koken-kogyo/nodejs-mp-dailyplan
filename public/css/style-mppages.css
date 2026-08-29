@@ -577,3 +577,32 @@ a {
     font-weight: bold;
     list-style: none; /* 本来ここではないが */
 }
+
+/* =========================================================================== */
+/*  通知メッセージ
+/* =========================================================================== */
+#notify-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: black;
+    color: #ffdd00;
+    font-size: 20px;
+    font-weight: bold;
+    padding: 8px 0;
+    overflow: hidden;
+    white-space: nowrap;
+    z-index: 9999;
+    cursor: pointer;
+    border-bottom: 2px solid #ffdd00;
+}
+#notify-text {
+    display: inline-block;
+    padding-left: 100%;
+    animation: scroll-left 30s linear infinite;
+}
+@keyframes scroll-left {
+    0%   { transform: translateX(0%); }
+    100% { transform: translateX(-100%); }
+}

@@ -79,6 +79,7 @@ app.get("/mp/order/:mcgcd", async (req, res, next) => {
 
     // 手配情報取得
     const kd8450 = await mysqlHandler.getKD8450Orders(mcgcd, mccds, ymds);
+    const notify = await mysqlHandler.getKD8520comment(mcgcd);
 
         // タナコンサーバー接続確認
         const socket = new net.Socket();
@@ -92,23 +93,23 @@ app.get("/mp/order/:mcgcd", async (req, res, next) => {
                 const tioitem = await oracleODBCHandler.getTLOCStock();
                 const kd8450new = await oracleODBCHandler.setTLOCStock(kd8450, tioitem); // 手配情報にタナコン在庫情報をセット
                 // 手配一覧の表示
-                res.render("order-information.ejs", {req, ymds, mcgcd, mccds, kd8450: kd8450new});
+                res.render("order-information.ejs", {req, ymds, mcgcd, mccds, kd8450: kd8450new, notify});
             } catch (e) {
                 const err = {"message" : "タナコンデータベースへの接続失敗: " + e.message};
-                res.render("order-information.ejs", {req, ymds, mcgcd, mccds, kd8450, err});
+                res.render("order-information.ejs", {req, ymds, mcgcd, mccds, kd8450, notify, err});
             }
 
         });
         socket.on('error', (e) => {
             const err = {"message" : "タナコンサーバーへの接続失敗: " + e.message};
             // 手配一覧の表示
-            res.render("order-information.ejs", {req, ymds, mcgcd, mccds, kd8450, err});
+            res.render("order-information.ejs", {req, ymds, mcgcd, mccds, kd8450, notify, err});
         });
         socket.on('timeout', () => {
             const err = {"message" : "タナコンサーバー接続タイムアウト"};
             socket.destroy(); // タイムアウト時にソケットを破棄
             // 手配一覧の表示
-            res.render("order-information.ejs", {req, ymds, mcgcd, mccds, kd8450, err});
+            res.render("order-information.ejs", {req, ymds, mcgcd, mccds, kd8450, notify, err});
         });
 
 });
@@ -133,6 +134,7 @@ app.get("/mp/plan/:mcgcd", async (req, res, next) => {
 
         // 内示情報取得
         const kd8440 = await mysqlHandler.getKD8440Plans(mcgcd, mccds, ymds);
+        const notify = await mysqlHandler.getKD8520comment(mcgcd);
 
         // タナコンサーバー接続確認
         const socket = new net.Socket();
@@ -146,22 +148,22 @@ app.get("/mp/plan/:mcgcd", async (req, res, next) => {
                 const tioitem = await oracleODBCHandler.getTLOCStock();
                 const kd8440new = oracleODBCHandler.setTLOCStock(kd8440, tioitem); // 手配情報にタナコン在庫情報をセット
                 // 内示一覧の表示
-                res.render("plan-order.ejs", {req, ymds, mcgcd, mccds, kd8440: kd8440new});
+                res.render("plan-order.ejs", {req, ymds, mcgcd, mccds, kd8440: kd8440new, notify});
             } catch (e) {
                 const err = {"message" : "タナコンデータベースへの接続失敗: " + e.message};
-                res.render("plan-order.ejs", {req, ymds, mcgcd, mccds, kd8440, err});
+                res.render("plan-order.ejs", {req, ymds, mcgcd, mccds, kd8440, notify, err});
             }
     
         });
         socket.on('error', (e) => {
             const err = {"message" : "タナコンサーバーへの接続失敗: " + e.message};
-            res.render("plan-order.ejs", {req, ymds, mcgcd, mccds, kd8440, err});
+            res.render("plan-order.ejs", {req, ymds, mcgcd, mccds, kd8440, notify, err});
         });
         socket.on('timeout', () => {
             const err = {"message" : "タナコンサーバー接続タイムアウト"};
             socket.destroy(); // タイムアウト時にソケットを破棄
             // 内示一覧の表示
-            res.render("plan-order.ejs", {req, ymds, mcgcd, mccds, kd8440, err});
+            res.render("plan-order.ejs", {req, ymds, mcgcd, mccds, kd8440, notify, err});
         });
     }).catch((err) => {
         next(err);
@@ -658,6 +660,16 @@ app.get("/mysqlsv/dashboard/future/popup/:MCGCD/:MCCD/:EDDT", async function (re
         const eddt = req.params.EDDT;
         const result = await mysqlHandler.getDashboardFuturePopup(mcgcd, mccd, eddt);
         res.status(200).json(result);
+    } catch (err) {
+        next(err);
+    }
+});
+
+// API 通知メッセージの消込処理
+app.get("/mysqlsv/confirmNotify/:autono", async (req, res, next) => {
+    try {
+        await mysqlHandler.updateKD8520comment(req.params.autono);
+        res.status(200).end();
     } catch (err) {
         next(err);
     }

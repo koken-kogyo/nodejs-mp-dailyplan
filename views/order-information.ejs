@@ -48,6 +48,13 @@ QRコード読取
             <li><%= err.message %></li>
         </ul>
     <% } %>
+    <% if (notify && notify.length > 0) { %>        
+    <div id="notify-bar" <%= `onclick=confirmNotify(${notify[0].AUTONO})` %>>
+        <div id="notify-text">
+            <%= notify[0].COMMENT %>
+        </div>
+    </div>
+    <% } %>
     <% if (kd8450) { %>
         <% let tableno = 1; %>
         <% let mccount = Object.keys(kd8450).length; %>
@@ -612,6 +619,13 @@ QRコード読取
             navigator.clipboard.writeText(hmcd);
             // 図面表示またはダウンロード
             window.open(`${apemurl}${modetext}${apemparam1}${apemparam2}`, "_blank");
+        }
+
+        // 通知メッセージを確認済に更新するAPIを呼び出す
+        async function confirmNotify(autono) {
+            await fetch(`/mysqlsv/confirmNotify/${autono}`);
+            const bar = document.getElementById("notify-bar");
+            if (bar) bar.remove();
         }
 
 </script>

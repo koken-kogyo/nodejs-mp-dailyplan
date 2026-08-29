@@ -945,6 +945,21 @@ exports.startOrder = async (odrno, mcgcd, mccd) => {
         , [kd8430[0].HMCD, kd8430[0].EDDT, mcgcd, mccd]);
 };
 
+// 切削通知ファイルの取得
+const getKD8520comment = async (mcgcd) => {
+    const kd8520 = await getDatabase(
+        `SELECT AUTONO, COMMENT from kd8520 where MCGCD='${mcgcd}' and CONFIRMED=0`
+    );
+    return kd8520;
+}
+exports.getKD8520comment = getKD8520comment;
+
+// 切削通知ファイルの消込（既読）
+const updateKD8520comment = async (autono) => {
+    const update = await getDatabase("UPDATE kd8520 SET CONFIRMED=1 WHERE AUTONO=?", [autono]);
+}
+exports.updateKD8520comment = updateKD8520comment;
+
 
 
 
