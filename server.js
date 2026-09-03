@@ -354,6 +354,8 @@ app.get("/ireporegist/sw/:id/:args", async function (req, res, next) {
 // https://nabev2:53030/ireporegist2/sw/11014/6C200-93223:80:80:
 // https://nabev2:53030/ireporegist2/mc/11014/6C200-93223:80:80:
 // https://nabev2:53030/ireporegist2/g/11014/6C200-93223:80:80:
+
+// https://pc090n:53030/ireporegist2/MC(CL)/11014/RP851-79611-3:25:25:
 app.get("/ireporegist2/:mcglabel/:dandori/:args", async function (req, res, next) {
     try {
         const userid = req.session.userid ?? 'DEBUG';
@@ -394,6 +396,12 @@ app.get("/ireporegist2/:mcglabel/:dandori/:args", async function (req, res, next
             logger.error(msg);
             logger.error(`[/ireporegist2/${mcglabel}/${dandori}/${args}]`);
             return res.render("error.ejs", {err: msg});
+        }
+        if (thisequip.KTSEQ == -1) {
+            const logger = log4js.getLogger("e");
+            logger.error(`[/ireporegist2/${req.params.mcglabel}/${dandori}/${args}] コード票マスタの設備名とアイレポの設備名に違います．`);
+            res.redirect(`/error/コード票マスタの設備名と、アイレポの設備名[${mcglabel}]が違います．`);
+            return;
         }
         const mcgcd = thisequip.MCGCD;
         const mccd = thisequip.MCCD;

@@ -1077,6 +1077,7 @@ const getThisEquipment = async (hmcd, mcglabel) => {
 	        `when KT4MCGCD like '${mcgcd}' and KT4MCCD like '${mccd}' then 4 ` +
 	        `when KT5MCGCD like '${mcgcd}' and KT5MCCD like '${mccd}' then 5 ` +
 	        `when KT6MCGCD like '${mcgcd}' and KT6MCCD like '${mccd}' then 6 ` +
+	        `else -1 ` +
             "end as KTSEQ, " +
         "case " +
 	        `when KT1MCGCD like '${mcgcd}' and KT1MCCD like '${mccd}' then KT1MCGCD ` +
