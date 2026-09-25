@@ -1064,10 +1064,19 @@ exports.isKD8460 = async (hmcd, mcgcd, mccd) => {
 // 　MC工程は括弧内の設備コードで検索「MC(MC)MC(CL)MC(S500)」
 // 　TN工程で括弧付きの場合はダイレクト検索「TN(2) -> TN(1)」(RD809-92332-3)
 // 　G 工程で括弧付きの場合はダイレクト検索「G(G) -> G(G2)」(129A01-39600-2)
+//   XW工程は「SK-XW」(129A01-39600-2)(198121-48830)
 // 　その他工程は設備Gコードで検索「mcglabel=MCGCD」
 const getThisEquipment = async (hmcd, mcglabel) => {
-    const mcgcd = mcglabel.includes("MC(") ? "%" : mcglabel.includes("TN(") ? "TN" : mcglabel.includes("G(") ? "G" : mcglabel.toUpperCase();
-    const mccd = mcglabel.includes("(") ? mcglabel.split("(")[1].split(")")[0].toUpperCase() : "%";
+    const mcgcd = 
+        mcglabel.includes("MC(") ? "%" : 
+        mcglabel.includes("TN(") ? "TN" : 
+        mcglabel.includes("G(") ? "G" : 
+        mcglabel == "XW" ? "SK" :
+        mcglabel.toUpperCase();
+    const mccd = 
+        mcglabel.includes("(") ? mcglabel.split("(")[1].split(")")[0].toUpperCase() : 
+        mcglabel == "XW" ? "XW" :
+        "%";
     const sql = 
         "select " +
         "case " +

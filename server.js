@@ -356,6 +356,10 @@ app.get("/ireporegist/sw/:id/:args", async function (req, res, next) {
 // https://nabev2:53030/ireporegist2/g/11014/6C200-93223:80:80:
 
 // https://pc090n:53030/ireporegist2/MC(CL)/11014/RP851-79611-3:25:25:
+
+// 2026.09.25 トラブル対応
+// https://pc090n:53030/ireporegist2/CN/10875/RC6A1-64221-2(K):200:200: 帳票定義IDが未登録です．→ 初回品（EMいろいろ登録まだ）
+// https://pc090n:53030/ireporegist2/XW/11014/198121-48830:288:288:
 app.get("/ireporegist2/:mcglabel/:dandori/:args", async function (req, res, next) {
     try {
         const userid = req.session.userid ?? 'DEBUG';
