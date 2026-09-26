@@ -25,7 +25,7 @@ function drawChart1(labels, ktnkbn, thisweekworks, thisweekdandori, nextweekwork
     if (labels=="") thisweekdandori = [1.95, 0.64, 0.68, 1.03, 0.73, 0.25, 0.93, 1.25, 2.59, 0.83, 0.63];
     if (labels=="") nextweekworks = [5.27, 2.95, 2.02, 6.19, 2.81, 5.05, 2.23, 9.90, 7.87, 8.26, 7.25];
     if (labels=="") nextweekdandori = [1.85, 0.55, 0.75, 0.95, 0.65, 0.25, 1.13, 1.17, 3.08, 0.90, 0.73];
-    if (labels=="") labels = ['SW', 'NC', 'MC1', 'MC2', 'MC3', 'SK', 'TN', 'SS', 'XT', 'CN', 'MS'];
+    if (labels=="") labels = ['SW', 'NC', 'MC1', 'MC2', 'MC3', 'LF', 'SK', 'TN', 'SS', 'XT', 'CN', 'MS'];
     const tickDesign1Y = {color: 'rgba(250, 250, 250, 0.6)',font: {size: remToPx(2.0),weight: "bold"},padding: remToPx(1.0),};
     const tickDesign1X = {color: 'rgba(250, 250, 250, 0.6)',font: {size: remToPx(1.5),weight: "bold"},};
     // グラフ要素を取得
@@ -120,7 +120,7 @@ function drawChart1(labels, ktnkbn, thisweekworks, thisweekdandori, nextweekwork
                 const value = chart.data.datasets[datasetIndex].data[index];
 
                 //alert(`クリックされた項目: ${label}, 値: ${value}`);
-                if (label == "SW" || label == "SS" || label == "XT" || label == "LF") {
+                if (label == "SW" || label == "XT" || label == "LF") {
                     getDashboardFutureQTY(label, label);                    // MCGCDとMCCDが同一行程なので直接chart3へ
                 } else if (label == "SK") {
                     getDashboardFutureQTY("SK", "SK2");                     // MCCDがSK2 しかないので直接chart3へ
